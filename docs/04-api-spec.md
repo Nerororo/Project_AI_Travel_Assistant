@@ -12,16 +12,58 @@ Request / Response는 JSON을 기본으로 한다.
 
 Entity를 직접 응답하지 않고 Response DTO를 사용한다.
 
-에러 응답 형식은 Global Exception Handler 도입 시 통일한다.
+### 성공 상태 코드
+
+| 상황 | 상태 코드 |
+|---|---|
+| 단건/목록 조회, 수정 성공 | `200 OK` |
+| 생성 성공 | `201 Created` |
+| 삭제 성공 | `204 No Content` |
+
+`POST`로 리소스를 생성하면 응답 헤더의 `Location`에 생성된 리소스 URI를 넣는다.
+
+### 오류 응답
+
+에러 응답 형식은 Global Exception Handler 도입 시 아래 형식으로 통일한다.
 
 예:
 
 ```json
 {
   "code": "PLACE_NOT_FOUND",
-  "message": "장소를 찾을 수 없습니다."
+  "message": "장소를 찾을 수 없습니다.",
+  "fieldErrors": []
 }
 ```
+
+| 상황 | 상태 코드 | 오류 코드 예시 |
+|---|---|---|
+| 필수값·형식·범위 검증 실패 | `400 Bad Request` | `VALIDATION_FAILED` |
+| 존재하지 않는 리소스 | `404 Not Found` | `PLACE_NOT_FOUND`, `TRAVEL_PLAN_NOT_FOUND` |
+| 중복되거나 현재 상태에서 수행할 수 없는 요청 | `409 Conflict` | `DUPLICATE_VISIT_ORDER` |
+| AI 제공자 장애 | `503 Service Unavailable` | `AI_UNAVAILABLE` |
+
+`fieldErrors`는 요청 필드 검증에 실패한 경우에만 채운다.
+
+```json
+{
+  "code": "VALIDATION_FAILED",
+  "message": "요청 값이 올바르지 않습니다.",
+  "fieldErrors": [
+    {
+      "field": "name",
+      "reason": "must not be blank"
+    }
+  ]
+}
+```
+
+### 날짜·ID·목록 요청 규칙
+
+- 날짜는 ISO-8601의 `yyyy-MM-dd` 형식으로 전달한다.
+- Path Variable과 ID 배열의 ID는 양의 정수여야 한다.
+- 배열형 입력값은 중복을 허용하지 않는다. 중복 값은 `400`으로 처리한다.
+- 목록 API의 기본 정렬은 `id,asc`이며, 지원하는 정렬 필드는 엔드포인트별로 명시한다.
 
 ---
 
@@ -47,13 +89,22 @@ Spring Boot 기본 연결 확인용 API.
 region=부산
 type=ATTRACTION
 category=BEACH
+page=0
+size=20
+sort=id,asc
 ```
+
+| 파라미터 | 기본값 | 제약 |
+|---|---:|---|
+| `page` | `0` | 0 이상 |
+| `size` | `20` | 1 이상 100 이하 |
+| `sort` | `id,asc` | `id`, `name`, `region`만 허용 |
 
 ### Response 예시
 
 ```json
 {
-  "places": [
+  "content": [
     {
       "id": 1,
       "name": "해운대",
@@ -63,7 +114,11 @@ category=BEACH
       "latitude": 35.1587,
       "longitude": 129.1604
     }
-  ]
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
 }
 ```
 
@@ -94,6 +149,17 @@ category=BEACH
 }
 ```
 
+### Validation
+
+| 필드 | 규칙 |
+|---|---|
+| `name`, `region`, `type` | 필수 |
+| `name`, `region` | 앞뒤 공백 제거 후 1~100자 |
+| `type` | `ATTRACTION`, `HOTEL`, `RESTAURANT`, `CAFE` 중 하나 |
+| `latitude` | -90 이상 90 이하 |
+| `longitude` | -180 이상 180 이하 |
+| `rating` | 제공 시 0 이상 5 이하 |
+
 ### Response
 
 ```json
@@ -102,6 +168,8 @@ category=BEACH
   "name": "해운대"
 }
 ```
+
+성공 시 `201 Created`를 반환한다.
 
 ---
 
@@ -131,6 +199,8 @@ category=BEACH
 }
 ```
 
+`text`는 앞뒤 공백 제거 후 1~1,000자여야 한다.
+
 ### Response
 
 ```json
@@ -142,6 +212,17 @@ category=BEACH
   "crowdPreference": "LOW"
 }
 ```
+
+### 응답 스키마
+
+| 필드 | 규칙 |
+|---|---|
+| `interests` | 중복 없는 배열. `NATURE`, `HISTORY`, `PHOTOGRAPHY`, `SHOPPING`, `ACTIVITY`, `RELAX`, `FOOD`만 허용 |
+| `crowdPreference` | `LOW`, `MEDIUM`, `HIGH`, `ANY` 중 하나 |
+
+선호를 판단할 수 없는 경우 `interests`는 빈 배열, `crowdPreference`는 `ANY`를 반환한다. AI가 이 계약을 만족하지 못하면 서버는 `503`과 `AI_RESPONSE_INVALID`를 반환하며 임의의 기본 선호로 대체하지 않는다.
+
+timeout 또는 제공자 장애는 `503`과 `AI_UNAVAILABLE`을 반환한다. 네트워크 오류와 제공자 5xx에 한해 최대 한 번 재시도하며, 클라이언트는 재시도 사실을 알 수 없다.
 
 이 API는 개발 / 검증 단계에서 AI 분석 기능을 독립 테스트하기 위한 용도로 사용할 수 있다.
 
@@ -330,6 +411,21 @@ MVP에서는 이동 거리 기준을 우선한다.
 }
 ```
 
+### Validation 및 일정 생성 규칙
+
+| 항목 | 규칙 | 실패 코드 |
+|---|---|---|
+| 여행 기간 | `startDate` 이상 `endDate`, 1~14일 | `INVALID_TRAVEL_PERIOD` |
+| 방문 장소 | 필수·선택 장소를 합쳐 중복 없이 1개 이상 | `INVALID_PLACE_SELECTION` |
+| 필수 장소 | 최종 일정에 모두 포함 | `REQUIRED_PLACE_MISSING` |
+| 일일 장소 수 | 식사 장소 포함 최대 6개 | `PLAN_CAPACITY_EXCEEDED` |
+| 전체 장소 수 | 여행 일수 × 6 이하 | `PLAN_CAPACITY_EXCEEDED` |
+| 음식 목록 | 중복 없이 최대 1~5개, 각 값 1~50자 | `VALIDATION_FAILED` |
+
+일정은 날짜별 장소 수 차이가 최대 1개가 되도록 앞선 날짜부터 배치한다. 각 날짜의 경로는 그 날짜에 배치된 장소만 대상으로 계산한다.
+
+MVP의 `assumptions`는 영업시간, 실시간 교통, 실제 도로 이동 시간, 체류 시간 기반 시간표를 최적화에 반영하지 않았음을 명시한다. 숙소는 모든 날짜의 출발·종료 기준점이지만 방문 순서에는 포함하지 않는다. 음식점은 자동 확정하지 않고 추천 후보로만 반환한다.
+
 ### 처리 흐름
 
 ```text
@@ -363,6 +459,10 @@ Response 반환
     "placeId": 44,
     "name": "Example Hotel"
   },
+  "assumptions": [
+    "영업시간과 실시간 교통은 반영하지 않았습니다.",
+    "음식점은 추천 후보이며 일정에 자동 확정되지 않습니다."
+  ],
   "days": [
     {
       "day": 1,
@@ -444,3 +544,20 @@ MVP에서는 수정 범위를 단순하게 유지한다.
 ```
 
 개별 기능 API를 먼저 만들고 충분히 테스트한 다음 최종 `POST /api/travel-plans`에서 조합한다.
+
+---
+
+# 12. 엔드포인트별 상태 코드
+
+| 엔드포인트 | 성공 | 주요 실패 |
+|---|---|---|
+| `GET /api/places` | `200` | `400`(잘못된 page/size/sort) |
+| `GET /api/places/{placeId}` | `200` | `404` |
+| `POST /api/places` | `201` | `400` |
+| `PUT /api/places/{placeId}` | `200` | `400`, `404` |
+| `DELETE /api/places/{placeId}` | `204` | `404`, `409`(참조 중인 장소) |
+| `POST /api/ai/preferences` | `200` | `400`, `503` |
+| `POST /api/recommendations/*` | `200` | `400`, `404`, `503`(AI 사용 시) |
+| `POST /api/routes/optimize` | `200` | `400`, `404` |
+| `POST /api/travel-plans` | `201` | `400`, `404`, `409`, `503` |
+| `GET/PUT/DELETE /api/travel-plans/{travelPlanId}` | `200`/`200`/`204` | `400`, `404`, `409` |

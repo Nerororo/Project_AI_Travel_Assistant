@@ -231,6 +231,21 @@ AI 패키지는 다음 기능을 구현하지 않는다.
 - 음식점 동선 점수 계산
 - TravelPlan DB 저장
 
+#### AI Client 경계
+
+```text
+AiService
+   │
+   ▼
+AiClient (interface)
+   ├── OpenAiClient       : 운영 OpenAI HTTP 통신
+   └── FakeAiClient       : 테스트/로컬의 결정적 응답
+```
+
+`AiService`는 프롬프트 구성, `AiClient` 호출, 구조화 응답 DTO 검증, 예외 변환을 담당한다. `OpenAiClient`만 HTTP 요청·인증 헤더·timeout·재시도를 담당한다.
+
+AI 응답은 JSON Schema 또는 provider의 structured output으로 제한한다. DTO validation에 실패하면 추천·저장 흐름을 중단하고 `AI_RESPONSE_INVALID` 예외로 변환한다.
+
 ---
 
 ### route

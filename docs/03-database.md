@@ -307,7 +307,53 @@ travel_plan_places(travel_plan_day_id)
 
 ---
 
-## 13. JPA 연관관계 원칙
+## 13. 데이터 무결성 제약
+
+애플리케이션 validation만으로 데이터 무결성을 보장하지 않는다. DB 제약조건도 함께 적용한다.
+
+| 테이블 | 제약조건 | 목적 |
+|---|---|---|
+| `places` | `name`, `type`, `region`, `latitude`, `longitude` NOT NULL | 추천·거리 계산에 필요한 최소 데이터 보장 |
+| `places` | latitude `[-90, 90]`, longitude `[-180, 180]` CHECK | 유효하지 않은 좌표 방지 |
+| `travel_plans` | `title`, `region`, `start_date`, `end_date` NOT NULL | 불완전한 계획 방지 |
+| `travel_plans` | `start_date <= end_date` CHECK | 잘못된 여행 기간 방지 |
+| `travel_preferences` | `travel_plan_id` UNIQUE, NOT NULL | 하나의 계획에 선호 하나만 연결 |
+| `food_preferences` | `(travel_plan_id, food_name)` UNIQUE | 같은 음식 선호의 중복 저장 방지 |
+| `travel_plan_days` | `(travel_plan_id, day_number)` UNIQUE | 같은 Day 번호 중복 방지 |
+| `travel_plan_days` | `(travel_plan_id, travel_date)` UNIQUE | 같은 날짜 중복 방지 |
+| `travel_plan_places` | `(travel_plan_day_id, visit_order)` UNIQUE | 하루 방문 순서 중복 방지 |
+| `travel_plan_places` | `stay_minutes >= 0` CHECK | 음수 체류 시간 방지 |
+| `users` | `email` UNIQUE, NOT NULL | 계정 중복 방지 |
+
+외래키의 삭제 정책은 Aggregate 생명주기에 맞춘다.
+
+- `TravelPlan` 삭제 시 `TravelPreference`, `FoodPreference`, `TravelPlanDay`, `TravelPlanPlace`는 함께 삭제한다.
+- `Place`는 여러 일정에서 공유하므로 참조 중일 때 삭제하지 않는다. API는 `409 Conflict`를 반환한다.
+- `User` 삭제 정책은 회원 기능을 설계할 때 별도 ADR로 결정한다.
+
+---
+
+## 14. 스키마 변경과 마이그레이션
+
+개발 초기 Entity 설계 검증 단계까지만 `ddl-auto: update`를 임시 사용한다. 공유 DB·테스트·운영 환경에서는 Flyway 마이그레이션으로 스키마를 관리한다.
+
+```text
+src/main/resources/db/migration/
+├── V1__create_places.sql
+├── V2__create_travel_plan_tables.sql
+└── V3__add_indexes_and_constraints.sql
+```
+
+규칙:
+
+- 이미 적용된 migration 파일은 수정하지 않는다. 변경은 새 버전 파일로 추가한다.
+- migration은 로컬 빈 DB에서 적용하고, 애플리케이션 통합 테스트로 검증한다.
+- 운영 프로필에서는 `ddl-auto: validate`를 사용하며 `update`와 `create`를 사용하지 않는다.
+- 롤백이 필요한 파괴적 변경은 사전 백업·호환 기간·복구 절차를 별도 작업으로 계획한다.
+
+---
+
+## 15. JPA 연관관계 원칙
 
 - 기본적으로 필요한 방향만 연관관계를 둔다.
 - 모든 관계를 양방향으로 만들지 않는다.

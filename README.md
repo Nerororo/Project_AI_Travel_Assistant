@@ -74,9 +74,9 @@
 
 * [x] Spring Boot 프로젝트 구성
 * [x] Java 21 개발 환경 구성
-* [x] MySQL 연결
+* [ ] MySQL/JPA 런타임 연결 검증
 * [x] Docker Compose 구성
-* [x] JPA 설정
+* [ ] JPA 의존성 및 스키마 초기화 적용
 * [x] 환경변수 분리
 * [x] Git / GitHub 연동
 * [ ] 장소 관리 기능
@@ -137,8 +137,15 @@ docs/
 ├── 03-database.md
 ├── 04-api-spec.md
 ├── 05-development-plan.md
-└── 06-decisions.md
+├── 06-decisions.md
+├── 07-implementation-readiness.md
+├── 08-test-strategy.md
+├── 09-operations.md
+├── 10-definition-of-done.md
+└── 11-command-roadmap.md
 ```
+
+처음 구현을 시작할 때는 큰 Phase 대신 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)의 작업 ID를 한 개씩 진행합니다.
 
 ---
 

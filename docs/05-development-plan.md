@@ -22,6 +22,8 @@ Git Commit
 
 Codex는 구현을 보조하지만, 새 Spring 개념을 사용할 때 개발자가 이해할 수 있도록 설명한다.
 
+큰 Phase를 실제 구현할 때는 `docs/11-command-roadmap.md`의 작은 작업 단위로 나누어 진행한다.
+
 ---
 
 # Phase 0 - 현재 개발 환경 확정
@@ -87,7 +89,7 @@ DELETE /api/places/{id}
 
 ## 완료 기준
 
-Postman / Swagger 또는 HTTP Client를 통해 Place CRUD가 DB와 정상 연동된다.
+Postman / Swagger 또는 HTTP Client를 통해 Place CRUD가 DB와 정상 연동되고, Service 단위 테스트와 Controller API 테스트가 통과한다.
 
 ---
 
@@ -117,7 +119,7 @@ Postman / Swagger 또는 HTTP Client를 통해 Place CRUD가 DB와 정상 연동
 
 ## 완료 기준
 
-AI 없이도 사용자가 선택한 장소들로 기본 여행 계획을 저장하고 조회할 수 있다.
+AI 없이도 사용자가 선택한 장소들로 기본 여행 계획을 저장하고 조회할 수 있으며, 날짜·필수 장소·방문 순서 제약의 통합 테스트가 통과한다.
 
 ---
 
@@ -151,7 +153,7 @@ POST /api/ai/preferences
 
 ## 완료 기준
 
-자연어 여행 요청이 안정적으로 Java DTO로 변환된다.
+자연어 여행 요청이 안정적으로 Java DTO로 변환된다. fake `AiClient` 기반 성공·계약 위반·제공자 장애 테스트가 통과하고, 실제 OpenAI 호출은 자동 테스트에서 수행하지 않는다.
 
 ---
 
@@ -382,10 +384,18 @@ POST /api/routes/optimize
 - [ ] Docker Image
 - [ ] 배포 플랫폼 선정
 - [ ] 운영 DB
-- [ ] 환경변수
-- [ ] Health Check
+- [ ] local / test / prod 프로필 분리
+- [ ] 운영 환경변수 설정
+- [ ] Application / DB Health Check
+- [ ] AI / 지도 API 상태 및 호출량 관찰
 - [ ] CORS
-- [ ] 운영 로그
+- [ ] 민감 정보 마스킹 운영 로그
+- [ ] Flyway migration 배포 절차
+- [ ] 배포 전후 검증 체크리스트
+
+## 완료 기준
+
+운영 프로필에서 `ddl-auto: validate`로 migration 적용 결과를 검증하고, 애플리케이션·DB health check와 핵심 API 확인을 마친다. 외부 AI·지도 API 장애가 발생해도 오류가 구분되어 기록되며 API 키와 사용자 원문은 로그에 남지 않는다.
 
 ---
 
@@ -430,6 +440,8 @@ Place Entity
 ### 5. 테스트
 
 기능 구현 직후 테스트한다.
+
+기능을 완료로 표시하기 전 `docs/10-definition-of-done.md`의 공통 및 해당 도메인 체크리스트를 확인한다.
 
 ### 6. 결정 기록
 
