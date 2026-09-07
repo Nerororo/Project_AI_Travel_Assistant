@@ -195,7 +195,7 @@ sort=id,asc
 
 ```json
 {
-  "text": "사람 많은 곳은 싫고 자연과 사진 찍는 것을 좋아해"
+  "text": "도쿄에 가고 싶고 사람 많은 곳은 싫어"
 }
 ```
 
@@ -205,9 +205,9 @@ sort=id,asc
 
 ```json
 {
+  "destination": "도쿄",
   "interests": [
-    "NATURE",
-    "PHOTOGRAPHY"
+    "NATURE"
   ],
   "crowdPreference": "LOW"
 }
@@ -217,10 +217,11 @@ sort=id,asc
 
 | 필드 | 규칙 |
 |---|---|
+| `destination` | 목적지를 판단할 수 있으면 1~100자 문자열, 판단할 수 없으면 `null` |
 | `interests` | 중복 없는 배열. `NATURE`, `HISTORY`, `PHOTOGRAPHY`, `SHOPPING`, `ACTIVITY`, `RELAX`, `FOOD`만 허용 |
 | `crowdPreference` | `LOW`, `MEDIUM`, `HIGH`, `ANY` 중 하나 |
 
-선호를 판단할 수 없는 경우 `interests`는 빈 배열, `crowdPreference`는 `ANY`를 반환한다. AI가 이 계약을 만족하지 못하면 서버는 `503`과 `AI_RESPONSE_INVALID`를 반환하며 임의의 기본 선호로 대체하지 않는다.
+선호를 판단할 수 없는 경우 `interests`는 빈 배열, `crowdPreference`는 `ANY`를 반환한다. 목적지를 판단할 수 없는 경우 `destination`은 `null`을 반환한다. 사용자가 "도쿄에 가고 싶어"처럼 목적지만 입력해도 `destination`을 이용해 여행지 추천을 시작할 수 있지만, 최종 여행 계획 생성에는 날짜와 방문 장소 선택이 추가로 필요하다. AI가 이 계약을 만족하지 못하면 서버는 `503`과 `AI_RESPONSE_INVALID`를 반환하며 임의의 기본 선호로 대체하지 않는다.
 
 timeout 또는 제공자 장애는 `503`과 `AI_UNAVAILABLE`을 반환한다. 네트워크 오류와 제공자 5xx에 한해 최대 한 번 재시도하며, 클라이언트는 재시도 사실을 알 수 없다.
 
@@ -312,12 +313,18 @@ timeout 또는 제공자 장애는 `503`과 `AI_UNAVAILABLE`을 반환한다. �
     {
       "order": 5,
       "placeId": 8
+    },
+    {
+      "order": 6,
+      "placeId": 10
     }
   ],
   "totalDistanceKm": 25.3,
   "algorithm": "NEAREST_NEIGHBOR"
 }
 ```
+
+`startPlaceId`는 경로의 시작과 종료 지점이다. `placeIds`의 각 장소는 중복 없이 한 번씩 방문하며, `startPlaceId`는 `placeIds`에 포함할 수 없다. `totalDistanceKm`은 시작점에서 첫 방문 장소까지, 방문 장소 사이, 마지막 방문 장소에서 시작점으로 돌아오는 모든 구간의 합이다.
 
 향후 2-opt를 적용하면 알고리즘 이름과 개선 전후 거리를 비교할 수 있다.
 
@@ -352,6 +359,8 @@ timeout 또는 제공자 장애는 `503`과 `AI_UNAVAILABLE`을 반환한다. �
 ```
 
 MVP에서는 이동 거리 기준을 우선한다.
+
+응답은 점수가 낮은 순서의 여러 호텔 후보를 반환한다. 클라이언트는 추천 후보 또는 같은 지역의 임의 `HOTEL` 장소 중 사용자가 선택한 `placeId`를 최종 여행 계획 생성 요청의 `selectedHotelId`로 전달할 수 있다.
 
 ---
 
@@ -404,6 +413,7 @@ MVP에서는 이동 거리 기준을 우선한다.
   "preferenceText": "바다와 사진 찍는 것을 좋아하고 사람이 너무 많은 곳은 싫어",
   "requiredPlaceIds": [1, 2],
   "selectedRecommendedPlaceIds": [5, 8],
+  "selectedHotelId": 44,
   "foods": [
     "돼지국밥",
     "회"
@@ -418,11 +428,12 @@ MVP에서는 이동 거리 기준을 우선한다.
 | 여행 기간 | `startDate` 이상 `endDate`, 1~14일 | `INVALID_TRAVEL_PERIOD` |
 | 방문 장소 | 필수·선택 장소를 합쳐 중복 없이 1개 이상 | `INVALID_PLACE_SELECTION` |
 | 필수 장소 | 최종 일정에 모두 포함 | `REQUIRED_PLACE_MISSING` |
-| 일일 장소 수 | 식사 장소 포함 최대 6개 | `PLAN_CAPACITY_EXCEEDED` |
+| 선택 호텔 | 존재하는 `HOTEL`이며 여행 지역과 일치 | `INVALID_HOTEL_SELECTION` |
+| 일일 장소 수 | 관광 장소 최대 6개 | `PLAN_CAPACITY_EXCEEDED` |
 | 전체 장소 수 | 여행 일수 × 6 이하 | `PLAN_CAPACITY_EXCEEDED` |
 | 음식 목록 | 중복 없이 최대 1~5개, 각 값 1~50자 | `VALIDATION_FAILED` |
 
-일정은 날짜별 장소 수 차이가 최대 1개가 되도록 앞선 날짜부터 배치한다. 각 날짜의 경로는 그 날짜에 배치된 장소만 대상으로 계산한다.
+일정은 날짜별 관광 장소 수 차이가 최대 1개가 되도록 앞선 날짜부터 배치한다. 각 날짜의 경로는 그 날짜에 배치된 관광 장소만 대상으로 계산하며, 선택된 호텔에서 출발해 마지막 관광 장소 방문 후 같은 호텔로 돌아온다.
 
 MVP의 `assumptions`는 영업시간, 실시간 교통, 실제 도로 이동 시간, 체류 시간 기반 시간표를 최적화에 반영하지 않았음을 명시한다. 숙소는 모든 날짜의 출발·종료 기준점이지만 방문 순서에는 포함하지 않는다. 음식점은 자동 확정하지 않고 추천 후보로만 반환한다.
 
@@ -435,7 +446,7 @@ MVP의 `assumptions`는 영업시간, 실시간 교통, 실제 도로 이동 시
  ↓
 여행지 확정
  ↓
-호텔 추천
+사용자 선택 호텔 검증
  ↓
 날짜별 장소 분배
  ↓
@@ -473,12 +484,6 @@ Response 반환
           "placeId": 1,
           "name": "해운대",
           "role": "ATTRACTION"
-        },
-        {
-          "order": 2,
-          "placeId": 81,
-          "name": "OO돼지국밥",
-          "role": "MEAL"
         }
       ]
     }

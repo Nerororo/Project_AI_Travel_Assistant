@@ -1,4 +1,4 @@
-# AI Travel Planner - Development Instructions
+# Routy - Development Instructions
 
 ## Project Goal
 

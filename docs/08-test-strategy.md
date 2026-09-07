@@ -55,6 +55,8 @@ Service
 - 필수 장소가 누락되지 않는지
 - 중복 장소와 일일 6개·전체 용량 초과 거절
 - 날짜별 장소 수 차이가 최대 1인지
+- 선택 호텔이 추천 후보인지와 관계없이 존재하는지, `HOTEL` 타입인지, 여행 지역과 일치하는지 검증하는지
+- 선택된 호텔에서 출발하고 같은 호텔로 돌아오는 날짜별 경로가 계산되는지, 호텔과 음식점 추천 후보가 방문 장소로 저장되지 않는지
 - 계획 삭제 시 하위 Aggregate는 삭제되고 Place는 삭제되지 않는지
 
 ### Route와 Recommendation
@@ -67,7 +69,8 @@ Service
 
 ### AI
 
-- 허용된 `interests`, `crowdPreference`가 DTO로 변환되는지
+- "도쿄에 가고 싶어"처럼 목적지만 포함한 자연어에서 `destination`이 DTO로 변환되고, 관심사가 없으면 빈 배열과 `ANY`가 반환되는지
+- 허용된 `destination`, `interests`, `crowdPreference`가 DTO로 변환되는지
 - 알 수 없는 enum, JSON 파싱 실패, 누락 필드가 `AI_RESPONSE_INVALID`로 변환되는지
 - timeout과 5xx가 최대 한 번 재시도된 뒤 `AI_UNAVAILABLE`으로 변환되는지
 - 인증·요청 오류는 재시도하지 않는지

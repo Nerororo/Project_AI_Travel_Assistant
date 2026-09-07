@@ -180,7 +180,7 @@ Accepted for MVP
 
 ## 결정
 
-MVP에서는 호텔과 선택 여행지 사이의 총 이동 거리를 핵심 점수로 사용한다.
+MVP에서는 호텔과 선택 여행지 사이의 총 이동 거리를 핵심 점수로 사용한다. 서비스는 점수가 낮은 순서로 여러 후보를 반환하고, 사용자는 추천 후보 또는 같은 지역의 임의 `HOTEL` 장소 중 하나를 선택한다. 선택한 호텔은 최종 여행 계획 생성 요청에 포함되며 각 날짜 경로의 시작·종료점으로 사용한다.
 
 ```text
 HotelScore = Σ distance(hotel, selectedPlace)
@@ -353,9 +353,9 @@ JPA의 `ddl-auto: update`는 개발 속도는 빠르지만 스키마 변경 이�
 
 ## 결정
 
-Entity 초기 설계 검증 단계 이후부터 DB 변경은 Flyway versioned migration으로 관리한다.
+첫 스키마부터 모든 DB 변경은 Flyway versioned migration으로 관리한다.
 
-운영 프로필의 Hibernate는 `ddl-auto: validate`만 사용한다.
+모든 profile의 Hibernate는 `ddl-auto: validate`만 사용한다.
 
 ## 이유
 
@@ -369,7 +369,7 @@ Entity 초기 설계 검증 단계 이후부터 DB 변경은 Flyway versioned mi
 
 ## 재검토 조건
 
-단일 개발 환경의 매우 짧은 실험 단계에서는 임시로 `ddl-auto: update`를 사용할 수 있다. 단, 공유 환경으로 옮기기 전에 migration으로 기준 스키마를 확정한다.
+JPA 매핑을 빠르게 실험해야 하면 별도 임시 DB에서만 수행하며, 프로젝트 설정의 `ddl-auto: update`로 전환하지 않는다.
 
 ---
 
@@ -387,7 +387,7 @@ Accepted for MVP
 
 MVP는 여행 기간별 장소 수를 최대 6개 범위에서 균등 배치한 뒤, 각 날짜 안에서만 Nearest Neighbor 기반 경로 최적화를 수행한다.
 
-필수 장소는 누락 없이 포함한다. 숙소는 매일의 경로 시작·종료 기준점으로 사용하고, 음식점은 자동 일정 삽입 대신 추천 후보로 반환한다.
+필수 장소는 누락 없이 포함한다. 숙소는 매일 `호텔 → 관광 장소들 → 호텔` 경로의 시작·종료 기준점으로 사용하되 방문 순서에는 포함하지 않는다. 음식점은 자동 일정 삽입 대신 추천 후보로 반환한다.
 
 ## 이유
 

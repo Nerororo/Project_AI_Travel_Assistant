@@ -1,37 +1,15 @@
 # Place Domain Instructions
 
-이 패키지는 장소 데이터를 담당한다.
+## Responsibility
 
-Place는 관광지, 호텔, 음식점을 통합하여 표현한다.
+- 관광지, 호텔, 음식점을 `Place`와 `PlaceType`으로 관리한다.
+- 장소 등록, 조회, 검색, 저장을 담당한다.
 
-PlaceType을 이용해 장소 종류를 구분한다.
+## Package Rules
 
-예:
-
-ATTRACTION
-HOTEL
-RESTAURANT
-CAFE
-
-
-## Responsibilities
-
-place 패키지는 다음 역할만 담당한다.
-
-- 장소 등록
-- 장소 조회
-- 장소 검색
-- 장소 데이터 저장
-
-
-## Rules
-
-여행 일정 생성 로직을 PlaceService에 작성하지 않는다.
-
-경로 최적화 로직을 작성하지 않는다.
-
-AI API를 직접 호출하지 않는다.
-
-Controller는 Entity를 직접 반환하지 않는다.
-
-DTO를 사용한다.
+- 여행 일정 생성이나 경로 최적화 로직을 구현하지 않는다.
+- AI API를 직접 호출하지 않는다.
+- Controller는 Entity를 직접 반환하지 않고 DTO를 사용한다.
+- 스키마 변경은 `docs/03-database.md`를 따른다.
+- HTTP 계약 변경은 `docs/04-api-spec.md`를 따른다.
+- 테스트 범위는 `docs/08-test-strategy.md`의 Place 항목을 따른다.

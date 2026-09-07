@@ -136,11 +136,6 @@ src/main/java/com/example/travel
 │   ├── domain/
 │   └── dto/
 │
-├── preference/
-│   ├── service/
-│   ├── domain/
-│   └── dto/
-│
 ├── travelplan/
 │   ├── controller/
 │   ├── service/
@@ -191,21 +186,11 @@ Place
 
 ---
 
-### preference
+### 여행 선호 데이터의 위치
 
-사용자의 여행 성향을 표현한다.
+별도 `preference` 패키지는 MVP에서 만들지 않는다. 자연어를 분석하기 위한 Request/Response DTO와 OpenAI 통신은 `ai` 패키지에 두고, 여행 계획에 저장되는 `TravelPreference` Entity와 관심사 값은 `travelplan` 패키지에 둔다.
 
-예:
-
-- 자연
-- 역사
-- 사진
-- 쇼핑
-- 휴식
-- 액티비티
-- 혼잡도
-
-AI가 분석한 자연어 결과를 서버 내부에서 사용할 수 있는 구조로 변환한다.
+이렇게 하면 AI 통신 책임과 여행 계획 데이터 저장 책임이 섞이지 않으면서, 아직 독립 기능이 없는 선호 데이터를 위한 패키지를 미리 만들지 않아도 된다.
 
 ---
 
@@ -295,12 +280,15 @@ RestaurantRecommendationService
 ```text
 TravelPlanService
      │
-     ├── PreferenceService
+     ├── AiService
+     │       자연어 선호 분석 (요청에 원문이 있을 때)
      ├── RecommendationService
      ├── RouteService
      ├── PlaceService
      └── Repository
 ```
+
+호텔이 선택된 날짜별 경로는 `호텔 → 관광 장소들 → 호텔`로 계산한다. `TravelPlanDay`에는 관광 장소와 그 방문 순서만 저장하며, 호텔과 음식점 추천 후보는 일정 방문 장소로 저장하지 않는다.
 
 향후 AI 일정 설명이 필요하다면 `AiService`도 사용한다.
 

@@ -10,7 +10,7 @@
 
 | 프로필 | 목적 | DB 스키마 | 외부 AI·지도 API | 로그 |
 |---|---|---|---|---|
-| `local` | 개인 개발 | 초기 검증 시에만 `ddl-auto: update` 허용 | 명시적 실행 때만 호출 | SQL 상세 로그 허용, 민감 값 금지 |
+| `local` | 개인 개발 | Flyway 적용 후 `ddl-auto: validate` | 명시적 실행 때만 호출 | SQL 상세 로그 허용, 민감 값 금지 |
 | `test` | 자동 테스트 | 전용 테스트 DB와 migration | fake/mock만 사용 | 실패 원인에 필요한 최소 로그 |
 | `prod` | 배포 환경 | Flyway 적용 후 `ddl-auto: validate` | 실제 호출, timeout·재시도 적용 | 구조화 로그, 민감 값 금지 |
 

@@ -1,32 +1,14 @@
 # Recommendation Domain Instructions
 
-recommendation 패키지는 추천 점수를 계산한다.
+## Responsibility
 
+- 여행지, 호텔, 음식점 후보의 추천 점수와 순위를 계산한다.
+- 추천 결과와 설명 가능한 추천 근거를 만든다.
 
-## Responsibilities
+## Package Rules
 
-- 여행지 추천
-- 호텔 추천
-- 음식점 추천
-
-
-## Hotel Recommendation
-
-호텔과 선택된 여행지 사이의
-총 이동 거리를 주요 평가 기준으로 한다.
-
-
-## Restaurant Recommendation
-
-다음을 고려한다.
-
-- 사용자가 먹고 싶은 음식과의 일치
-- 여행 경로와의 거리
-
-향후 평점 등을 추가할 수 있다.
-
-
-## Rule
-
-추천 로직과 외부 API 호출 로직을
-가능한 한 분리한다.
+- 추천 규칙과 외부 API 호출 코드를 분리한다.
+- 호텔은 이동 거리, 음식점은 음식 선호와 동선 이탈 거리를 고려한다.
+- 경로 계산은 `route` 패키지의 기능을 재사용한다.
+- AI가 장소 ID나 최종 추천 순위를 직접 결정하게 하지 않는다.
+- 테스트 범위는 `docs/08-test-strategy.md`의 Recommendation 항목을 따른다.

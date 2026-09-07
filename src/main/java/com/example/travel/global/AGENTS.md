@@ -1,25 +1,13 @@
 # Global Package Instructions
 
-global은 여러 도메인에서 공통으로 사용하는 기능만 포함한다.
+## Responsibility
 
-## Allowed
+- 여러 도메인이 공유하는 예외 처리와 공통 응답을 관리한다.
+- 공통 Configuration, Security, 범용 Utility를 관리한다.
 
-- Exception Handling
-- Configuration
-- Security
-- Common Response
-- 공통 Utility
+## Package Rules
 
-
-## Not Allowed
-
-특정 도메인 비즈니스 로직을
-global에 작성하지 않는다.
-
-예:
-
-여행 추천
-여행 일정 계산
-호텔 추천
-
-등은 global에 두지 않는다.
+- 여행 추천, 일정 계산, 장소 추천 같은 도메인 로직을 두지 않는다.
+- 특정 도메인에서만 쓰는 코드는 해당 도메인 패키지에 둔다.
+- 오류 응답 계약은 `docs/04-api-spec.md`를 따른다.
+- 로그와 보안 설정은 `docs/09-operations.md`를 따른다.

@@ -120,8 +120,9 @@ MVP에서는 미리 복잡하게 분리하지 않는다.
 | id | BIGINT | N | PK |
 | travel_plan_id | BIGINT | N | 여행 계획 FK |
 | crowd_preference | VARCHAR | Y | 혼잡도 선호 |
-| original_text | TEXT | Y | 사용자 원문 |
 | created_at | DATETIME | N | 생성 시각 |
+
+사용자의 자연어 선호 원문은 저장하지 않는다. AI 분석 요청 처리 중에만 사용하고, 검증된 관심사와 혼잡도 선호만 저장한다.
 
 ### 여행 관심사 저장
 
@@ -214,7 +215,7 @@ Unique 권장:
 | place_id | BIGINT | N | 장소 FK |
 | visit_order | INT | N | 방문 순서 |
 | required | BOOLEAN | N | 필수 장소 여부 |
-| place_role | VARCHAR | N | 관광/식사/숙소 등 |
+| place_role | VARCHAR | N | 일정 안의 관광 장소 역할 (MVP: `ATTRACTION`) |
 | arrival_time | TIME | Y | 도착 예정 |
 | departure_time | TIME | Y | 출발 예정 |
 | stay_minutes | INT | Y | 예상 체류 시간 |
@@ -225,11 +226,9 @@ Unique 권장:
 
 ```text
 ATTRACTION
-MEAL
-HOTEL
 ```
 
-`Place.type`과 달리 여행 일정 안에서 어떤 역할로 포함됐는지를 표현한다.
+`Place.type`과 달리 여행 일정 안에서 어떤 역할로 포함됐는지를 표현한다. MVP에서는 음식점과 호텔을 `TravelPlanPlace`로 저장하지 않으므로 `ATTRACTION`만 사용한다.
 
 ---
 
@@ -335,7 +334,7 @@ travel_plan_places(travel_plan_day_id)
 
 ## 14. 스키마 변경과 마이그레이션
 
-개발 초기 Entity 설계 검증 단계까지만 `ddl-auto: update`를 임시 사용한다. 공유 DB·테스트·운영 환경에서는 Flyway 마이그레이션으로 스키마를 관리한다.
+첫 스키마부터 Flyway versioned migration으로 관리한다. 모든 profile에서 Hibernate는 schema를 생성·변경하지 않으며, DB 변경은 migration으로만 수행한다.
 
 ```text
 src/main/resources/db/migration/
@@ -348,7 +347,7 @@ src/main/resources/db/migration/
 
 - 이미 적용된 migration 파일은 수정하지 않는다. 변경은 새 버전 파일로 추가한다.
 - migration은 로컬 빈 DB에서 적용하고, 애플리케이션 통합 테스트로 검증한다.
-- 운영 프로필에서는 `ddl-auto: validate`를 사용하며 `update`와 `create`를 사용하지 않는다.
+- `local`, `test`, `prod` profile 모두 `ddl-auto: validate`를 사용하며 `update`와 `create`를 사용하지 않는다.
 - 롤백이 필요한 파괴적 변경은 사전 백업·호환 기간·복구 절차를 별도 작업으로 계획한다.
 
 ---
