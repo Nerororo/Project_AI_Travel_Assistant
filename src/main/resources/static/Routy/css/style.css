@@ -1245,3 +1245,31 @@
     background: var(--bs-dark) !important;
 }
 /*** copyright end ***/
+
+/* MVP 범위 밖의 템플릿 기능은 구조를 유지한 채 화면에서 숨긴다. */
+.mvp-hidden {
+    display: none !important;
+}
+
+.mvp-template > .container-fluid.bg-primary.px-5,
+.mvp-template .subscribe,
+.mvp-template .footer,
+.mvp-template .copyright,
+.mvp-template .blog,
+.mvp-template .testimonial,
+.mvp-template .nav-pills,
+.mvp-template a[href="about.html"],
+.mvp-template a[href="services.html"],
+.mvp-template a[href="blog.html"],
+.mvp-template a[href="contact.html"],
+.mvp-template a[href="tour.html"],
+.mvp-template a[href="gallery.html"],
+.mvp-template a[href="guides.html"],
+.mvp-template a[href="testimonial.html"],
+.mvp-template a[href="404.html"],
+.mvp-template .destination-item a,
+.mvp-template .packages-info,
+.mvp-template .packages-price,
+.mvp-template .packages-content .row.bg-primary {
+    display: none !important;
+}

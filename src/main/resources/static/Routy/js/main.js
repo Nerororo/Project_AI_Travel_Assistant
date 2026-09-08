@@ -22,6 +22,8 @@
     });
 
 
+    // Owl Carousel 플러그인이 포함된 화면에서만 캐러셀을 초기화한다.
+    if ($.fn.owlCarousel) {
     // International Tour carousel
     $(".InternationalTour-carousel").owlCarousel({
         autoplay: true,
@@ -51,9 +53,10 @@
             }
         }
     });
-
+    }
 
     // packages carousel
+    if ($.fn.owlCarousel) {
     $(".packages-carousel").owlCarousel({
         autoplay: true,
         smartSpeed: 1000,
@@ -82,9 +85,11 @@
             }
         }
     });
+    }
 
 
     // testimonial carousel
+    if ($.fn.owlCarousel) {
     $(".testimonial-carousel").owlCarousel({
         autoplay: true,
         smartSpeed: 1000,
@@ -113,6 +118,7 @@
             }
         }
     });
+    }
 
     
    // Back to top button

@@ -1,0 +1,4 @@
+o/.gradle-instrumented-classpath.marker
+o/.gradle-agent-instrumented-external.marker
+o/instrumented/instrumented-jackson-databind-3.1.5.jar
+i/

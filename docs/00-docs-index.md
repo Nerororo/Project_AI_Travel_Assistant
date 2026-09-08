@@ -12,7 +12,8 @@
 - Base Package: `com.example.travel`
 - Local DB: Docker Compose
 - 현재 확인된 API: `GET /hello`
-- AI: OpenAI API 연동 예정
+- 외부 장소·지도: Google Maps Platform 연동 예정
+- AI: 국가 기반 도시 후보 추천을 위한 OpenAI API 연동 예정
 
 ## 문서 구성
 
@@ -71,6 +72,10 @@
 11. `11-command-roadmap.md`
     - Codex와 대화하며 진행하는 작은 구현 단위
     - 작업별 요청 문구, 예상 변경 범위, 완료 확인 방법
+
+12. `12-harness-boundaries.md`
+    - 폴더별 책임, 필수 참조 문서, 변경 금지 경계
+    - 작업 전 확인 순서
 
 ## 선택적 읽기 규칙
 

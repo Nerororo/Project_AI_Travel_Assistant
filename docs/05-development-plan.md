@@ -28,12 +28,12 @@ Spring Boot를 학습하면서 포트폴리오 수준의 서비스를 완성한�
 | 단계 | 목표 | 주요 학습 내용 | 실행 작업 |
 |---|---|---|---|
 | 개발 기반 | JPA·MySQL·profile 기반 준비 | Dependency, Configuration, migration | F0 |
-| Place | 장소 CRUD와 검색 | Entity, Repository, DTO, Validation | P1 |
-| 거리·경로 | 거리 계산과 방문 순서 결정 | 순수 Java 로직, Haversine, Nearest Neighbor | R1 |
+| Place | Google 장소 검색과 내부 참조 저장 | Entity, Repository, 외부 Client, DTO, Validation | P1 |
+| 거리·경로 | 거리·정적 이동 시간 행렬과 방문 순서 결정 | 순수 Java 로직, Haversine, Nearest Neighbor, Google Routes client 분리 | R1 |
 | TravelPlan 저장 | 일정 Aggregate 저장과 조회 | 연관관계, Transaction, Lazy Loading | T1 |
-| AI 선호 분석 | 자연어를 제한된 DTO로 변환 | 외부 Client 분리, 구조화 응답, 실패 처리 | A1 |
-| 추천 | 장소·호텔·음식점 후보 평가 | 점수, 정렬, Service 책임 분리 | R2 |
-| 최종 일정 | 도메인 서비스를 조합해 일정 생성 | Orchestration, transaction, 통합 테스트 | T2 |
+| AI 도시 추천 | 국가 기반 도시 후보를 제한된 DTO로 생성 | 외부 Client 분리, 구조화 응답, Google 검증 | A1 |
+| 추천 | 장소·호텔·식사 시간대별 음식점 후보 평가 | 점수, 내부·인접 판정, 정렬, Service 책임 분리 | R2 |
+| 최종 일정 | 체류·이동·식사 시간을 조합해 일정 생성 | 시간 용량, Orchestration, transaction, 통합 테스트 | T2 |
 | 품질·운영 | 오류·profile·배포 기반 정리 | Exception Handler, logging, health check | Q1 |
 | 인증 | 사용자와 일정 소유권 보호 | Spring Security, JWT | U1 |
 
@@ -51,7 +51,7 @@ Spring Boot를 학습하면서 포트폴리오 수준의 서비스를 완성한�
 ## 5. 포트폴리오용 측정 항목
 
 - 경로: Nearest Neighbor 거리, 2-opt 적용 전후 거리와 개선율
-- AI: 정상 parsing 결과, 실패 유형, 재시도 결과
+- AI: 도시 후보 parsing·Google 검증 결과, 실패 유형, 재시도 결과
 - DB: 주요 query, N+1 발생 여부, 개선 전후 결과
 - 테스트: 핵심 domain, service, integration test 결과
 

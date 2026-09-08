@@ -17,9 +17,10 @@
 | Spring Boot 웹 애플리케이션 | 기본 골격 | `TravelApplication`과 `GET /hello`가 있다. |
 | Java 21 / Gradle | 준비됨 | Java toolchain과 Gradle wrapper가 있다. |
 | MySQL 컨테이너 | 구성됨 | `docker-compose.yaml`에 MySQL 8.4 서비스가 있다. |
-| JPA / migration | 구현 전 | JPA, MySQL driver, Flyway dependency와 migration을 추가해야 한다. |
-| 핵심 도메인 | 구현 전 | Place, Route, TravelPlan, Recommendation은 문서만 준비돼 있다. |
-| OpenAI 연동 | 구현 전 | 계약을 확인한 뒤 fake client부터 구현한다. |
+| JPA / migration | 설정 초안만 존재 | `application.yml`에 datasource와 `ddl-auto: validate` 초안은 있으나 JPA, MySQL driver, Flyway dependency와 migration은 아직 추가해야 한다. |
+| 핵심 도메인 | 구현 전 | Google Place 참조, Route, TravelPlan, Recommendation은 문서만 준비돼 있다. |
+| Google Maps Platform | 구현 전 | Places·Routes·Maps JavaScript API 계약과 키 제한을 확인한 뒤 fake client부터 구현한다. |
+| OpenAI 연동 | 구현 전 | 국가 기반 도시 후보 계약을 확인한 뒤 fake client부터 구현한다. |
 | 인증 | 후순위 | 핵심 MVP 이후 U1 단계에서 범위를 확정한다. |
 
 이 표는 구현 상태가 바뀔 때만 갱신한다.
@@ -28,9 +29,10 @@
 
 | 주제 | 확인 시점 | 기록할 기준 문서 |
 |---|---|---|
-| 장소 데이터 출처와 초기 적재 방식 | Place 구현 전 | `docs/01-requirements.md`, 필요하면 README |
-| AI 응답 schema와 provider 설정 | AI 연동 전 | `docs/04-api-spec.md`, `docs/09-operations.md` |
-| 일정 입력 제약과 일일 배치 규칙 | TravelPlan 구현 전 | `docs/01-requirements.md`, `docs/04-api-spec.md` |
+| Google Places Field Mask·캐시 허용 범위·API 키 제한 | Place 구현 전 | `docs/04-api-spec.md`, `docs/09-operations.md` |
+| Google Routes route matrix 한도·이동 방식·원소별 실패·Field Mask | R1-06 구현 전 | `docs/04-api-spec.md`, `docs/09-operations.md` |
+| AI 도시 후보 schema와 provider 설정 | AI 연동 전 | `docs/04-api-spec.md`, `docs/09-operations.md` |
+| 일정 입력 제약, 장소 유형별 체류 시간, 일일 시간 용량 | TravelPlan 구현 전 | `docs/01-requirements.md`, `docs/04-api-spec.md` |
 | 상태·오류 코드와 paging 계약 | 각 API 구현 전 | `docs/04-api-spec.md` |
 | 배포 플랫폼과 health endpoint | 운영 단계 전 | `docs/09-operations.md` |
 

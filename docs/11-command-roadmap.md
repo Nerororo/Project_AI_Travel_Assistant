@@ -8,6 +8,18 @@
 
 작업을 시작할 때는 `docs/00-docs-index.md`의 선택적 읽기 표를 사용해 관련 문서만 확인한다.
 
+각 작업 ID에는 `docs/12-harness-boundaries.md`의 단계 경계를 적용한다. 구현 설명에는 아래 Change Envelope를 반드시 포함한다.
+
+```text
+Task ID:
+Allowed Paths:
+Conditional Paths:
+Forbidden Paths:
+Verification:
+```
+
+표의 요청 문구는 작업 범위를 넓히지 않는다. Change Envelope에 없는 경로가 필요해지면 수정 전에 사용자에게 별도로 승인받는다.
+
 ```text
 P1-01을 설명만 해줘.
 수정할 파일, 각 파일의 역할, 사용할 Spring 개념을 초보자 기준으로 설명해줘.
@@ -22,10 +34,12 @@ P1-03에서 막혔어. 코드는 바꾸지 말고 원인과 선택지를 설명�
 ## 전체 순서
 
 ```text
-F0 개발 기반 → P1 Place CRUD → R1 거리·경로
-→ T1 TravelPlan 기본 저장 → A1 AI 선호 분석
+F0 개발 기반 → P1 Google 장소 참조 → R1 거리·경로
+→ T1 TravelPlan 기본 저장 → A1 AI 도시 추천
 → R2 추천 → T2 최종 일정 조합 → Q1 품질·운영 → U1 인증
 ```
+
+각 구간은 다음 구간의 테스트에 필요한 기반을 먼저 만든다. 아직 뒤 단계의 스키마나 기능이 없어 검증할 수 없는 완료 조건은 구현된 것으로 표시하지 않고, 검증 가능한 단계까지 명시적으로 이월한다.
 
 ## F0 — 개발 기반
 
@@ -36,18 +50,19 @@ F0 개발 기반 → P1 Place CRUD → R1 거리·경로
 | F0-03 | 승인한 dependency·기본 profile 구조 구현 | 컴파일 및 DB 연결 준비 | `F0-03을 구현해줘. F0-02 범위 밖 dependency는 추가하지 마.` |
 | F0-04 | Docker MySQL과 최소 연결 확인 | 앱 시작 또는 연결 테스트 성공 | `F0-04를 진행하자. 비밀번호를 출력하지 말고 연결만 확인해줘.` |
 
-## P1 — Place CRUD
+## P1 — Google 장소 검색과 Place 참조
 
 | ID | 작업 | 완료 확인 | 요청 문구 |
 |---|---|---|---|
-| P1-01 | Place Entity·PlaceType·V1 migration 설계 설명 | 필드·제약조건 이해 | `P1-01을 설명만 해줘. Place Entity와 V1 migration을 표로 설명해줘.` |
-| P1-02 | Entity·enum·V1 migration 구현 | migration, 컴파일 성공 | `P1-02를 구현해줘. Entity와 migration만 만들고 API는 만들지 마.` |
-| P1-03 | Repository, 조회 Service, not found 예외 | 성공/실패 단위 테스트 | `P1-03을 진행하자. Repository와 Service 차이를 설명한 뒤 구현해줘.` |
-| P1-04 | Request/Response DTO와 validation | 잘못된 이름·타입·좌표 거절 | `P1-04를 구현해줘. DTO validation만 추가하고 Controller는 만들지 마.` |
-| P1-05 | POST와 단건 GET API | 201·200·400·404 테스트 | `P1-05를 진행하자. 요청부터 응답 흐름을 설명하고 승인 후 구현해줘.` |
-| P1-06 | 목록 page/size/sort | 경계·잘못된 값 테스트 | `P1-06을 구현해줘. 명세 밖 정렬 필드는 허용하지 마.` |
-| P1-07 | 수정·삭제 API | 200·204·404·409 테스트 | `P1-07을 진행하자. 참조 중 Place 삭제를 왜 막는지 설명해줘.` |
-| P1-08 | 테스트·문서·DoD 점검 | `./gradlew test`와 P1 DoD 통과 | `P1-08을 진행하자. 코드를 추가하기 전 완료 기준을 점검해줘.` |
+| P1-01 | Place 참조 Entity·V1 migration 설계 | Google Place ID와 내부 ID 관계 이해 | `P1-01을 설명만 해줘. Place 참조 Entity와 V1 migration을 표로 설명해줘.` |
+| P1-02 | Place 참조 Entity·Repository·migration | Google Place ID UNIQUE와 조회 테스트 | `P1-02를 구현해줘. Google 장소 본문 필드는 영구 저장하지 마.` |
+| P1-03 | GooglePlacesClient·fake·DTO 설계 | 외부 데이터와 Entity 경계 이해 | `P1-03을 설명만 해줘. GooglePlacesClient와 fake가 필요한 이유를 설명해줘.` |
+| P1-04 | fake client·PlaceService 구현 | 국가·도시·장소 검증 단위 테스트 | `P1-04를 구현해줘. 실제 Google API는 호출하지 마.` |
+| P1-05 | 공통 오류 응답과 Global Exception Handler | validation·not found·provider 장애 계약 테스트 | `P1-05를 설명만 해줘. Exception Handler가 필요한 이유와 수정 파일을 설명해줘.` |
+| P1-06 | Google Places client 구현 계획 | API·Field Mask·키 제한·비용 이해 | `P1-06을 설명만 해줘. dependency와 Google 키 보안, 저장 정책을 설명해줘.` |
+| P1-07 | 승인한 Google Places client 구현 | fake 기반 계약·timeout·오류 변환 테스트 | `P1-07을 구현해줘. 자동 테스트에서 실제 Google API를 호출하지 마.` |
+| P1-08 | 도시 직접 선택 검증·장소 상세 API | 200·400·404·503 테스트 | `P1-08을 구현해줘. Google Place ID를 검증하고 Entity를 직접 응답하지 마.` |
+| P1-09 | P1 테스트·문서·중간 점검 | `./gradlew test` 통과, provider 정책 확인 | `P1-09를 진행하자. Place 참조 DoD와 Google 저장·표시 정책을 점검해줘.` |
 
 ## R1 — 거리와 경로
 
@@ -58,47 +73,72 @@ F0 개발 기반 → P1 Place CRUD → R1 거리·경로
 | R1-03 | Nearest Neighbor 설계 | 입력·출력·시간 복잡도 이해 | `R1-03을 설명만 해줘. 알고리즘과 동률 처리 규칙을 설명해줘.` |
 | R1-04 | Optimizer·단위 테스트 | 모든 장소 1회 방문 | `R1-04를 구현해줘. 빈 목록과 단일 장소도 테스트해줘.` |
 | R1-05 | 경로 최적화 API | 200·400·404 테스트 | `R1-05를 구현해줘. Controller에서 알고리즘을 직접 실행하지 마.` |
+| R1-06 | Google Routes client·fake·시간 행렬 | 정적 이동 시간·원소별 실패·503 테스트 | `R1-06을 설명만 해줘. route/client와 순수 알고리즘의 경계를 설명해줘.` |
 
-## T1 — TravelPlan 기본 저장
+## T1 — TravelPlan 저장 계층
+
+T1은 계산이 완료된 일정 데이터를 입력받는 내부 저장·조회 계층을 구현한다. 도착·출발 시각과 체류 시간은 고정된 테스트 fixture로 제공하고, 저장 계층은 이를 임시 값으로 채우거나 계산하지 않는다. Google 검증과 시간표 생성, 공개 TravelPlan CRUD API 연결은 T2에서 수행한다. T1의 내부 전달 DTO를 HTTP 요청으로 노출하지 않는다.
+
+T1-01~T1-05의 Aggregate·migration·fixture·조회·교체·삭제 범위에는 `TravelPlanMealSlot`도 포함한다. 식사 슬롯의 종류·확정 시작·종료 시각을 저장하며 음식점 후보는 저장하지 않는다.
 
 | ID | 작업 | 완료 확인 | 요청 문구 |
 |---|---|---|---|
 | T1-01 | Aggregate·V2 migration 설계 | 관계·삭제 정책 이해 | `T1-01을 설명만 해줘. Plan, Day, PlanPlace 관계를 설명해줘.` |
 | T1-02 | Entity·연관관계·migration | migration/관계 테스트 | `T1-02를 구현해줘. Place 삭제 cascade는 추가하지 마.` |
-| T1-03 | 생성 DTO·Service | 날짜·중복·필수 장소 검증 | `T1-03을 진행하자. Transaction 설명 후 구현해줘.` |
-| T1-04 | 상세 조회 API | Day/Place DTO 조회 | `T1-04를 구현해줘. Entity를 직접 응답하지 마.` |
-| T1-05 | 수정·삭제 | 하위 삭제·Place 유지 | `T1-05는 수정 범위를 먼저 제안하고 승인 후 구현해줘.` |
+| T1-03 | 계산 완료 일정의 내부 전달 DTO·저장 Service | 필수 저장값·날짜·중복 검증, 전체 저장·rollback | `T1-03을 진행하자. Transaction 설명 후 고정 일정 fixture로 저장 계층을 구현해줘. 생성 API나 시간표 계산은 만들지 마.` |
+| T1-04 | 내부 조회 Service·DTO | 저장한 Day·Place 참조·시각을 DTO로 조회 | `T1-04를 구현해줘. 저장값 조회를 검증하고 공개 GET API와 Google 상세 조회는 T2로 남겨줘.` |
+| T1-05 | 계산 완료 일정 교체·삭제 Service | 교체 실패 시 기존 계획 유지, 하위 삭제·Place 유지 | `T1-05는 내부 교체·삭제 범위를 먼저 제안하고 승인 후 구현해줘. 재계산과 공개 API는 T2로 남겨줘.` |
+| T1-06 | Place 참조 무결성 통합 | 같은 Google Place ID 재사용·계획 삭제 후 공유 Place 유지 테스트 | `T1-06을 구현해줘. 계획을 삭제해도 다른 계획이 참조하는 Place는 삭제하지 마.` |
 
-## A1 — AI 선호 분석
+## A1 — 국가 기반 AI 도시 추천
 
 | ID | 작업 | 완료 확인 | 요청 문구 |
 |---|---|---|---|
-| A1-01 | AiClient·fake·DTO·설정 설계 | AI/서버 경계 이해 | `A1-01을 설명만 해줘. AiClient와 FakeAiClient가 필요한 이유를 설명해줘.` |
-| A1-02 | fake·DTO validation·AiService | 키 없이 테스트 통과 | `A1-02를 구현해줘. 실제 OpenAI 호출은 만들지 마.` |
-| A1-03 | OpenAI client·structured output | 10초/1회 재시도·오류 테스트 | `A1-03을 설명만 해줘. dependency와 비용 발생 지점을 설명해줘.` |
-| A1-04 | 선호 분석 API | 200·400·503 테스트 | `A1-04를 구현해줘. 원문 응답을 로그에 남기지 마.` |
+| A1-01 | 도시 후보 AiClient·fake·DTO 설계 | AI 후보와 Google 검증 경계 이해 | `A1-01을 설명만 해줘. AI가 도시 이름만 만들고 Google이 검증해야 하는 이유를 설명해줘.` |
+| A1-02 | fake·도시 후보 DTO validation·AiService | 키 없이 3~5개 후보 테스트 통과 | `A1-02를 구현해줘. 실제 OpenAI와 Google API는 호출하지 마.` |
+| A1-03 | OpenAI client·structured output 구현 계획 | dependency·비용·보안·오류 처리 이해 | `A1-03을 설명만 해줘. 수정 파일, dependency와 비용 발생 지점을 설명해줘.` |
+| A1-04 | 승인한 OpenAI client 구현 | 10초/1회 재시도·계약 위반·장애 테스트 | `A1-04를 구현해줘. A1-03에서 승인한 dependency만 사용하고 실제 API는 자동 테스트에서 호출하지 마.` |
+| A1-05 | 국가 기반 도시 후보 API | 직접 도시 선택·AI 후보 선택·Google 검증 테스트 | `A1-05를 구현해줘. AI 후보에 Google Place ID를 임의로 만들지 마.` |
 
 ## R2·T2 — 추천과 최종 일정
 
 | ID | 작업 | 완료 확인 | 요청 문구 |
 |---|---|---|---|
-| R2-01 | 지역·관심사 기반 장소 추천 | 필수 보존·후보 없음 테스트 | `R2-01을 설명만 해줘. AI 결과와 DB 장소를 조합하는 법을 설명해줘.` |
-| R2-02 | 장소 추천 API | 이유·필수 표시 테스트 | `R2-02를 구현해줘. AI가 Place ID를 결정하지 않게 해줘.` |
+| R2-01 | 선택 도시 기반 Google 장소 후보 수집·정렬 | 필수 보존·중복·후보 없음 테스트 | `R2-01을 설명만 해줘. Google 후보와 Spring 검증·정렬 경계를 설명해줘.` |
+| R2-02 | 방문 장소 추천 API | 도시 범위·유형·개수·필수 표시 테스트 | `R2-02를 구현해줘. Google 검색 결과를 DB에 일괄 저장하지 마.` |
 | R2-03 | 호텔 점수·후보 API | 총거리·동률 정렬·복수 후보 테스트 | `R2-03을 진행하자. 예시 좌표로 점수와 호텔 선택 흐름을 설명해줘.` |
-| R2-04 | 음식점 점수·API | 음식 일치·이탈거리 테스트 | `R2-04를 구현해줘. 음식점을 자동 일정 추가하지 마.` |
-| T2-01 | 날짜별 균등 배치 설계 | 하루 6개·필수 보장 | `T2-01을 설명만 해줘. 균등 배분 예시를 설명해줘.` |
-| T2-02 | 일정 배치 Service | 기간·용량·중복·선택 호텔 검증 테스트 | `T2-02를 구현해줘. RouteOptimizer는 별도 Service로 호출해줘.` |
-| T2-03 | 통합 생성 API | 201·rollback·assumptions 테스트 | `T2-03을 설명만 해줘. 전체 Service 조합 흐름을 설명해줘.` |
-| T2-04 | 최종 통합 구현·회귀 점검 | MVP DoD 통과 | `T2-04를 구현해줘. 실패 시 일부 계획이 저장되지 않게 해줘.` |
+| R2-04 | 식사 슬롯 기반 음식점 계산 Service·전달 DTO | 고정 일정 DTO로 점심·저녁·이탈시간 테스트 | `R2-04를 구현해줘. 완성된 식사 슬롯 DTO로 후보를 계산하고 저장 일정 조회·공개 API는 T2로 남겨줘.` |
+| R2-05 | 긴 체류 장소 내부·인접 음식점 규칙 | 내부 우선·인접 대체·관계 미확인 테스트 | `R2-05를 구현해줘. 내부라고 확인되지 않은 후보를 내부로 표시하지 마.` |
+| T2-01 | 체류 시간 정책·일일 용량 설계 | 유형별 기본값·사용자 수정·10~21시 이해 | `T2-01을 설명만 해줘. 전망대와 놀이공원의 체류 시간이 왜 다른지 예시로 설명해줘.` |
+| T2-02 | 시간 기반 일정 배치 Service | 기간·시간 용량·중복·필수·선택 호텔 검증 | `T2-02를 구현해줘. RouteOptimizer와 Google Routes client는 별도 Service로 호출해줘.` |
+| T2-03 | Google Place ID 무결성 검증 | 존재·유형·도시 소속·교차 중복·수정 대상 테스트 | `T2-03을 구현해줘. 외부 검증 중에는 DB 트랜잭션을 열지 마.` |
+| T2-04 | 통합 생성 API | 201·provider 실패·rollback·assumptions 테스트 | `T2-04를 설명만 해줘. 검증 완료 후 전체 저장 트랜잭션이 시작되는 흐름을 설명해줘.` |
+| T2-05 | 최종 생성 API 구현·저장 연결 | 201·외부 실패 시 미저장·저장 실패 rollback | `T2-05를 구현해줘. 검증·계산 결과를 T1 저장 계층에 연결하고 실패 시 Place 참조나 일부 계획이 저장되지 않게 해줘.` |
+| T2-06 | 공개 조회·수정·삭제 API 계약 구현 설계 | 저장 시간표 유지 조회·조건 수정 재계산·실패 보존 구현 범위 확인 | `T2-06을 설명만 해줘. ADR-020과 API 계약에 따라 내부 저장 DTO와 공개 API를 구분하고 식사 슬롯의 조회·교체·삭제 흐름을 설명해줘.` |
+| T2-07 | 승인한 조회·수정·삭제 API 연결 | HTTP 계약·재계산 실패 시 기존 계획 보존 | `T2-07을 구현해줘. T2-06에서 승인한 계약으로 T1 조회·교체·삭제 계층을 연결해줘.` |
+| T2-07A | 저장 일정 기반 음식점 검색 API 연결 | 계획·날짜·슬롯 검증, 후보 검색·오류·일정 불변 테스트 | `T2-07A를 구현해줘. travelplan에서 저장 슬롯을 읽고 R2 추천 Service를 호출하며 일정은 변경하지 마.` |
+| T2-08 | 최종 통합 회귀 점검 | TravelPlan 전체 DoD와 MVP 기준 통과 | `T2-08을 진행하자. T1에서 이월한 Google 검증·시간표·CRUD API 항목까지 검증해줘.` |
 
-## Q1·U1 — 마무리와 인증
+## Q1 — 품질과 운영
 
 | ID | 작업 | 완료 확인 | 요청 문구 |
 |---|---|---|---|
-| Q1-01 | Global Exception Handler | 오류 응답 API 테스트 | `Q1-01을 설명만 해줘. ControllerAdvice 흐름을 설명해줘.` |
-| Q1-02 | profile·Flyway 운영 설정 | test/prod schema 규칙 검증 | `Q1-02를 설명만 해줘. 설정 파일 책임을 설명해줘.` |
-| Q1-03 | Actuator·Docker 배포 준비 | health·새 환경 실행 검증 | `Q1-03은 dependency와 보안 영향을 먼저 설명해줘.` |
-| U1-01 | 회원·JWT 범위 설계 | 인증 도입 범위 확정 | `U1-01을 설명만 해줘. Security 도입 전 결정할 항목을 알려줘.` |
+| Q1-01 | 공통 오류 처리 회귀 점검 | 모든 API 오류 응답 계약 테스트 | `Q1-01을 진행하자. 새 코드를 만들기 전에 도메인별 오류 매핑 누락부터 점검해줘.` |
+| Q1-02 | profile·Flyway 운영 설정 구현 | local/test/prod schema 규칙 검증 | `Q1-02를 설명한 뒤 구현해줘. 설정 파일별 책임과 비밀값 주입 방식을 먼저 알려줘.` |
+| Q1-03 | Actuator·배포 준비 설계 | dependency·노출 endpoint·보안 영향 확정 | `Q1-03을 설명만 해줘. Actuator dependency와 공개할 health 정보의 보안 영향을 설명해줘.` |
+| Q1-04 | 승인한 health·Docker 배포 준비 구현 | health·새 환경 실행 검증 | `Q1-04를 구현해줘. Q1-03에서 승인한 endpoint와 dependency 범위를 지켜줘.` |
+
+## U1 — 회원과 인증
+
+핵심 MVP와 Q1 완료 후 진행한다. 인증을 시작하기 전 `U1-01`에서 범위를 확정하고, 승인되지 않은 소셜 로그인이나 권한 기능은 추가하지 않는다.
+
+| ID | 작업 | 완료 확인 | 요청 문구 |
+|---|---|---|---|
+| U1-01 | 회원·JWT 범위 설계 | 인증 방식·토큰 정책·소유권 범위 확정 | `U1-01을 설명만 해줘. Security 도입 전 결정할 항목과 수정 범위를 알려줘.` |
+| U1-02 | User Entity·migration·Repository | 이메일 UNIQUE·비밀번호 비노출 통합 테스트 | `U1-02를 구현해줘. U1-01에서 승인한 User 스키마만 추가해줘.` |
+| U1-03 | 회원가입 Service·API | 비밀번호 해시·중복 이메일·validation 테스트 | `U1-03을 구현해줘. 비밀번호 원문을 저장하거나 로그에 남기지 마.` |
+| U1-04 | Spring Security·JWT 로그인 | 인증 성공·실패·만료 토큰 테스트 | `U1-04를 설명한 뒤 구현해줘. 승인하지 않은 인증 방식은 추가하지 마.` |
+| U1-05 | TravelPlan 소유권 적용 | 본인 계획만 조회·수정·삭제 가능 | `U1-05를 구현해줘. 일정 계산 로직은 변경하지 말고 소유권 경계만 적용해줘.` |
 
 ## 지금 시작할 작업
 

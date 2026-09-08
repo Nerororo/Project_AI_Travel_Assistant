@@ -27,14 +27,13 @@ Base Package: com.example.travel
                        ▼
                 Spring Boot API
                        │
-              ┌────────┴────────┐
-              │                 │
-              ▼                 ▼
-       Domain Services      AI Service
-              │                 │
-              │                 ▼
-              │            OpenAI API
-              │
+              ┌────────┼────────┐
+              │        │        │
+              ▼        ▼        ▼
+       Domain Services AI Service Google Places
+              │        │
+              │        ▼
+              │     OpenAI API
               ▼
        Repository / JPA
               │
@@ -42,10 +41,10 @@ Base Package: com.example.travel
             MySQL
 ```
 
-향후 실제 장소 / 도로 이동 정보를 사용하게 되면 외부 지도 / 장소 API를 추가할 수 있다.
+국가·도시·관광지·호텔·음식점 검색과 화면의 지도 표시는 Google Maps Platform을 사용한다. Google Places 통신은 `place/client`에 격리하고, 자동 테스트에서는 fake client로 대체한다.
 
 ```text
-Place Service ──────► Map / Place API
+Place Service ──────► Google Places API
 ```
 
 ---
@@ -132,6 +131,7 @@ src/main/java/com/example/travel
 ├── place/
 │   ├── controller/
 │   ├── service/
+│   ├── client/
 │   ├── repository/
 │   ├── domain/
 │   └── dto/
@@ -149,6 +149,7 @@ src/main/java/com/example/travel
 │
 ├── route/
 │   ├── service/
+│   ├── client/
 │   ├── algorithm/
 │   └── dto/
 │
@@ -172,9 +173,7 @@ src/main/java/com/example/travel
 
 ### place
 
-관광지, 호텔, 음식점 등 위치를 가진 장소 정보를 담당한다.
-
-초기 MVP에서는 공통 `Place` 모델과 `PlaceType`으로 통합한다.
+Google Places에서 국가, 도시, 관광지, 호텔, 음식점을 검색하고 검증한다. 영구 저장 대상은 Google Places 콘텐츠 전체가 아니라 Google Place ID를 가진 내부 `Place` 참조다.
 
 ```text
 Place
@@ -186,26 +185,26 @@ Place
 
 ---
 
-### 여행 선호 데이터의 위치
+### 국가와 도시 선택 데이터의 위치
 
-별도 `preference` 패키지는 MVP에서 만들지 않는다. 자연어를 분석하기 위한 Request/Response DTO와 OpenAI 통신은 `ai` 패키지에 두고, 여행 계획에 저장되는 `TravelPreference` Entity와 관심사 값은 `travelplan` 패키지에 둔다.
+국가·도시·장소의 Google Place ID 검증과 조회 DTO는 `place` 패키지가 소유한다. 국가를 바탕으로 도시 이름과 추천 이유를 생성하는 OpenAI 계약은 `ai` 패키지가 소유한다. 선택된 도시와 방문 장소의 내부 참조는 `travelplan`이 저장한다.
 
-이렇게 하면 AI 통신 책임과 여행 계획 데이터 저장 책임이 섞이지 않으면서, 아직 독립 기능이 없는 선호 데이터를 위한 패키지를 미리 만들지 않아도 된다.
+여행 취향과 혼잡도를 입력받지 않으므로 `preference` 패키지와 `TravelPreference` Entity는 만들지 않는다.
 
 ---
 
 ### ai
 
-OpenAI API 통신만 담당한다.
+국가를 기준으로 3~5개의 도시 후보 이름과 추천 이유를 구조화해 생성하는 OpenAI 통신을 담당한다.
 
 ```text
-Prompt 생성
+검증된 국가 정보로 Prompt 생성
     ↓
 OpenAI API 호출
     ↓
 구조화된 Response 수신
     ↓
-AI DTO 변환
+도시 후보 DTO 변환
 ```
 
 AI 패키지는 다음 기능을 구현하지 않는다.
@@ -227,9 +226,21 @@ AiClient (interface)
    └── FakeAiClient       : 테스트/로컬의 결정적 응답
 ```
 
-`AiService`는 프롬프트 구성, `AiClient` 호출, 구조화 응답 DTO 검증, 예외 변환을 담당한다. `OpenAiClient`만 HTTP 요청·인증 헤더·timeout·재시도를 담당한다.
+`AiService`는 프롬프트 구성, `AiClient` 호출, 도시 후보 DTO 검증, 예외 변환을 담당한다. `OpenAiClient`만 HTTP 요청·인증 헤더·timeout·재시도를 담당한다. AI가 만든 도시 이름은 `PlaceService`가 Google Places로 검증한 뒤에만 사용자에게 반환한다.
 
 AI 응답은 JSON Schema 또는 provider의 structured output으로 제한한다. DTO validation에 실패하면 추천·저장 흐름을 중단하고 `AI_RESPONSE_INVALID` 예외로 변환한다.
+
+---
+
+### route와 시간표
+
+`route/client`는 Google Routes에서 정적 이동 거리·시간 행렬을 가져온다. `route/algorithm`은 HTTP Client나 Spring에 의존하지 않고 전달받은 행렬로 방문 순서를 계산한다.
+
+`TravelPlanService`는 `RouteService`가 반환한 순서와 이동 시간을 이용해 목적지 현지 시각 기준 시간표를 조합한다. 장소 유형별 기본 체류 시간과 사용자 수정값의 선택은 순수 Java `StayDurationPolicy`가 담당한다.
+
+음식점 후보 수집은 `RecommendationService`가 `PlaceService`를 통해 수행한다. 일반 식사 슬롯은 직전·직후 장소 사이의 이탈 시간을 계산하고, 긴 체류가 식사 시간대 전체를 포함하면 해당 장소 내부 후보를 우선한 뒤 인접 후보로 대체한다.
+
+`StayDurationPolicy`의 체류 시간은 전체 체류 구간을 뜻한다. 시간표 조합은 긴 체류 안의 식사·인접 음식점 왕복 이동을 중복 합산하지 않는다. `RecommendationService`는 저장된 식사 시각과 체류·주변 방문 경계를 이용해 후보의 시간 충족 여부를 검증하며, 후보에 맞춰 시간표를 변경하지 않는다. 구체 합산·경계 식은 `01-requirements.md`의 FR-11을 따른다.
 
 ---
 
@@ -257,6 +268,8 @@ Nearest Neighbor
 
 ### recommendation
 
+저장 일정 기반 음식점 검색의 HTTP 처리는 `travelplan/controller`, 조회·조합은 `travelplan/service`가 담당한다. 해당 Service는 자체 내부 조회 계층에서 계획·날짜·슬롯을 검증하고 DB 조회 트랜잭션을 끝낸 뒤, 도시·호텔·하루 범위·방문 시각·식사 시각·음식을 `recommendation`의 전달 DTO로 구성해 공개 Service에 넘긴다. `recommendation`은 TravelPlan Entity·Repository·Service를 역으로 참조하지 않는다. 외부 장소 조회와 이동 비용은 각각 PlaceService·RouteService를 사용한다.
+
 추천 관련 비즈니스 규칙을 담당한다.
 
 ```text
@@ -281,14 +294,31 @@ RestaurantRecommendationService
 TravelPlanService
      │
      ├── AiService
-     │       자연어 선호 분석 (요청에 원문이 있을 때)
+     │       국가 기반 도시 후보 생성 (국가 선택 흐름에서만)
      ├── RecommendationService
      ├── RouteService
      ├── PlaceService
+     │       Google Place ID 검증 / 장소 정보 확보
      └── Repository
 ```
 
-호텔이 선택된 날짜별 경로는 `호텔 → 관광 장소들 → 호텔`로 계산한다. `TravelPlanDay`에는 관광 장소와 그 방문 순서만 저장하며, 호텔과 음식점 추천 후보는 일정 방문 장소로 저장하지 않는다.
+호텔이 선택된 날짜별 경로는 `호텔 → 관광 장소들 → 호텔`로 계산한다. `TravelPlanDay`는 관광 장소·방문 순서·시각과 `TravelPlanMealSlot`의 식사 시각을 소유한다. 호텔과 음식점 추천 후보는 일정 방문 장소로 저장하지 않는다.
+
+상세 조회는 저장된 시간표·식사 슬롯을 내부 조회 DTO로 읽고 DB 조회 트랜잭션을 끝낸 뒤, `PlaceService`로 현재 장소 표시 정보를 보완한다. `RouteService`나 일정 배치 정책을 실행하지 않는다. 음식점 후보는 별도 검색 요청에서 `RecommendationService`로 조회하며 저장된 일정은 변경하지 않는다. 일정 조건 수정은 외부 검증·재계산 성공 후 저장 트랜잭션에서 방문 일정과 식사 슬롯을 함께 교체한다.
+
+#### Google Place ID 검증과 저장 경계
+
+`TravelPlanService`는 입력 목록의 형식·교차 중복·체류 시간 수정 대상 포함 여부를 검사하고, `PlaceService`에 다음 검증을 한 번에 요청한다.
+
+```text
+선택 도시: 존재 + 도시 유형
+방문 장소: 존재 + 관광 유형 + 선택 도시 소속
+선택 호텔: 존재 + 숙박 유형 + 선택 도시 소속
+```
+
+`PlaceService`는 Google 응답의 포함 행정구역 등 검증 가능한 근거로 도시 소속을 판정한다. 소속을 확인할 수 없는 경우 일치한다고 추측하지 않고 검증 실패로 처리한다.
+
+외부 Google 검증과 경로·추천 계산 중에는 DB 트랜잭션을 열지 않는다. 모든 검증과 계산이 성공한 다음 트랜잭션을 시작해 `Place` 참조와 전체 TravelPlan Aggregate를 저장한다. 따라서 provider 실패나 validation 실패 시 일부 `Place`, Day, PlanPlace가 남지 않는다.
 
 향후 AI 일정 설명이 필요하다면 `AiService`도 사용한다.
 
@@ -335,13 +365,13 @@ TravelPlanController
 TravelPlanService
    │
    ├──► AiService
-   │       자연어 선호 구조화
-   │
-   ├──► RecommendationService
-   │       여행지 후보 추천
+   │       국가를 선택한 경우 도시 후보 생성
    │
    ├──► PlaceService
-   │       장소 / 좌표 확보
+   │       Google Places로 도시·장소 검증
+   │
+   ├──► RecommendationService
+   │       선택 도시의 방문 장소 후보 정렬
    │
    ├──► RouteService
    │       거리 / 방문 순서 계산
@@ -363,11 +393,11 @@ MySQL
 ### AI가 잘하는 일
 
 ```text
-"한적하면서 자연 풍경이 좋고 사진 찍기 좋은 곳"
-                      ↓
-              의미 / 의도 해석
-                      ↓
-[NATURE, PHOTOGRAPHY, LOW_CROWD]
+선택 국가: 일본
+      ↓
+대표 여행 도시 후보 생성
+      ↓
+[도쿄, 오사카, 교토]
 ```
 
 ### 백엔드가 잘하는 일
@@ -404,16 +434,15 @@ OpenAiClient
 OpenAI API
 ```
 
-향후 지도 API도 같은 형태를 사용할 수 있다.
+Google Places API도 같은 형태로 격리한다.
 
 ```text
 PlaceService
    │
    ▼
-MapClient
-   │
-   ▼
-External Map API
+GooglePlacesClient (interface)
+   ├── GooglePlacesHttpClient : 실제 통신
+   └── FakeGooglePlacesClient : 자동 테스트
 ```
 
 외부 서비스 변경이 핵심 비즈니스 로직에 미치는 영향을 줄이기 위한 구조다.

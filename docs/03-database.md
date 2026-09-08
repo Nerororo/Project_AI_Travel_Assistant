@@ -2,17 +2,9 @@
 
 ## 1. 기본 원칙
 
-초기 MVP에서는 데이터 모델을 과도하게 분리하지 않는다.
+초기 MVP에서는 전 세계 장소 정보를 자체 DB에 복제하지 않는다. Google Places를 장소 원천으로 사용하고, DB에는 Google Place ID와 Routy가 직접 생성한 여행 계획 데이터만 영구 저장한다.
 
-특히 관광지, 호텔, 음식점은 모두 다음 공통 특성을 가진다.
-
-- 이름
-- 주소
-- 위도
-- 경도
-- 장소 타입
-
-따라서 초기에는 하나의 `Place` Entity로 통합하고 `PlaceType`으로 구분한다.
+`Place` Entity는 Google 장소 본문을 수정하는 CRUD 대상이 아니라, TravelPlan의 FK 연결을 위한 내부 참조다. 장소명·주소·좌표·사진·Google 장소 유형은 필요한 시점에 Google Places에서 조회해 DTO로 사용한다.
 
 ---
 
@@ -25,13 +17,12 @@ User
  ▼
 TravelPlan
  │
- ├──────── 1:1 ──────── TravelPreference
- │
  ├──────── 1:N ──────── FoodPreference
  │
  └──────── 1:N
              ▼
        TravelPlanDay
+             ├──────── 1:N ──────── TravelPlanMealSlot
              │
              │ 1:N
              ▼
@@ -42,50 +33,24 @@ TravelPlan
            Place
 ```
 
-회원 기능 구현 전에는 `TravelPlan.user_id`를 nullable로 두거나 User 연관관계를 나중에 추가할 수 있다.
+회원 기능 구현 전에는 `TravelPlan.user_id`와 User 연관관계를 만들지 않는다. U1 인증 단계에서 `users` 테이블을 먼저 만든 뒤 새 migration으로 `travel_plans.user_id`와 FK를 추가한다.
 
-초기 학습 단계에서는 회원 기능 때문에 핵심 여행 로직 개발이 막히지 않도록 한다.
+초기 학습 단계에서는 회원 기능 때문에 핵심 여행 로직 개발이 막히지 않도록 하며, 인증 도입 시 기존 개발 데이터의 소유권 이관 방법을 U1 설계에서 함께 결정한다.
 
 ---
 
 ## 3. places
 
-장소 공통 테이블.
+Google 장소를 내부 Aggregate에서 참조하기 위한 테이블.
 
 | Column | Type 예시 | Nullable | 설명 |
 |---|---|---:|---|
 | id | BIGINT | N | PK |
-| name | VARCHAR | N | 장소명 |
-| type | VARCHAR / ENUM | N | 장소 타입 |
-| category | VARCHAR | Y | 세부 카테고리 |
-| region | VARCHAR | N | 지역 |
-| address | VARCHAR | Y | 주소 |
-| latitude | DECIMAL | N | 위도 |
-| longitude | DECIMAL | N | 경도 |
-| rating | DECIMAL | Y | 평점 |
-| description | TEXT | Y | 설명 |
+| google_place_id | VARCHAR(255) | N | Google Places의 장소 식별자, UNIQUE |
 | created_at | DATETIME | N | 생성 시각 |
 | updated_at | DATETIME | N | 수정 시각 |
 
-### PlaceType
-
-```text
-ATTRACTION
-HOTEL
-RESTAURANT
-CAFE
-```
-
-### 장소 타입별 추가 데이터
-
-초기에는 공통 필드만 사용한다.
-
-호텔 가격이나 음식점 메뉴처럼 도메인별 속성이 크게 늘어나면 다음 중 하나를 검토한다.
-
-1. `HotelDetail`, `RestaurantDetail` 같은 1:1 보조 Entity
-2. 별도 Entity 분리
-
-MVP에서는 미리 복잡하게 분리하지 않는다.
+Google Place ID는 장기 저장 가능한 식별자로 사용한다. Google이 제공한 나머지 콘텐츠는 별도 허용 근거 없이 영구 저장하지 않으며, 표시와 계산에 필요한 정보는 요청 처리 중 조회한다. Place ID가 오래되거나 조회되지 않으면 Google Places로 다시 검증한다.
 
 ---
 
@@ -96,72 +61,25 @@ MVP에서는 미리 복잡하게 분리하지 않는다.
 | Column | Type 예시 | Nullable | 설명 |
 |---|---|---:|---|
 | id | BIGINT | N | PK |
-| user_id | BIGINT | Y* | 사용자 FK |
 | title | VARCHAR | N | 여행 제목 |
-| region | VARCHAR | N | 여행 지역 |
+| destination_place_id | BIGINT | N | 사용자가 확정한 도시 Place FK |
 | start_date | DATE | N | 시작일 |
 | end_date | DATE | N | 종료일 |
+| daily_start_time | TIME | N | 목적지 현지 시각 기준 하루 시작, 기본 10:00 |
+| daily_end_time | TIME | N | 목적지 현지 시각 기준 하루 종료, 기본 21:00 |
 | selected_hotel_id | BIGINT | Y | 추천 후 선택된 호텔 |
 | created_at | DATETIME | N | 생성 시각 |
 | updated_at | DATETIME | N | 수정 시각 |
 
-`user_id`는 회원 기능 구현 전에는 제외하거나 nullable로 둘 수 있다.
+`user_id`는 T1 스키마에 포함하지 않는다. U1 인증 단계에서 `users` 테이블과 기존 데이터 처리 방식을 먼저 정의한 뒤 새 migration으로 추가한다.
 
-`selected_hotel_id`는 초기에는 선택적으로 사용한다.
+`selected_hotel_id`의 DB nullable 결정은 유지하며, 최종 일정 생성 API에서는 호텔을 필수로 검증한다. DB의 null 허용이 호텔 없는 기본 계획 API를 의미하지는 않는다. T1의 정상 저장 fixture에도 선택 호텔을 포함한다.
 
----
-
-## 5. travel_preferences
-
-여행 계획 단위의 사용자 선호.
-
-| Column | Type 예시 | Nullable | 설명 |
-|---|---|---:|---|
-| id | BIGINT | N | PK |
-| travel_plan_id | BIGINT | N | 여행 계획 FK |
-| crowd_preference | VARCHAR | Y | 혼잡도 선호 |
-| created_at | DATETIME | N | 생성 시각 |
-
-사용자의 자연어 선호 원문은 저장하지 않는다. AI 분석 요청 처리 중에만 사용하고, 검증된 관심사와 혼잡도 선호만 저장한다.
-
-### 여행 관심사 저장
-
-`interests`가 복수 값이므로 초기 구현에서 두 가지 선택지가 있다.
-
-#### 선택 A - ElementCollection 사용
-
-```text
-travel_preference_interests
-- travel_preference_id
-- interest
-```
-
-장점:
-
-- 정규화 가능
-- JPA 연습 가능
-
-#### 선택 B - 별도 Entity
-
-관심사에 추가 속성이 필요해질 때 사용한다.
-
-MVP에서는 A를 우선 검토한다.
-
-예시 Interest:
-
-```text
-NATURE
-HISTORY
-PHOTOGRAPHY
-SHOPPING
-ACTIVITY
-RELAX
-FOOD
-```
+T1은 계산 완료된 일정의 저장 계층을 검증한다. `arrival_time`, `departure_time`, `stay_minutes`의 NOT NULL·CHECK 제약은 처음부터 유지하고, 테스트가 완성된 일정 값을 제공한다. 운영 코드에서 임시 시각을 채우거나 T1을 위해 제약을 완화하지 않는다. T2가 Google 검증·시간표 계산을 마친 결과를 같은 저장 계층에 전달한다.
 
 ---
 
-## 6. food_preferences
+## 5. food_preferences
 
 여행 계획에서 사용자가 먹고 싶은 음식.
 
@@ -185,7 +103,7 @@ FOOD
 
 ---
 
-## 7. travel_plan_days
+## 6. travel_plan_days
 
 여행 계획의 날짜별 구분.
 
@@ -196,7 +114,7 @@ FOOD
 | day_number | INT | N | Day 순서 |
 | travel_date | DATE | N | 실제 날짜 |
 
-Unique 권장:
+필수 UNIQUE:
 
 ```text
 (travel_plan_id, day_number)
@@ -204,7 +122,7 @@ Unique 권장:
 
 ---
 
-## 8. travel_plan_places
+## 7. travel_plan_places
 
 각 날짜에 포함된 장소.
 
@@ -216,9 +134,9 @@ Unique 권장:
 | visit_order | INT | N | 방문 순서 |
 | required | BOOLEAN | N | 필수 장소 여부 |
 | place_role | VARCHAR | N | 일정 안의 관광 장소 역할 (MVP: `ATTRACTION`) |
-| arrival_time | TIME | Y | 도착 예정 |
-| departure_time | TIME | Y | 출발 예정 |
-| stay_minutes | INT | Y | 예상 체류 시간 |
+| arrival_time | TIME | N | 목적지 현지 시각 기준 도착 예정 |
+| departure_time | TIME | N | 목적지 현지 시각 기준 출발 예정 |
+| stay_minutes | INT | N | 기본 정책 또는 사용자 수정값으로 확정한 체류 시간 |
 
 ### PlaceRole
 
@@ -228,11 +146,27 @@ Unique 권장:
 ATTRACTION
 ```
 
-`Place.type`과 달리 여행 일정 안에서 어떤 역할로 포함됐는지를 표현한다. MVP에서는 음식점과 호텔을 `TravelPlanPlace`로 저장하지 않으므로 `ATTRACTION`만 사용한다.
+여행 일정 안에서 어떤 역할로 포함됐는지를 표현한다. MVP에서는 음식점과 호텔을 `TravelPlanPlace`로 저장하지 않으므로 `ATTRACTION`만 사용한다. 식사 슬롯은 아래 테이블에 저장하고 음식점 후보는 저장하지 않는다.
+
+### travel_plan_meal_slots
+
+Routy가 확정한 날짜별 식사 시간이다. `TravelPlanDay`에 속하며 Google 음식점 콘텐츠나 음식점 Place 참조를 저장하지 않는다.
+
+| Column | Type 예시 | Nullable | 설명 |
+|---|---|---:|---|
+| id | BIGINT | N | PK |
+| travel_plan_day_id | BIGINT | N | Day FK |
+| meal_type | VARCHAR(10) | N | `LUNCH` 또는 `DINNER` |
+| start_time | TIME | N | 목적지 현지 시각 기준 확정 식사 시작 |
+| end_time | TIME | N | 목적지 현지 시각 기준 확정 식사 종료 |
+
+`(travel_plan_day_id, meal_type)` UNIQUE, `meal_type IN ('LUNCH', 'DINNER')` CHECK, `start_time < end_time` CHECK를 적용한다. 시작·종료 시각은 분 단위이며 현재 MVP의 식사 길이는 60분이다. 하루 범위와 식사 허용 시간대 안에 있는지는 Service에서 검증한다. 허용 시간대와 `reservedMinutes`는 현재 정책과 저장 시각으로 응답을 구성하며 중복 컬럼으로 저장하지 않는다.
+
+T1은 식사 슬롯까지 포함한 완성 일정 fixture로 저장·조회·교체·삭제를 검증한다. 실제 migration 작성 시 해당 테이블을 포함하고, 이미 적용된 migration이 있으면 새 버전을 추가한다. 음식점 검색에 필요한 주변 방문 장소와 호텔은 저장된 일정에서 확보하며, 검색 결과로 식사 시각을 변경하지 않는다.
 
 ---
 
-## 9. users
+## 8. users
 
 회원 기능 구현 시 추가한다.
 
@@ -255,11 +189,11 @@ email
 
 ---
 
-## 10. 추천 후보 데이터 저장 여부
+## 9. 추천 후보 데이터 저장 여부
 
-초기 MVP에서는 AI나 추천 알고리즘이 생성한 모든 후보를 영구 저장하지 않는다.
+초기 MVP에서는 AI나 Google Places가 반환한 모든 후보를 영구 저장하지 않는다.
 
-사용자가 최종 선택하여 여행 계획에 포함한 장소 위주로 저장한다.
+사용자가 최종 선택하여 여행 계획에 포함한 장소의 Google Place ID만 내부 `Place` 참조로 저장한다.
 
 필요성이 생기면 다음과 같은 테이블을 추가할 수 있다.
 
@@ -273,31 +207,30 @@ restaurant_recommendation_logs
 
 ---
 
-## 11. 좌표 타입
+## 10. 좌표 사용
 
-초기에는 JPA 학습 난이도를 낮추기 위해 다음처럼 구현할 수 있다.
+좌표는 Google Places 상세 조회 결과를 요청 처리 중 DTO로 사용한다.
 
 ```java
 BigDecimal latitude;
 BigDecimal longitude;
 ```
 
-또는 학습 편의를 위해 `double`을 사용할 수 있으나 DB 정밀도와 의미를 고려해 최종적으로 선택한다.
+좌표 DTO에서는 범위를 validation하고, 경로 알고리즘에서 삼각함수를 계산할 때만 `double`로 변환한다. Google Places 콘텐츠 저장 정책에 따라 좌표를 Place Entity에 영구 저장하지 않는다.
 
 MySQL Spatial Type은 필요성이 확인되기 전까지 도입하지 않는다.
 
 ---
 
-## 12. Index 후보
+## 11. Index 후보
 
 MVP 기능이 완성된 후 실제 Query를 확인하면서 추가한다.
 
 초기 후보:
 
 ```text
-places(region, type)
-places(name)
-travel_plans(user_id)
+places(google_place_id) UNIQUE
+travel_plans(user_id)  # U1에서 user_id 추가 후 검토
 travel_plan_days(travel_plan_id)
 travel_plan_places(travel_plan_day_id)
 ```
@@ -306,33 +239,33 @@ travel_plan_places(travel_plan_day_id)
 
 ---
 
-## 13. 데이터 무결성 제약
+## 12. 데이터 무결성 제약
 
 애플리케이션 validation만으로 데이터 무결성을 보장하지 않는다. DB 제약조건도 함께 적용한다.
 
 | 테이블 | 제약조건 | 목적 |
 |---|---|---|
-| `places` | `name`, `type`, `region`, `latitude`, `longitude` NOT NULL | 추천·거리 계산에 필요한 최소 데이터 보장 |
-| `places` | latitude `[-90, 90]`, longitude `[-180, 180]` CHECK | 유효하지 않은 좌표 방지 |
-| `travel_plans` | `title`, `region`, `start_date`, `end_date` NOT NULL | 불완전한 계획 방지 |
+| `places` | `google_place_id` UNIQUE, NOT NULL | 동일 Google 장소 참조의 중복 저장 방지 |
+| `travel_plans` | `title`, `destination_place_id`, `start_date`, `end_date`, `daily_start_time`, `daily_end_time` NOT NULL | 불완전한 계획 방지 |
 | `travel_plans` | `start_date <= end_date` CHECK | 잘못된 여행 기간 방지 |
-| `travel_preferences` | `travel_plan_id` UNIQUE, NOT NULL | 하나의 계획에 선호 하나만 연결 |
+| `travel_plans` | `daily_start_time < daily_end_time` CHECK | 잘못된 일일 시간 범위 방지 |
 | `food_preferences` | `(travel_plan_id, food_name)` UNIQUE | 같은 음식 선호의 중복 저장 방지 |
 | `travel_plan_days` | `(travel_plan_id, day_number)` UNIQUE | 같은 Day 번호 중복 방지 |
 | `travel_plan_days` | `(travel_plan_id, travel_date)` UNIQUE | 같은 날짜 중복 방지 |
 | `travel_plan_places` | `(travel_plan_day_id, visit_order)` UNIQUE | 하루 방문 순서 중복 방지 |
-| `travel_plan_places` | `stay_minutes >= 0` CHECK | 음수 체류 시간 방지 |
+| `travel_plan_places` | `arrival_time < departure_time` CHECK | 잘못된 방문 시간 방지 |
+| `travel_plan_places` | `stay_minutes > 0` CHECK | 0 이하 체류 시간 방지 |
 | `users` | `email` UNIQUE, NOT NULL | 계정 중복 방지 |
 
 외래키의 삭제 정책은 Aggregate 생명주기에 맞춘다.
 
-- `TravelPlan` 삭제 시 `TravelPreference`, `FoodPreference`, `TravelPlanDay`, `TravelPlanPlace`는 함께 삭제한다.
+- `TravelPlan` 삭제 시 `FoodPreference`, `TravelPlanDay`, `TravelPlanPlace`, `TravelPlanMealSlot`은 함께 삭제한다. 일정 재계산으로 Day를 교체할 때 식사 슬롯도 같은 트랜잭션에서 교체하며 실패하면 기존 일정과 슬롯을 보존한다.
 - `Place`는 여러 일정에서 공유하므로 참조 중일 때 삭제하지 않는다. API는 `409 Conflict`를 반환한다.
 - `User` 삭제 정책은 회원 기능을 설계할 때 별도 ADR로 결정한다.
 
 ---
 
-## 14. 스키마 변경과 마이그레이션
+## 13. 스키마 변경과 마이그레이션
 
 첫 스키마부터 Flyway versioned migration으로 관리한다. 모든 profile에서 Hibernate는 schema를 생성·변경하지 않으며, DB 변경은 migration으로만 수행한다.
 
@@ -352,7 +285,7 @@ src/main/resources/db/migration/
 
 ---
 
-## 15. JPA 연관관계 원칙
+## 14. JPA 연관관계 원칙
 
 - 기본적으로 필요한 방향만 연관관계를 둔다.
 - 모든 관계를 양방향으로 만들지 않는다.
