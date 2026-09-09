@@ -293,18 +293,21 @@ RestaurantRecommendationService
 ```text
 TravelPlanService
      │
-     ├── AiService
-     │       국가 기반 도시 후보 생성 (국가 선택 흐름에서만)
-     ├── RecommendationService
      ├── RouteService
      ├── PlaceService
      │       Google Place ID 검증 / 장소 정보 확보
+     ├── SchedulePlacementPolicy
+     │       날짜별 배치와 식사 슬롯 결정
      └── Repository
 ```
+
+국가 기반 도시 후보 API는 `ai` 유스케이스가 `AiService`와 `PlaceService`를 조합한다. 방문 장소·호텔 후보 API는 `recommendation` 유스케이스가 `PlaceService`와 `RouteService`를 조합한다. 음식점 검색 API는 `travelplan`이 저장 일정을 읽어 전달 DTO를 만든 뒤 `RecommendationService`에 위임한다. 이 유스케이스들은 TravelPlan 생성 과정의 내부 단계가 아니다.
 
 호텔이 선택된 날짜별 경로는 `호텔 → 관광 장소들 → 호텔`로 계산한다. `TravelPlanDay`는 관광 장소·방문 순서·시각과 `TravelPlanMealSlot`의 식사 시각을 소유한다. 호텔과 음식점 추천 후보는 일정 방문 장소로 저장하지 않는다.
 
 상세 조회는 저장된 시간표·식사 슬롯을 내부 조회 DTO로 읽고 DB 조회 트랜잭션을 끝낸 뒤, `PlaceService`로 현재 장소 표시 정보를 보완한다. `RouteService`나 일정 배치 정책을 실행하지 않는다. 음식점 후보는 별도 검색 요청에서 `RecommendationService`로 조회하며 저장된 일정은 변경하지 않는다. 일정 조건 수정은 외부 검증·재계산 성공 후 저장 트랜잭션에서 방문 일정과 식사 슬롯을 함께 교체한다.
+
+수정 요청에 장소별 날짜 배정이 있으면 `TravelPlanService`가 최종 방문 장소 집합과 배정 목록의 정확한 일치, 여행 기간 안의 날짜, 날짜별 최대 개수를 검증한다. `SchedulePlacementPolicy`는 자동 날짜 배치를 건너뛰고 지정된 날짜별 그룹을 유지하며, `RouteService`와 함께 각 그룹의 방문 순서와 시간표를 다시 계산한다. 용량을 초과해도 다른 날짜로 자동 이동하지 않으며 저장 전 실패로 처리한다. 날짜 배정 없이 일정 조건이 바뀌면 기본 자동 배치 정책을 사용하고, 음식 목록만 바뀌면 저장된 배치와 시간표를 유지한다.
 
 #### Google Place ID 검증과 저장 경계
 
@@ -318,7 +321,7 @@ TravelPlanService
 
 `PlaceService`는 Google 응답의 포함 행정구역 등 검증 가능한 근거로 도시 소속을 판정한다. 소속을 확인할 수 없는 경우 일치한다고 추측하지 않고 검증 실패로 처리한다.
 
-외부 Google 검증과 경로·추천 계산 중에는 DB 트랜잭션을 열지 않는다. 모든 검증과 계산이 성공한 다음 트랜잭션을 시작해 `Place` 참조와 전체 TravelPlan Aggregate를 저장한다. 따라서 provider 실패나 validation 실패 시 일부 `Place`, Day, PlanPlace가 남지 않는다.
+외부 Google 검증과 경로·시간표 계산 중에는 DB 트랜잭션을 열지 않는다. 모든 검증과 계산이 성공한 다음 트랜잭션을 시작해 `Place` 참조와 전체 TravelPlan Aggregate를 저장한다. 따라서 provider 실패나 validation 실패 시 일부 `Place`, Day, PlanPlace가 남지 않는다.
 
 향후 AI 일정 설명이 필요하다면 `AiService`도 사용한다.
 
@@ -353,7 +356,11 @@ MVP 핵심 기능 이후 구현한다.
 
 ---
 
-## 6. 핵심 여행 계획 생성 흐름
+## 6. 주요 유스케이스 흐름
+
+도시 후보 추천, 방문 장소·호텔 후보 추천, 여행 계획 생성, 음식점 검색은 서로 독립된 요청이다. 앞선 추천 결과를 사용자가 선택해 다음 요청의 입력으로 보낼 수 있지만, 서버가 하나의 TravelPlan 생성 트랜잭션 안에서 모든 추천을 다시 실행하지 않는다.
+
+### 여행 계획 생성
 
 ```text
 사용자 요청
@@ -364,20 +371,14 @@ TravelPlanController
    ▼
 TravelPlanService
    │
-   ├──► AiService
-   │       국가를 선택한 경우 도시 후보 생성
-   │
    ├──► PlaceService
-   │       Google Places로 도시·장소 검증
-   │
-   ├──► RecommendationService
-   │       선택 도시의 방문 장소 후보 정렬
+   │       선택된 도시·관광 장소·호텔 검증
    │
    ├──► RouteService
-   │       거리 / 방문 순서 계산
+   │       날짜별 정적 이동 행렬 / 방문 순서 계산
    │
-   ├──► RecommendationService
-   │       호텔 / 음식점 추천
+   ├──► SchedulePlacementPolicy
+   │       체류 시간 / 날짜별 배치 / 식사 슬롯 계산
    │
    ▼
 TravelPlanRepository
@@ -385,6 +386,17 @@ TravelPlanRepository
    ▼
 MySQL
 ```
+
+### 추천과 조회 흐름
+
+```text
+도시 후보 요청       → AiService → PlaceService 검증 → 후보 응답
+방문 장소 후보 요청  → RecommendationService → PlaceService → 후보 응답
+호텔 후보 요청       → RecommendationService → PlaceService / RouteService → 후보 응답
+음식점 후보 요청     → TravelPlan 조회 → RecommendationService → PlaceService / RouteService → 후보 응답
+```
+
+후보 응답 자체는 TravelPlan Aggregate를 생성하거나 변경하지 않는다. 음식점 검색도 저장된 방문 순서와 식사 슬롯을 유지한다.
 
 ---
 
@@ -487,30 +499,6 @@ AiResponseParsingException
 
 ---
 
-## 11. 테스트 전략
+## 11. 테스트 경계
 
-### Algorithm Unit Test
-
-Spring Context 없이 실행하는 것을 우선한다.
-
-대상:
-
-- 거리 계산
-- Nearest Neighbor
-- 2-opt
-
-### Service Unit / Integration Test
-
-대상:
-
-- 호텔 점수
-- 음식점 추천
-- 여행 계획 생성
-
-### Repository Test
-
-필요한 Query가 생겼을 때 작성한다.
-
-### Controller Test
-
-핵심 API의 Validation / Response 계약을 확인한다.
+거리 계산과 경로 최적화처럼 결정적인 알고리즘은 Spring Context 없이 단위 테스트한다. Service·Repository·Controller 테스트의 수준별 책임과 필수 검증 항목은 `08-test-strategy.md`를 단일 기준으로 사용한다.

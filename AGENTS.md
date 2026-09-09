@@ -19,7 +19,7 @@ AI는 다음 역할을 담당한다.
 
 - 국가를 입력했을 때 도시 후보 생성
 - 도시 후보의 추천 이유 생성
-- 음식 관련 자연어 분석
+- 음식 관련 자연어 분석(후속 범위)
 
 Spring Backend는 다음 역할을 담당한다.
 
@@ -59,8 +59,6 @@ Spring Backend는 다음 역할을 담당한다.
 11. OpenAI API 관련 코드는 ai 패키지 내부에서 관리한다.
 
 11-1. Google Places 관련 코드는 place 패키지의 client 내부에서 관리한다.
-
-11-2. Google Routes 관련 코드는 route 패키지의 client 내부에서 관리한다.
 
 11-2. Google Routes 관련 코드는 route 패키지의 client 내부에서 관리한다.
 

@@ -67,6 +67,7 @@ Google Place ID는 장기 저장 가능한 식별자로 사용한다. Google이 
 | end_date | DATE | N | 종료일 |
 | daily_start_time | TIME | N | 목적지 현지 시각 기준 하루 시작, 기본 10:00 |
 | daily_end_time | TIME | N | 목적지 현지 시각 기준 하루 종료, 기본 21:00 |
+| meal_travel_buffer_minutes | INT | N | 일반 식사 한쪽 이동 여유, 기본 15분, 0~60 CHECK |
 | selected_hotel_id | BIGINT | Y | 추천 후 선택된 호텔 |
 | created_at | DATETIME | N | 생성 시각 |
 | updated_at | DATETIME | N | 수정 시각 |
@@ -74,6 +75,8 @@ Google Place ID는 장기 저장 가능한 식별자로 사용한다. Google이 
 `user_id`는 T1 스키마에 포함하지 않는다. U1 인증 단계에서 `users` 테이블과 기존 데이터 처리 방식을 먼저 정의한 뒤 새 migration으로 추가한다.
 
 `selected_hotel_id`의 DB nullable 결정은 유지하며, 최종 일정 생성 API에서는 호텔을 필수로 검증한다. DB의 null 허용이 호텔 없는 기본 계획 API를 의미하지는 않는다. T1의 정상 저장 fixture에도 선택 호텔을 포함한다.
+
+`meal_travel_buffer_minutes`는 Routy 일정 입력값으로 저장하며 GET·음식 목록만 수정할 때 유지한다. 여유값을 수정하면 T2에서 재계산 후 시간표와 같은 트랜잭션으로 교체하고 실패 시 이전 값도 복원한다. T1 fixture·내부 전달 DTO에 포함하고 0~60 CHECK를 검증한다. 아직 migration 구현 전이므로 T1의 V2 설계에 포함하되, 구현 시 적용된 V2가 있으면 새 버전으로 추가한다. 식사 슬롯에는 여유 컬럼을 중복 저장하지 않는다.
 
 T1은 계산 완료된 일정의 저장 계층을 검증한다. `arrival_time`, `departure_time`, `stay_minutes`의 NOT NULL·CHECK 제약은 처음부터 유지하고, 테스트가 완성된 일정 값을 제공한다. 운영 코드에서 임시 시각을 채우거나 T1을 위해 제약을 완화하지 않는다. T2가 Google 검증·시간표 계산을 마친 결과를 같은 저장 계층에 전달한다.
 
@@ -249,6 +252,7 @@ travel_plan_places(travel_plan_day_id)
 | `travel_plans` | `title`, `destination_place_id`, `start_date`, `end_date`, `daily_start_time`, `daily_end_time` NOT NULL | 불완전한 계획 방지 |
 | `travel_plans` | `start_date <= end_date` CHECK | 잘못된 여행 기간 방지 |
 | `travel_plans` | `daily_start_time < daily_end_time` CHECK | 잘못된 일일 시간 범위 방지 |
+| `travel_plans` | `meal_travel_buffer_minutes` NOT NULL, 0~60 CHECK | 식사 이동 여유의 저장 범위 보장 |
 | `food_preferences` | `(travel_plan_id, food_name)` UNIQUE | 같은 음식 선호의 중복 저장 방지 |
 | `travel_plan_days` | `(travel_plan_id, day_number)` UNIQUE | 같은 Day 번호 중복 방지 |
 | `travel_plan_days` | `(travel_plan_id, travel_date)` UNIQUE | 같은 날짜 중복 방지 |
@@ -260,7 +264,7 @@ travel_plan_places(travel_plan_day_id)
 외래키의 삭제 정책은 Aggregate 생명주기에 맞춘다.
 
 - `TravelPlan` 삭제 시 `FoodPreference`, `TravelPlanDay`, `TravelPlanPlace`, `TravelPlanMealSlot`은 함께 삭제한다. 일정 재계산으로 Day를 교체할 때 식사 슬롯도 같은 트랜잭션에서 교체하며 실패하면 기존 일정과 슬롯을 보존한다.
-- `Place`는 여러 일정에서 공유하므로 참조 중일 때 삭제하지 않는다. API는 `409 Conflict`를 반환한다.
+- `Place`는 여러 일정에서 공유하므로 참조 중일 때 삭제하지 않는다.
 - `User` 삭제 정책은 회원 기능을 설계할 때 별도 ADR로 결정한다.
 
 ---
@@ -289,7 +293,6 @@ src/main/resources/db/migration/
 
 - 기본적으로 필요한 방향만 연관관계를 둔다.
 - 모든 관계를 양방향으로 만들지 않는다.
-- Entity를 Controller Response로 직접 반환하지 않는다.
 - Collection 연관관계는 Lazy Loading을 기본으로 고려한다.
 - Cascade / orphanRemoval은 Aggregate 생명주기가 명확할 때만 사용한다.
 
