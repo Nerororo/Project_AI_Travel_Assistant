@@ -96,17 +96,19 @@ Spring Backend는 다음 역할을 담당한다.
 |---|---|---|
 | 요구사항 또는 MVP 범위 | `docs/01-requirements.md` | 관련 도메인 `AGENTS.md` |
 | Controller, DTO, HTTP 상태 코드 | `docs/04-api-spec.md` | `global` 예외 규칙 |
-| Entity, Repository, migration, DB 제약 | `docs/03-database.md` | `docs/04-api-spec.md` |
+| Entity, Repository, migration, DB 제약 | `docs/03-database.md`의 관련 절 | 공개 API도 바뀌면 `docs/04-api-spec.md`의 해당 endpoint |
 | 경로·거리·추천 점수 알고리즘 | `docs/01-requirements.md`, `docs/08-test-strategy.md` | `route` 또는 `recommendation` 규칙 |
 | AI Client, prompt, provider 설정 | `docs/04-api-spec.md`, `docs/09-operations.md` | `ai/AGENTS.md` |
 | Google Places Client, Place ID, 지도 표시 | `docs/04-api-spec.md`, `docs/09-operations.md` | `place/AGENTS.md`, `resources/static/AGENTS.md` |
 | Google Routes Client, 이동 시간 행렬 | `docs/04-api-spec.md`, `docs/09-operations.md` | `route/AGENTS.md` |
-| 테스트 추가 또는 수정 | `docs/08-test-strategy.md` | `docs/10-definition-of-done.md` |
+| 테스트 추가 또는 수정 | `docs/08-test-strategy.md`의 관련 절 | 기능 완료 판정 시 `docs/10-definition-of-done.md`의 해당 항목 |
 | 설정, 배포, Docker, 외부 API | `docs/09-operations.md` | 관련 `build.gradle` 또는 설정 파일 |
 
 ### Change Boundaries
 
 - 한 작업은 하나의 기능 또는 설계 변경 단위로 제한한다. 관련 없는 리팩터링, 포맷 변경, 파일 이동을 함께 수행하지 않는다.
+- 모든 코드와 문서를 한꺼번에 읽지 않는다. 적용되는 `AGENTS.md`, `docs/12-harness-boundaries.md`의 해당 작업 행, `docs/11-command-roadmap.md`의 현재 작업 ID, 변경 대상 파일과 직접 참조 코드부터 확인한다. 추가 기준은 위 표에 따라 관련 절·endpoint·ADR만 읽는다.
+- 다른 도메인이나 문서가 필요하면 현재 작업과의 직접 의존 관계를 먼저 확인하고 필요한 공개 Service·DTO·문서 절로 읽기 범위를 좁힌다. 폴더 전체를 관성적으로 탐색하지 않는다.
 - 모든 작업은 수정 전에 `docs/12-harness-boundaries.md`의 단계별 경계를 확인하고, 작업 ID·Allowed Paths·Conditional Paths·Forbidden Paths를 포함한 Change Envelope를 사용자에게 설명한다.
 - 명시되지 않은 경로는 미승인 경로로 취급하며 수정하지 않는다. 현재 작업에 필요하면 수정 전에 이유·영향·추가할 파일을 설명하고 사용자 승인을 받아 Change Envelope의 Allowed 또는 Conditional Paths에 추가할 수 있다.
 - Conditional Paths는 최초 또는 추가 승인된 Change Envelope에 파일과 변경 조건이 명시되고, 해당 조건이 충족된 경우에만 수정한다.

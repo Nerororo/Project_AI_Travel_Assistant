@@ -7,7 +7,7 @@
 HTTP 미리보기가 필요하면 프로젝트 루트에서 다음을 실행한다.
 
 ```powershell
-node src/main/resources/static/Routy2/preview-server.cjs
+node src/main/resources/static/Routy2/js/preview-server.cjs
 ```
 
 주소는 `http://127.0.0.1:4173`이며 이 서버는 Routy2 화면 자산만 읽는다. Spring 실행 시 주소는 `/Routy2/index.html`이다.
@@ -44,7 +44,7 @@ node src/main/resources/static/Routy2/preview-server.cjs
 
 ## 연결할 때의 코드 경계
 
-`preview.js`의 `simulate()`는 로딩 상태를 보여주기 위한 지연일 뿐 API adapter가 아니다. 실제 연결 작업에서는 별도 API 모듈에 JSON 요청, timeout/취소, 상태 코드 변환을 구현하고 위 호출 위치에서 사용한다. 화면 렌더링 함수와 CSS·HTML 구조는 재사용할 수 있으나 예시 데이터·미리보기 컨트롤은 운영 화면에서 제거한다.
+`js/preview.js`의 `simulate()`는 로딩 상태를 보여주기 위한 지연일 뿐 API adapter가 아니다. 실제 연결 작업에서는 별도 API 모듈에 JSON 요청, timeout/취소, 상태 코드 변환을 구현하고 위 호출 위치에서 사용한다. 화면 렌더링 함수와 CSS·HTML 구조는 재사용할 수 있으나 예시 데이터·미리보기 컨트롤은 운영 화면에서 제거한다.
 
 - 서버 확인 전 화면에서 저장 성공으로 바꾸지 않는다. 생성 응답 ID를 이후 요청에 사용한다.
 - Google Place ID를 예시 키 `busan`이나 배열 순번으로 대체하지 않는다.
@@ -66,8 +66,8 @@ node src/main/resources/static/Routy2/preview-server.cjs
 ## 검증
 
 ```powershell
-node --check src/main/resources/static/Routy2/preview.js
-node --test src/main/resources/static/Routy2/preview.test.cjs
+node --check src/main/resources/static/Routy2/js/preview.js
+node --test src/main/resources/static/Routy2/js/preview.test.cjs
 ```
 
 실제 API·DB·인증·브라우저 E2E와 외부 provider smoke는 아직 검증되지 않았다. `docs/08-test-strategy.md`와 `docs/10-definition-of-done.md`의 S1 완료 조건은 실제 연결 후 별도로 통과해야 한다.

@@ -131,7 +131,7 @@
 알아야 할 사항:
 
 - [ ] S1-01은 구현이 아니라 화면 구조와 상태 전이를 확정하는 설계 단계다.
-- [ ] 프론트는 `src/main/resources/static/Routy/**` 안에서 Vanilla HTML·CSS·JavaScript로 새로 만든다.
+- [ ] 프론트는 `src/main/resources/travela-1.0.0/Routy/**` 안에서 Vanilla HTML·CSS·JavaScript로 새로 만든다.
 - [ ] 원본 `src/main/resources/travela-1.0.0/**`는 수정하지 않는다.
 - [ ] 프론트 API 연결은 S1-02~S1-07에서 백엔드 준비 시점에 맞춰 나누어 진행한다.
 - [ ] 단순 시각 디자인 변경은 계약 문서 변경이 필수가 아니지만 API·사용자 흐름·기술 구조가 바뀌면 문서 검토가 필요하다.

@@ -79,7 +79,7 @@
 
 ## 선택적 읽기 규칙
 
-Codex와 개발할 때 `docs/` 전체를 한 번에 읽지 않는다. 적용되는 `AGENTS.md`와 현재 작업에 필요한 아래 문서만 읽는다.
+Codex와 개발할 때 전체 코드나 `docs/` 전체를 한 번에 읽지 않는다. 적용되는 `AGENTS.md`, `12-harness-boundaries.md`의 해당 작업 행, `11-command-roadmap.md`의 현재 작업 ID, 변경 대상 파일과 직접 참조 코드부터 확인한다. 아래 표에서 현재 작업에 해당하는 문서의 관련 절·endpoint·ADR만 추가로 읽는다.
 
 | 작업 유형 | 반드시 읽을 문서 | 조건부로 읽을 문서 |
 |---|---|---|
@@ -89,7 +89,7 @@ Codex와 개발할 때 `docs/` 전체를 한 번에 읽지 않는다. 적용되�
 | Controller·DTO·오류 응답 | `04-api-spec.md`의 해당 절 | 새 요구사항이면 `01-requirements.md` |
 | 테스트 작성·수정 | `08-test-strategy.md`의 해당 절 | 완료 판정 시 `10-definition-of-done.md` |
 | AI·외부 API·profile·배포 | `09-operations.md`의 해당 절 | HTTP 계약도 바뀌면 `04-api-spec.md` |
-| 설계 선택 변경 | `06-decisions.md` | 영향받은 계약 문서 |
+| 설계 선택 변경 | `06-decisions.md`의 관련 ADR | 영향받은 계약 문서의 관련 절 |
 | 새 Phase 시작·현황 점검 | `07-implementation-readiness.md` | 실행 작업은 `11-command-roadmap.md` |
 
 기능 구현을 마칠 때만 `10-definition-of-done.md`의 공통 항목과 해당 도메인 항목을 확인한다. 관련 없는 문서는 읽거나 갱신하지 않는다.
@@ -105,6 +105,7 @@ Codex와 개발할 때 `docs/` 전체를 한 번에 읽지 않는다. 적용되�
 - 실제 코드가 변경되면 선택적 읽기 표에서 직접 관련된 문서만 함께 수정한다.
 - 아직 구현되지 않은 내용은 `계획` 또는 `예정`임을 명시한다.
 - 설계가 변경되면 `06-decisions.md`에 이유를 남긴다.
-- Codex는 적용되는 `AGENTS.md`와 현재 작업에 필요한 문서만 참고한다.
-- 구현 시작 전에는 `07-implementation-readiness.md`의 기준선과 완료 조건을 확인한다.
+- Codex는 적용되는 `AGENTS.md`, 변경 대상과 직접 참조 코드, 현재 작업에 필요한 문서 절만 참고한다. 다른 도메인의 내부 구현이나 폴더 전체를 관성적으로 읽지 않는다.
+- 구현 시작 전에는 새 Phase이거나 현황 확인이 필요한 경우 `07-implementation-readiness.md`에서 현재 기준선과 미확정 사항만 확인한다.
+- 구현 후 완료 판정이 필요할 때만 `10-definition-of-done.md`의 공통 항목과 해당 도메인 항목을 확인한다.
 - 실제 구현은 `11-command-roadmap.md`의 작업 ID를 한 번에 하나씩 진행한다.
