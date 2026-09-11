@@ -2,11 +2,20 @@
 
 ## Responsibility
 
-- 자동 테스트와 테스트 전용 fixture를 관리한다.
+자동 테스트와 테스트 전용 fixture를 관리한다.
 
-## Boundaries
+## Rules
 
-- 테스트 책임과 완료 기준은 `docs/08-test-strategy.md`를 따른다.
-- 테스트는 실제 OpenAI, 지도 API, 결제 서비스 등 외부 제공자를 호출하지 않는다. fake 또는 mock을 사용한다.
-- fixture와 assertion에 API key, 비밀번호, access token, 사용자 자연어 원문을 넣지 않는다.
-- 단위 테스트는 알고리즘·도메인 규칙을, 통합 테스트는 Repository·DB 제약을, API 테스트는 validation·상태 코드·오류 응답을 검증한다.
+- 책임과 필수 사례는 `docs/08-test-strategy.md`, 완료 판정은 `docs/10-definition-of-done.md`를 따른다.
+- 실제 OpenAI·카카오 API를 호출하지 않고 Fake 또는 mock을 사용한다.
+- 단위 테스트는 순수 규칙, Service 테스트는 use case, 통합 테스트는 Repository·migration·DB 제약, API 테스트는 인증·validation·상태 코드를 검증한다.
+- 테스트는 순서·공유 상태·실제 시계에 의존하지 않는다. 시간 규칙은 고정 `Clock`과 `Asia/Seoul`을 사용한다.
+- 비밀값, 개인정보, 사용자 원문, 외부 원문, 실제 카카오 좌표와 token 원문을 fixture·assertion·실패 출력에 넣지 않는다.
+- 카카오 DevTalk의 일시 사용 허용 답변과 Fake 테스트 통과만으로 운영 가능하다고 판단하지 않는다. 실제 구현의 즉시 폐기와 저장 금지를 별도로 검증한다.
+- 기하 중앙값·메도이드 계산은 가상 좌표로 검증하고 숙소 지도 탐색은 Fake Place Client로 검증한다.
+- 경로 쿼터 사전 확보의 동시성과 실패 시 외부 호출 0건·전체 구간 fallback을 검증한다.
+- MySQL 공유 카운터의 사용자·서비스 범위 분리, 조건부 원자 확보, 다중 인스턴스 동시성, 만료 판정과 payload 비저장을 검증한다.
+- 메뉴 AI의 지역·관광지 맥락 구조화와 사용자 확정 경계, 식사 60분·한쪽 여유 15분·긴 체류 중복 방지, 음식점 지도·목록 결과를 Fake로 검증한다.
+- 여행 1~7일·하루 관광지 5개, 점심·저녁 시간대와 선호 시각, MOVE 숫자만 저장하는 계약을 경계값으로 검증한다.
+- 일반 429와 경로 쿼터 부족 전체 fallback을 서로 다른 시나리오로 검증한다.
+- 변경 코드에 직접 대응하는 최소 테스트만 수정한다.

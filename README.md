@@ -1,239 +1,110 @@
 # ✈️ Routy
 
-> **사용자가 선택한 국가 또는 도시를 바탕으로 방문 장소를 추천하고,
-> 이동 동선과 숙소·맛집까지 함께 고려해 여행 계획을 만들어주는 서비스입니다.**
+> 국내 여행지를 고르면 체류시간과 이동시간을 계산해 자동차 또는 대중교통 일정으로 만드는 Spring Boot 학습 프로젝트입니다.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Java-21-007396?style=for-the-badge&logo=openjdk&logoColor=white">
-  <img src="https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F?style=for-the-badge&logo=springboot&logoColor=white">
-  <img src="https://img.shields.io/badge/MySQL-8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
-  <img src="https://img.shields.io/badge/OpenAI-API-412991?style=for-the-badge&logo=openai&logoColor=white">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
-</p>
+## 프로젝트 방향
 
----
-
-## 🌍 프로젝트 소개
-
-여행을 계획할 때는 단순히 관광지를 찾는 것뿐 아니라,
-
-* 어디를 방문할지
-* 어떤 순서로 이동할지
-* 어느 지역에 숙소를 잡을지
-* 여행 중 어디에서 식사할지
-
-까지 함께 고려해야 합니다.
-
-**Routy**는 사용자가 국가 또는 도시를 직접 선택할 수 있고, 국가만 선택한 경우에는 AI가 도시 후보를 제안합니다. 선택된 도시 안에서 Google Places로 방문 장소를 찾고, 선택된 장소들의 위치를 고려하여 **하나의 여행 일정으로 구성해주는 서비스**입니다.
-
-예를 들어,
+사용자는 서울·광역시·도 가운데 상위 지역을 먼저 고른 뒤, 그 안에서 최종 여행 범위인 시·군·구 하나를 선택합니다. 세종특별자치시는 그 자체를 최종 지역으로 선택합니다. 직접 선택하는 대신 AI에게 여행 성향에 맞는 지역 후보 3개와 이유를 추천받을 수도 있습니다.
 
 ```text
-부산 2박 3일 여행
-
-✓ 부산을 여행 도시로 선택
-✓ 해운대와 감천문화마을은 꼭 방문
-✓ 돼지국밥과 회를 먹고 싶음
+지역 선택 → 관광지 선택과 체류시간 조정
+→ Haversine 기반 일정 추정
+→ 숙소 지도 탐색(숙박 여행)
+→ 음식 자연어 입력과 메뉴 확정 → 음식점 지도 선택
+→ 최종 인접 구간 실제 경로 검증 → 시간 초과 확인
+→ 완료 일정 저장
 ```
 
-와 같이 입력하면,
+AI는 지역 후보와 추천 이유를 만들고, 음식 관련 자연어에서 메뉴 후보 1~5개를 구조화합니다. 장소 검증, 체류시간, 일정 배치, 거리·경로 계산, 숙소 탐색 중심, 음식점 이탈거리, 저장과 권한은 Spring Backend가 담당합니다.
+
+## 확정된 핵심 규칙
+
+- 여행 기간은 1~7일이며 하루 관광지는 최대 5개입니다.
+- 최종 여행 범위는 시·군·구 하나입니다. 읍·면·동은 선택 단위로 지원하지 않습니다.
+- 행정구역 기준은 공공 출처로 만든 `regions.json`을 사용합니다.
+- 관광지는 기준 지역 주소에 속하거나 기준점 반경 20km 이내일 때 선택할 수 있습니다.
+- 장소는 카카오 Local, 자동차는 카카오모빌리티, 대중교통은 카카오맵 경로 API를 사용합니다.
+- 방문 순서는 Haversine, Nearest Neighbor, 2-opt로 먼저 계산하고 거의 완성된 일정의 인접 구간만 실제 경로로 검증합니다.
+- 실제 경로 시간은 10분 단위로 올려 예상 이동시간으로 사용합니다. 한도가 부족하면 실제 경로를 호출하지 않고 전체 일정을 Haversine 추정값으로 반환하며 경고를 표시합니다.
+- 장소 유형은 화면과 DB에 노출하지 않습니다. 카카오 분류로 기본 체류시간만 정하고 사용자가 10분 단위로 조정합니다.
+- 숙소는 관광지들의 기하 중앙값 주변 5km, 필요하면 10km에서 지도와 목록으로 탐색합니다. 사용자가 원하면 메도이드 관광지 주변이나 현재 지도 영역을 검색하며 서버가 숙소 순위를 매기지 않습니다.
+- 음식 자연어는 AI가 메뉴·검색어·이유·기준 관광지 후보로 구조화하고 사용자가 확정하거나 수정합니다. 음식점은 추정 일정 뒤 목록과 지도에 표시하며 식사 전후 Haversine 이탈이 작은 순서로 보여줍니다.
+- 점심은 11:30~14:00(기준 12:00), 저녁은 17:30~20:30(기준 18:00), 식사는 60분이며 한쪽 이동 여유는 기본 15분입니다.
+- 사용자가 빈 입력창에 장소 표시 이름을 직접 작성합니다. 완료 후에는 일정 제목, 표시 이름, 메모만 수정할 수 있습니다.
+- 완료·공유 화면은 저장된 시간표와 카카오 외부 링크만 표시하며 외부 API를 다시 호출하지 않습니다.
+- 일정과 외부 API 사용에는 처음부터 인증 사용자와 소유권을 적용합니다.
+
+## 카카오 문의 결과와 적용 규칙
+
+2026-09-11 카카오 DevTalk에서 “일시적으로 저장 및 참조 후 즉시 폐기하는 구조는 허용 가능합니다.”라는 답변을 받았습니다. 검색 좌표는 같은 제작 흐름 동안 브라우저 JavaScript 메모리에만 두고 서버 요청에서 계산에 사용한 뒤 즉시 폐기합니다.
+
+좌표와 카카오 검색 원문은 DB, Redis, Caffeine, 서버 세션, 브라우저 저장소와 로그에 남기지 않습니다. `selectionToken`은 사용자가 선택한 장소와 요청을 연결하되 영속 좌표 저장 수단으로 사용하지 않습니다. 이 정책 확인과 실제 구현 완료는 구분합니다.
+
+## 주요 기능과 현재 상태
+
+현재 코드는 Spring Boot 기본 골격과 `GET /hello` 수준입니다. 아래 항목은 확정된 목표이며 구현 완료 표시가 아닙니다.
+
+- [ ] 회원가입·JWT 인증·일정 소유권
+- [ ] 국내 지역 직접 선택과 AI 지역 추천
+- [ ] 카카오 장소 검색과 사용자 표시 이름·체류시간 입력
+- [ ] Haversine·Nearest Neighbor·2-opt
+- [ ] 자동차·대중교통 실제 경로 검증과 한도 fallback
+- [ ] 기하 중앙값·메도이드 기반 숙소 지도 탐색
+- [ ] AI 메뉴 후보와 음식점 목록·지도 탐색
+- [ ] 추정 일정과 시간 초과 검증
+- [ ] 완료 일정 저장·조회·제한 편집·삭제
+- [ ] 외부 호출 없는 완료·공유 화면
+- [ ] 호출 한도, 로그, health와 배포 검증
+
+정확한 구현 상태는 [구현 준비도](./docs/07-implementation-readiness.md), 작업 순서는 [대화형 로드맵](./docs/11-command-roadmap.md)을 따릅니다.
+
+## 기술 기준
+
+- Java 21
+- Spring Boot 4.1.1
+- Gradle
+- 목표 영속 계층: Spring Data JPA, MySQL 8.4, Flyway
+- 인증: Spring Security와 JWT
+- AI: OpenAI
+- 장소·경로: 카카오
+- 화면: `src/main/resources/static/Routy/**`의 Vanilla HTML·CSS·JavaScript
+
+JPA·MySQL·Flyway·Security 등은 목표 기술이며 실제 dependency와 구현 여부는 준비도 문서에서 확인합니다.
+
+## 책임 구조
 
 ```text
-여행지 추천
-    ↓
-방문 장소 선정
-    ↓
-이동 동선 구성
-    ↓
-숙소 추천
-    ↓
-동선 주변 맛집 추천
-    ↓
-2박 3일 여행 일정 생성
+Controller → Service
+              ├─ user / region / place / route
+              ├─ recommendation / ai
+              └─ travelplan
+           → Repository 또는 Client 인터페이스
 ```
 
-의 형태로 여행 계획을 제공합니다.
+- Controller는 HTTP 요청과 응답만 처리합니다.
+- Service는 비즈니스 규칙과 use case 조합을 담당합니다.
+- Repository는 같은 도메인의 DB 접근만 담당합니다.
+- 외부 HTTP 코드는 `ai/client`, `place/client`, `route/client`에 둡니다.
+- `route/algorithm`은 Spring, JPA, HTTP, AI에 의존하지 않는 순수 Java입니다.
+- 외부 호출과 계산은 짧은 DB 트랜잭션과 분리해 완료 일정 전체를 저장합니다.
 
----
+## 데이터와 보안
 
-## 🧭 설계 원칙
+영속 저장하는 장소 정보는 카카오 장소 ID·URL, 사용자가 작성한 표시 이름, 확정 체류시간과 자체 일정 정보입니다. 카카오 장소명, 좌표, 주소, 전화번호, 카테고리와 검색·경로 원문은 저장하지 않습니다.
 
-Routy는 AI가 현재 도시 후보 추천을 보조하고, 서버가 검증 가능한 여행 규칙을 결정하도록 책임을 분리합니다. 음식 자연어 해석은 후속 범위입니다.
+사용량 카운터와 `requestId` 처리 상태는 MySQL에 저장하지만 장소 좌표와 요청·응답 payload는 넣지 않습니다. 자동 테스트는 실제 OpenAI·카카오 API를 호출하지 않으며 비밀값과 외부 원문을 코드, Git, 로그, fixture, 오류 응답에 남기지 않습니다.
 
-* AI는 국가 기반 도시 후보와 추천 이유를 구조화된 데이터로 제안합니다.
-* 서버는 Google Places로 국가·도시·장소를 검증하고 Google Place ID를 기준으로 참조합니다.
-* 거리 계산, 경로 최적화, 호텔·음식점 점수, 날짜별 일정 배치는 결정적인 백엔드 로직으로 처리합니다.
-* AI 응답과 외부 제공자 응답은 검증한 뒤에만 사용하며, AI가 Place ID·최종 경로·최종 순위를 직접 결정하지 않습니다.
+## 문서
 
----
-
-## ✨ 주요 기능
-
-* [ ] 🌍 국가 기반 AI 도시 후보 추천
-* [ ] 📍 Google Places 기반 방문 장소 추천
-* [ ] 🍽️ 점심·저녁 시간대와 동선을 고려한 맛집 추천
-* [ ] 🗺️ 실제 이동 시간과 장소별 체류 시간을 고려한 동선 구성
-* [ ] 🏨 방문 장소를 고려한 숙소 추천
-* [ ] 📅 날짜별 여행 일정 생성
-* [ ] ✅ 도시·관광지·호텔의 Google Place ID·유형·도시 소속 검증
-* [ ] ⏱️ 장소 유형별 체류 시간과 점심·저녁 식사 슬롯 반영
-* [ ] 🔁 Nearest Neighbor 기반 방문 순서 최적화와 정적 이동 시간 행렬 적용
-* [ ] 🧾 저장된 일정 기반 음식점 후보 검색과 시간표 불변성 보장
-* [ ] 💾 여행 계획 저장 및 조회
-* [ ] 🔐 회원가입 및 로그인
-
----
-
-## 🚀 Development Progress
-
-* [x] Spring Boot 프로젝트 구성
-* [x] Java 21 개발 환경 구성
-* [x] `GET /hello` 개발 확인 endpoint 구성
-* [x] Docker Compose 구성
-* [x] 환경변수 분리
-* [x] Git / GitHub 연동
-* [x] 요구사항·아키텍처·DB·API·테스트·운영·완료 기준 문서화
-* [x] UI 검토용 Travela 원본과 Routy 정적 파일 배치
-* [ ] 기존 템플릿을 사용하지 않는 Routy 전용 UI 설계
-* [ ] JPA 의존성 및 스키마 초기화 적용
-* [ ] DB 자동 테스트 환경과 Flyway migration 기반 구성
-* [ ] MySQL/JPA 런타임 연결 검증
-* [ ] Google 장소 검색·참조 관리 기능
-* [ ] Place 참조 Entity·Repository·Google Place ID UNIQUE 제약 구현
-* [ ] GooglePlacesClient·fake·DTO와 PlaceService 공개 계약 구현
-* [ ] 공통 오류 응답·Global Exception Handler 및 도시 직접 선택·장소 상세 API 구현
-* [ ] 실제 Google Places client의 Field Mask·timeout·오류 변환 구현
-* [ ] 이동 경로 계산
-* [ ] Haversine 거리 계산·Nearest Neighbor 최적화·경로 API 구현
-* [ ] Google Routes client·fake와 정적 이동 시간 행렬 구현
-* [ ] 여행 계획 관리 기능
-* [ ] TravelPlan Aggregate·내부 저장·조회·교체·삭제 계층 구현
-* [ ] 공유 Place 참조 재사용과 계획 삭제 후 Place 유지 무결성 검증
-* [ ] AI 도시 후보 추천
-* [ ] AI 구조화 응답 DTO·fake·검증 Service 구현
-* [ ] OpenAI client와 국가 기반 도시 후보 API 구현
-* [ ] 방문 장소 추천
-* [ ] 호텔 추천
-* [ ] 맛집 추천
-* [ ] 날짜별 일정 생성
-* [ ] 체류 시간 정책·일일 시간 용량·날짜별 일정 배치 구현
-* [ ] TravelPlan 입력의 Google Place ID 무결성 검증과 최종 생성 API 구현
-* [ ] TravelPlan 공개 조회·수정·삭제와 저장 일정 기반 음식점 검색 API 구현
-* [ ] 최종 일정 통합 회귀·MVP 완료 기준 점검
-* [ ] 공통 오류 처리·테스트·운영 설정
-* [ ] local/test/prod profile·Flyway 운영 설정과 health check 구현
-* [ ] 배포
-* [ ] 회원 / 인증
-* [ ] 회원·JWT 인증과 TravelPlan 소유권 적용
-* [ ] 새 Routy 프론트 구현과 API 단계별 연결
-* [ ] 전체 브라우저 흐름·반응형·접근성 검증
-
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다.
-
----
-
-## 🛠 Tech Stack
-
-### Backend
-
-<p>
-  <img src="https://img.shields.io/badge/Java_21-007396?style=flat-square&logo=openjdk&logoColor=white">
-  <img src="https://img.shields.io/badge/Spring_Boot_4.1.1-6DB33F?style=flat-square&logo=springboot&logoColor=white">
-  <img src="https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=flat-square&logo=spring&logoColor=white">
-  <img src="https://img.shields.io/badge/Gradle-02303A?style=flat-square&logo=gradle&logoColor=white">
-</p>
-
-### Database & Infrastructure
-
-<p>
-  <img src="https://img.shields.io/badge/MySQL_8.4-4479A1?style=flat-square&logo=mysql&logoColor=white">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white">
-</p>
-
-### AI
-
-<p>
-  <img src="https://img.shields.io/badge/OpenAI_API-412991?style=flat-square&logo=openai&logoColor=white">
-</p>
-
-### Tools
-
-<p>
-  <img src="https://img.shields.io/badge/IntelliJ_IDEA-000000?style=flat-square&logo=intellijidea&logoColor=white">
-  <img src="https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white">
-  <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white">
-</p>
-
-### Frontend (계획)
-
-Spring Boot의 `src/main/resources/static/Routy/**`에서 별도 프론트 빌드 도구 없이 동작하는 Vanilla HTML·CSS·JavaScript UI를 새로 설계할 예정입니다. 현재 배치된 Travela 파일은 완성 화면이 아니며, 원본 `travela-1.0.0/**`는 보존합니다.
-
-프론트 구현은 백엔드 API 준비 시점에 맞춰 S1 단계에서 연결합니다. S1-01에서 참고 이미지, 화면 구조, 디자인 시스템, 반응형·접근성, 상태 유지 방식을 먼저 확정하고 S1-02~S1-07에서 기능별로 구현합니다.
-
----
-
-## 🧱 아키텍처와 책임 경계
-
-도메인 중심 패키지 구조를 사용하며, Controller·Service·Repository·DTO·Entity의 책임을 분리합니다.
+문서 역할과 읽는 순서는 [문서 안내](./docs/00-docs-index.md)에 정리되어 있습니다.
 
 ```text
-API Controller
-      ↓
-Application Service
-      ├── Place Service      : Google Places 검증·Place 참조 관리
-      ├── Route Service      : 거리·이동 시간·방문 순서 계산
-      ├── Recommendation     : 장소·호텔·음식점 후보 평가
-      ├── AI Service         : 도시 후보 생성과 응답 검증
-      └── TravelPlan Service : 일정 생성·저장·조회·수정·삭제 조합
-      ↓
-Repository / External Client
+docs/01 requirements      docs/07 readiness
+docs/02 architecture      docs/08 tests
+docs/03 database          docs/09 operations
+docs/04 API               docs/10 Definition of Done
+docs/05 development       docs/11 command roadmap
+docs/06 decisions         docs/12 harness boundaries
 ```
 
-외부 통신은 `ai`, `place/client`, `route/client`에 격리합니다. 경로 알고리즘과 추천 정책은 Spring·JPA·HTTP·AI에 직접 의존하지 않는 순수 Java 로직으로 유지합니다.
-
-일정 생성 전에는 도시·관광지·호텔의 Google Place ID와 역할·도시 소속을 모두 검증합니다. 외부 검증과 일정 계산이 성공한 뒤 하나의 트랜잭션으로 전체 TravelPlan을 저장해 부분 저장을 방지합니다.
-
----
-
-## 📚 Documents
-
-상세 요구사항과 설계 문서는 [`docs/`](./docs)에서 관리합니다.
-
-```text
-docs/
-├── 01-requirements.md
-├── 02-architecture.md
-├── 03-database.md
-├── 04-api-spec.md
-├── 05-development-plan.md
-├── 06-decisions.md
-├── 07-implementation-readiness.md
-├── 08-test-strategy.md
-├── 09-operations.md
-├── 10-definition-of-done.md
-├── 11-command-roadmap.md
-└── 12-harness-boundaries.md
-```
-
-처음 구현을 시작할 때는 큰 Phase 대신 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)의 작업 ID를 한 개씩 진행합니다.
-
-화면 작업은 백엔드가 모두 끝난 뒤 한 번에 붙이지 않습니다. F0 이후 S1-01에서 새 UI를 설계하고, 도시 추천·관광지와 호텔·일정·음식점·인증 API가 준비될 때마다 대응하는 S1 작업에서 순차적으로 연결합니다.
-
-문서별 기준은 분리합니다. 요구사항은 `01`, 아키텍처는 `02`, DB 계약은 `03`, HTTP 계약은 `04`, 설계 결정은 `06`, 테스트는 `08`, 운영은 `09`, 완료 기준은 `10` 문서를 기준으로 합니다.
-
----
-
-## 🧪 개발·운영 기준
-
-* 자동 테스트는 실제 OpenAI·Google API를 호출하지 않고 fake 또는 mock을 사용합니다.
-* API 키, DB 비밀번호, access token, 사용자 원문과 외부 제공자 원문 요청·응답은 코드·Git·로그·오류 응답에 기록하지 않습니다.
-* DB 스키마 변경은 Flyway versioned migration으로 관리하며, Hibernate는 `ddl-auto: validate`만 사용합니다.
-* 로컬 기본 실행과 자동 테스트는 외부 API를 호출하지 않습니다. 실제 연동은 키를 별도로 주입한 수동 smoke 환경에서만 확인합니다.
-
----
-
-## 📌 Project Status
-
-> 현재 개발 진행 중인 개인 프로젝트입니다.
-
-구현이 완료된 기능은 위 체크리스트에 지속적으로 반영합니다.
+D0 문서·하네스 정렬은 완료됐으며 실제 기능 구현은 시작하지 않았습니다. 이후 구현은 작업 ID 하나와 Change Envelope 하나로 진행합니다.

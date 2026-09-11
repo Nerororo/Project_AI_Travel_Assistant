@@ -2,160 +2,101 @@
 
 ## Project Goal
 
-이 프로젝트는 Spring Boot 기반 AI 여행 일정 추천 및
-경로 최적화 백엔드 서비스이다.
-
-개발자는 Spring Boot 학습 단계의 취업 준비생이다.
-
-프로젝트의 목적은 기능 완성뿐 아니라
-Spring 아키텍처와 백엔드 설계를 학습하는 것이다.
-
+Routy는 국내 여행 장소를 선택하고 자동차 또는 대중교통의 이동 시간을 반영해 일정을 만드는 Spring Boot 백엔드 학습 프로젝트다. 기능 완성과 함께 Spring 계층, 도메인 경계, 테스트와 운영 설계를 학습한다.
 
 ## Core Principle
 
-AI와 서버의 역할을 명확히 분리한다.
+AI와 서버의 책임을 분리한다.
 
-AI는 다음 역할을 담당한다.
+AI:
+- 허용된 국내 지역 목록에서 지역 후보 3개와 이유 생성
+- 지역·관광지 맥락을 반영해 음식 자연어를 메뉴·검색어·이유·선택적 기준 관광지 1~5개로 구조화
 
-- 국가를 입력했을 때 도시 후보 생성
-- 도시 후보의 추천 이유 생성
-- 음식 관련 자연어 분석(후속 범위)
+Spring Backend:
+- 인증·인가와 사용자별 호출 한도
+- 국내 지역 기준 데이터와 검색
+- 카카오 장소 검색 결과 검증과 데이터 수명 통제
+- 거리, 방문 순서, 체류·이동 시간과 일정 계산
+- 숙소 지도 탐색 중심과 음식점 추천 점수
+- 완료 일정 저장·조회·제한 편집·공유
+- 비즈니스 규칙과 외부 장애 처리
 
-Spring Backend는 다음 역할을 담당한다.
-
-- 데이터 저장
-- Google 장소 검증과 Place ID 관리
-- 여행 일정 관리
-- 거리 계산
-- 경로 최적화
-- 호텔 추천 점수 계산
-- 맛집 추천 점수 계산
-- 인증/인가
-- 비즈니스 규칙
-
+AI는 장소 존재, 거리, 방문 순서, 시간표, 추천 점수와 저장 성공을 결정하지 않는다.
 
 ## Development Rules
 
-1. 사용자가 요청하지 않은 기능을 임의로 구현하지 않는다.
+1. 사용자가 요청하지 않은 기능과 구조 변경을 추가하지 않는다.
+2. 구현 전에 수정 파일, 이유와 Change Envelope를 설명한다.
+3. dependency 추가 전 목적과 대안을 설명한다.
+4. Controller는 HTTP Request·Response, DTO validation과 Service 호출만 담당한다.
+5. Service는 비즈니스 규칙과 use case 조합을 담당한다.
+6. Repository는 같은 도메인의 DB 접근만 담당한다.
+7. Entity와 API DTO를 분리하며 Entity를 직접 반환하지 않는다.
+8. 외부 HTTP 구현은 OpenAI=`ai/client`, 카카오 장소=`place/client`, 경로=`route/client`에 둔다.
+9. `route/algorithm`은 Spring·JPA·HTTP·AI에 의존하지 않는 순수 Java로 유지한다.
+10. 다른 도메인은 공개 Service·전달 DTO로만 사용하고 Repository·내부 구현을 직접 참조하지 않는다.
+11. 외부 API 호출 중 DB 트랜잭션을 열지 않는다.
+12. 완료 일정은 모든 계산 뒤 짧은 트랜잭션으로 Aggregate 전체를 저장한다.
+13. 적용된 versioned migration은 수정하지 않고 새 버전을 추가한다.
+14. 비밀값, 개인정보, 사용자 원문, 외부 원문과 카카오 좌표를 코드·Git·fixture·로그·오류 응답에 남기지 않는다.
+15. 중요한 로직은 `docs/08-test-strategy.md`에 따라 테스트한다.
+16. 과도한 추상화와 복잡한 패턴을 사용하지 않는다.
+17. 완료 표시는 `docs/10-definition-of-done.md` 확인 뒤에만 한다.
 
-2. 기존 프로젝트 구조를 임의로 변경하지 않는다.
+## Product Invariants
 
-3. 코드를 작성하기 전에 어떤 파일을 수정할지 설명한다.
+- 서울특별시·광역시·도는 상위 탐색 항목으로 두고 그 아래 최종 시·군·구 하나만 여행 지역으로 선택한다. 세종특별자치시처럼 하위 시·군·구가 없는 예외는 자체 선택하며 읍·면·동과 해외는 제외한다.
+- 숙소는 기하 중앙값·메도이드·현재 지도 영역으로 탐색하되 거리 점수로 자동 추천하지 않고 사용자가 지도에서 직접 선택한다.
+- 일정 하나는 `CAR` 또는 `PUBLIC_TRANSIT` 하나만 사용한다.
+- Haversine·Nearest Neighbor·2-opt로 먼저 계산하고 최종 후보 인접 구간만 실제 경로로 검증한다.
+- 이동 시간은 10분 단위로 올리며 고정 이동 buffer를 더하지 않는다.
+- 경로 API가 반환한 예상 이동시간으로 종료 시각을 넘으면 저장하지 않고 장소 삭제·체류 축소도 자동 수행하지 않는다.
+- 장소 유형은 기본 체류 시간 계산에만 쓰고 노출·저장하지 않는다.
+- 카카오 장소명을 사용자 이름의 기본값·placeholder로 사용하지 않는다.
+- 완료 뒤에는 제목·사용자 장소 이름·메모만 수정한다.
+- 완료·공유 조회는 외부 API와 지도 없이 저장 데이터·카카오 링크만 사용한다.
+- 여행은 1~7일이며 하루 관광지는 최대 5개다.
+- 점심은 11:30~14:00, 저녁은 17:30~20:30 안에 60분으로 배치하고 한쪽 이동 여유 기본 15분을 중복 없이 반영한다.
+- 사용자 경로 한도는 자동차·대중교통 각각 60회/분·120회/일이다. 필요한 쿼터를 사전 확보하지 못하면 외부 호출 없이 일정 전체를 Haversine으로 추정하고 warning을 반환한다.
+- 호출 카운터와 `requestId` 처리 상태는 MySQL 공유 저장소에 두고 좌표·payload·response를 저장하지 않는다.
 
-4. 새로운 Dependency를 추가할 경우 이유를 먼저 설명한다.
+## Kakao Policy Gate
 
-5. Controller에는 비즈니스 로직을 작성하지 않는다.
-
-6. Controller는 HTTP Request/Response 처리를 담당한다.
-
-7. Service는 비즈니스 로직을 담당한다.
-
-8. Repository는 DB 접근을 담당한다.
-
-9. Entity를 API Response로 직접 반환하지 않는다.
-
-10. DTO와 Entity를 구분한다.
-
-11. OpenAI API 관련 코드는 ai 패키지 내부에서 관리한다.
-
-11-1. Google Places 관련 코드는 place 패키지의 client 내부에서 관리한다.
-
-11-2. Google Routes 관련 코드는 route 패키지의 client 내부에서 관리한다.
-
-12. OpenAI API Key를 코드 또는 Git에 저장하지 않는다.
-
-13. route 알고리즘은 AI에 의존하지 않는다.
-
-14. 중요한 로직에는 테스트 코드를 작성한다. 테스트 책임과 완료 기준은 `docs/08-test-strategy.md`를 따른다.
-
-15. 과도한 추상화나 복잡한 디자인 패턴을 사용하지 않는다.
-
-16. 기능을 완료로 표시하기 전 `docs/10-definition-of-done.md`의 해당 체크리스트를 확인한다.
+`K0-02A`는 2026-09-11 카카오 DevTalk 답변으로 완료되었다. 실제 카카오 좌표 기반 장소 선택, `selectionToken`, estimate·완료 생성과 경로 호출은 좌표를 한 번의 제작 흐름과 서버 요청에서만 일시적으로 사용하고 즉시 폐기해야 한다. 정책 확인을 구현 완료로 간주하지 않는다.
 
 ## Harness Rules
 
-### Instruction Hierarchy
+- 루트 규칙은 전체 저장소에 적용되고 하위 `AGENTS.md`는 이를 구체화한다.
+- 작업 전 `docs/11-command-roadmap.md`의 작업 ID와 `docs/12-harness-boundaries.md`의 해당 단계 행을 확인한다.
+- 적용되는 AGENTS, 대상 파일과 직접 참조 코드, 필요한 문서 절만 읽는다.
+- Change Envelope에는 Task ID, Goal, Allowed·Conditional·Forbidden Paths, References Read, Verification을 적는다.
+- 명시되지 않은 경로는 미승인이다. 필요하면 편집 전에 이유·영향·파일을 설명하고 승인받는다.
+- 명시적 Forbidden은 같은 작업에서 재분류하지 않고 별도 작업으로 다룬다.
+- 작업 전 `git status --short`와 대상 diff로 사용자 변경을 확인한다.
+- 작업 후 실제 변경 경로, 관련 테스트, 전체 `./gradlew test`, `git diff --check`와 DoD를 확인한다.
+- 문서 전용 작업은 Gradle 테스트 생략 이유를 기록한다.
+- 사용자가 요청하지 않으면 git add, commit, stash, reset, checkout을 실행하지 않는다.
 
-- 이 파일의 규칙은 프로젝트 전체에 적용한다.
-- 하위 폴더의 `AGENTS.md`가 있으면 해당 폴더와 모든 하위 폴더의 작업에는 이 파일과 하위 규칙을 함께 적용한다.
-- 하위 규칙은 상위 규칙을 구체화할 수 있지만, 보안·테스트·DTO 분리·AI와 서버의 책임 분리 원칙을 완화할 수 없다.
+## Required References
 
-### Allowed Dependency Direction
+| 변경 | 먼저 읽을 문서 |
+|---|---|
+| 요구사항·MVP | `docs/01-requirements.md` 관련 절 |
+| 아키텍처·도메인 책임 | `docs/02-architecture.md` |
+| Entity·Repository·migration | `docs/03-database.md` 관련 절 |
+| Controller·DTO·상태 코드 | `docs/04-api-spec.md` 해당 endpoint |
+| 알고리즘·추천 | `docs/01-requirements.md`, `docs/08-test-strategy.md` 관련 절 |
+| AI·카카오 Client | `docs/04-api-spec.md`, `docs/09-operations.md` |
+| 테스트 | `docs/08-test-strategy.md`, 완료 시 `docs/10-definition-of-done.md` |
+| 설정·배포 | `docs/09-operations.md` |
 
-- `controller`는 같은 도메인의 `service`, Request/Response DTO, `global`의 공통 예외 처리만 사용한다.
-- `service`는 같은 도메인의 `domain`, `repository`, DTO, Client 인터페이스, 순수 알고리즘·정책 클래스와 명시적으로 필요한 다른 도메인의 공개 Service·전달용 DTO를 사용한다. 외부 제공자의 구체 HTTP 구현은 직접 생성하거나 참조하지 않는다.
-- `repository`는 같은 도메인의 Entity 조회·저장만 담당하며 다른 도메인 Service를 호출하지 않는다.
-- `domain` Entity와 값 객체는 Controller, API DTO, 외부 API Client에 의존하지 않는다.
-- `dto`는 API 입출력 또는 도메인 간 전달용 데이터 표현만 담당하며 DB 조회·저장이나 비즈니스 로직을 두지 않는다.
-- `global`에는 공통 예외, 설정, 보안, 범용 도구만 두며 특정 여행 도메인의 정책을 두지 않는다.
-- `route/algorithm`은 Spring Bean, JPA Repository, HTTP Client, AI Client에 의존하지 않는 순수 Java 로직으로 유지한다.
+## Infrastructure
 
-### Required References Before Changes
-
-| 변경 유형 | 먼저 읽을 문서 | 함께 확인할 위치 |
-|---|---|---|
-| 요구사항 또는 MVP 범위 | `docs/01-requirements.md` | 관련 도메인 `AGENTS.md` |
-| Controller, DTO, HTTP 상태 코드 | `docs/04-api-spec.md` | `global` 예외 규칙 |
-| Entity, Repository, migration, DB 제약 | `docs/03-database.md`의 관련 절 | 공개 API도 바뀌면 `docs/04-api-spec.md`의 해당 endpoint |
-| 경로·거리·추천 점수 알고리즘 | `docs/01-requirements.md`, `docs/08-test-strategy.md` | `route` 또는 `recommendation` 규칙 |
-| AI Client, prompt, provider 설정 | `docs/04-api-spec.md`, `docs/09-operations.md` | `ai/AGENTS.md` |
-| Google Places Client, Place ID, 지도 표시 | `docs/04-api-spec.md`, `docs/09-operations.md` | `place/AGENTS.md`, `resources/static/AGENTS.md` |
-| Google Routes Client, 이동 시간 행렬 | `docs/04-api-spec.md`, `docs/09-operations.md` | `route/AGENTS.md` |
-| 테스트 추가 또는 수정 | `docs/08-test-strategy.md`의 관련 절 | 기능 완료 판정 시 `docs/10-definition-of-done.md`의 해당 항목 |
-| 설정, 배포, Docker, 외부 API | `docs/09-operations.md` | 관련 `build.gradle` 또는 설정 파일 |
-
-### Change Boundaries
-
-- 한 작업은 하나의 기능 또는 설계 변경 단위로 제한한다. 관련 없는 리팩터링, 포맷 변경, 파일 이동을 함께 수행하지 않는다.
-- 모든 코드와 문서를 한꺼번에 읽지 않는다. 적용되는 `AGENTS.md`, `docs/12-harness-boundaries.md`의 해당 작업 행, `docs/11-command-roadmap.md`의 현재 작업 ID, 변경 대상 파일과 직접 참조 코드부터 확인한다. 추가 기준은 위 표에 따라 관련 절·endpoint·ADR만 읽는다.
-- 다른 도메인이나 문서가 필요하면 현재 작업과의 직접 의존 관계를 먼저 확인하고 필요한 공개 Service·DTO·문서 절로 읽기 범위를 좁힌다. 폴더 전체를 관성적으로 탐색하지 않는다.
-- 모든 작업은 수정 전에 `docs/12-harness-boundaries.md`의 단계별 경계를 확인하고, 작업 ID·Allowed Paths·Conditional Paths·Forbidden Paths를 포함한 Change Envelope를 사용자에게 설명한다.
-- 명시되지 않은 경로는 미승인 경로로 취급하며 수정하지 않는다. 현재 작업에 필요하면 수정 전에 이유·영향·추가할 파일을 설명하고 사용자 승인을 받아 Change Envelope의 Allowed 또는 Conditional Paths에 추가할 수 있다.
-- Conditional Paths는 최초 또는 추가 승인된 Change Envelope에 파일과 변경 조건이 명시되고, 해당 조건이 충족된 경우에만 수정한다.
-- 단계표·적용 규칙·Change Envelope에 명시된 Forbidden Paths는 같은 작업 안에서 수정하거나 미승인 경로로 재분류하지 않는다. 필요하면 현재 작업을 끝내고 별도 작업 단위로 제안한다.
-- API, DB 스키마, 알고리즘, AI 계약을 변경하면 해당 계약 문서도 같은 작업에서 갱신한다.
-- versioned migration은 적용된 파일을 수정하지 않고 새 버전 파일을 추가한다.
-- 비밀값, 개인 정보, API 원문 요청·응답은 코드, Git, fixture, 문서 예시, 로그, 오류 응답에 남기지 않는다.
-- 다른 도메인의 Repository나 내부 구현 클래스를 직접 참조하지 않는다. 필요한 기능은 해당 도메인의 Service 계약을 통해 사용한다.
-- `docs/03-database.md`에 명시된 Aggregate 간 JPA 연관관계는 Entity 참조를 허용한다. 이 참조는 관계 매핑과 데이터 탐색에만 사용하며 다른 도메인의 비즈니스 규칙을 호출하는 통로로 사용하지 않는다.
-- 현재 작업과 관계없는 `docs/`, `src/main/resources/`, 빌드 설정, 템플릿 자산은 변경하지 않는다.
-
-### Verification Gate
-
-- 구현 전에는 수정 대상 파일, 변경 이유, 읽은 기준 문서를 설명한다.
-- 구현 전 `git status --short`와 변경 대상 파일의 기존 diff를 확인해 사용자 변경을 식별한다. 기존 변경을 되돌리거나 덮어쓰지 않는다.
-- 구현 후 실제로 수정한 파일 목록을 Change Envelope와 대조한다. 범위 밖 변경이 있으면 완료로 보고하지 말고 원인을 밝힌다.
-- 사용자가 요청하지 않으면 `git add`, commit, stash, reset을 실행하지 않는다.
-- 구현 후에는 관련 테스트와 `./gradlew test` 결과를 확인한다. 실행할 수 없는 경우에는 이유와 미검증 범위를 명확히 남긴다.
-- 기능 완료 표시는 `docs/10-definition-of-done.md`의 공통 항목과 해당 도메인 항목을 확인한 뒤에만 한다.
-
-### Infrastructure File Boundaries
-
-- `build.gradle`, `settings.gradle`은 dependency·빌드 규칙 변경이 필요한 경우에만 수정한다. dependency 추가 전에는 목적과 대안을 설명한다.
-- `docker-compose.yaml`은 로컬 개발용 인프라 설정이다. 서비스명, 포트, volume, 환경 변수 이름을 관련 문서 갱신 없이 임의로 변경하지 않는다.
-- `src/main/resources/application*.yml`, `application*.properties`에는 비밀값을 기록하지 않는다. profile·외부 연결·로그 정책 변경 전에는 `docs/09-operations.md`를 확인한다.
-- `src/main/resources/db/migration`이 생성된 뒤에는 migration 파일을 versioned schema 변경 전용으로 사용한다. 적용 이력이 있는 migration은 수정하지 않는다.
-
+- 빌드 파일은 dependency·빌드 변경에만 수정한다.
+- `application*`에 비밀값을 기록하지 않는다.
+- Docker의 서비스명·포트·volume·환경 변수는 운영 문서 없이 바꾸지 않는다.
+- migration은 schema 변경 전용이다.
 
 ## Learning Rule
 
-Spring 관련 새로운 개념을 사용하는 경우
-구현과 함께 해당 개념을 설명한다.
-
-특히 다음 개념을 처음 사용할 때 설명한다.
-
-- Bean
-- Dependency Injection
-- IoC
-- Controller
-- Service
-- Repository
-- JPA
-- Entity
-- DTO
-- Transaction
-- Lazy Loading
-- Validation
-- Exception Handler
-- Spring Security
-- JWT
+처음 사용하는 Bean, DI, IoC, Controller, Service, Repository, JPA, Entity, DTO, Transaction, Lazy Loading, Validation, Exception Handler, Spring Security와 JWT는 구현과 함께 초보자 기준으로 설명한다.

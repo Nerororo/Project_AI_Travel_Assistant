@@ -1,504 +1,205 @@
 # 시스템 아키텍처
 
-## 1. 현재 프로젝트 기반
+## 1. 목적과 원칙
 
-현재 `travel` 프로젝트는 다음 환경을 기준으로 한다.
+Routy는 국내 여행 장소를 선택하고 체류 시간과 이동 시간을 조합해 실행 가능한 일정을 만드는 Spring Boot 백엔드다. 이 문서는 목표 구조를 설명하며 구현 상태는 `docs/07-implementation-readiness.md`에서 관리한다.
 
-```text
-Java 21
-Spring Boot 4.1.1
-Gradle
-Spring Data JPA
-MySQL 8.4
-Docker Compose
-Base Package: com.example.travel
-```
+- AI는 지역 후보와 음식 검색어 같은 자연어 결과만 만든다.
+- 일정 배치, 거리·시간 계산, 경로 최적화와 시간 검증은 서버가 결정한다.
+- 외부 HTTP 구현은 Client 인터페이스 뒤에 격리한다.
+- 작성 중 데이터와 완료된 일정을 분리한다.
+- 외부 호출과 계산을 마친 뒤 완료 일정 Aggregate를 한 번에 저장한다.
+- 완료·공유 일정 조회에는 외부 API를 호출하지 않는다.
 
-현재 기본 Spring Boot 실행 환경과 DB 개발 환경을 기반으로 기능을 단계적으로 확장한다.
-
----
-
-## 2. 전체 시스템 구조
+## 2. 전체 구성
 
 ```text
-                     Client
-                       │
-                       │ HTTP / JSON
-                       ▼
-                Spring Boot API
-                       │
-              ┌────────┼────────┐
-              │        │        │
-              ▼        ▼        ▼
-       Domain Services AI Service Google Places
-              │        │
-              │        ▼
-              │     OpenAI API
-              ▼
-       Repository / JPA
-              │
-              ▼
-            MySQL
+Browser (작성 중 임시 정보 / 완료 일정 표시)
+  → Spring Boot API
+      ├─ Controller / DTO / Validation
+      ├─ Authentication / Authorization / Rate Limit
+      ├─ User / Region / Place / Route / TravelPlan / Recommendation / AI
+      ├─ 순수 정책과 알고리즘
+      ├─ 외부 Client 인터페이스
+      └─ Repository / JPA / MySQL
+
+Static region data: src/main/resources/data/regions.json
+External: Kakao Local, Kakao Mobility, Kakao Map 대중교통, OpenAI
 ```
 
-국가·도시·관광지·호텔·음식점 검색과 화면의 지도 표시는 Google Maps Platform을 사용한다. Google Places 통신은 `place/client`에 격리하고, 자동 테스트에서는 fake client로 대체한다.
+2026-09-11 카카오 DevTalk 답변으로 장소 좌표를 제작 중 일시적으로 사용하고 즉시 폐기하는 구조가 허용됨을 확인했다. 이 확인은 구현 완료를 뜻하지 않으며 실제 구현은 아래 데이터 수명 규칙을 지켜야 한다.
+
+## 3. Spring 계층
 
 ```text
-Place Service ──────► Google Places API
+HTTP Request → Controller → Service
+             → Repository 또는 Client 인터페이스
+             → Response DTO
 ```
 
----
+Controller는 URL, Request DTO, 형식 검증, 인증 사용자 전달과 HTTP 응답을 담당한다. Service는 비즈니스 규칙과 작업 순서를 담당한다. Repository는 같은 도메인의 Entity 조회·저장만 수행한다. Request·Response DTO와 Entity를 분리하며 Entity를 직접 반환하지 않는다.
 
-## 3. Spring 요청 처리 기본 흐름
+Service는 다른 도메인의 공개 Service·전달 DTO만 사용하고 외부 HTTP 구현을 직접 참조하지 않는다. 외부 호출 중 DB 트랜잭션을 열어 두지 않는다.
+
+## 4. 목표 패키지
 
 ```text
-HTTP Request
-     │
-     ▼
-Controller
-     │
-     ▼
-Service
-     │
-     ▼
-Repository
-     │
-     ▼
-JPA
-     │
-     ▼
-MySQL
+com.example.travel
+├─ user/{controller,service,repository,domain,dto}
+├─ region/{controller,service,domain,dto}
+├─ place/{controller,service,client,dto}
+├─ route/{service,client,algorithm,dto}
+├─ travelplan/{controller,service,repository,domain,dto}
+├─ recommendation/{service,dto}
+├─ ai/{service,client,dto}
+└─ global/{config,exception,security,common}
 ```
 
-### Controller
+패키지는 구현 시 필요한 만큼만 만든다. `global`에는 공통 보안·예외·설정·도구만 두고 여행 정책은 해당 도메인에 둔다.
 
-책임:
-
-- URL Mapping
-- Request DTO 수신
-- Validation
-- Service 호출
-- Response DTO 반환
-
-Controller가 직접 다음 작업을 수행하지 않는다.
-
-- 경로 알고리즘 실행
-- JPA Repository 조합
-- OpenAI Prompt 설계
-- 추천 점수 계산
-
----
-
-### Service
-
-책임:
-
-- 비즈니스 규칙
-- 여러 Repository 또는 다른 Service 조합
-- Transaction 경계
-- 여행 일정 생성 흐름 관리
-
----
-
-### Repository
-
-책임:
-
-- Entity 저장
-- Entity 조회
-- 조건 기반 DB 검색
-
-Repository에 비즈니스 규칙을 작성하지 않는다.
-
----
-
-## 4. 패키지 구조
-
-현재 Base Package인 `com.example.travel`을 유지한다.
-
-```text
-src/main/java/com/example/travel
-│
-├── TravelApplication.java
-│
-├── user/
-│   ├── controller/
-│   ├── service/
-│   ├── repository/
-│   ├── domain/
-│   └── dto/
-│
-├── place/
-│   ├── controller/
-│   ├── service/
-│   ├── client/
-│   ├── repository/
-│   ├── domain/
-│   └── dto/
-│
-├── travelplan/
-│   ├── controller/
-│   ├── service/
-│   ├── repository/
-│   ├── domain/
-│   └── dto/
-│
-├── recommendation/
-│   ├── service/
-│   └── dto/
-│
-├── route/
-│   ├── service/
-│   ├── client/
-│   ├── algorithm/
-│   └── dto/
-│
-├── ai/
-│   ├── service/
-│   ├── client/
-│   └── dto/
-│
-└── global/
-    ├── config/
-    ├── exception/
-    ├── security/
-    └── common/
-```
-
-패키지는 해당 기능을 개발하는 시점에 생성한다. 빈 폴더를 한꺼번에 만들 필요는 없다.
-
----
-
-## 5. 각 도메인의 책임
-
-### place
-
-Google Places에서 국가, 도시, 관광지, 호텔, 음식점을 검색하고 검증한다. 영구 저장 대상은 Google Places 콘텐츠 전체가 아니라 Google Place ID를 가진 내부 `Place` 참조다.
-
-```text
-Place
-├── ATTRACTION
-├── HOTEL
-├── RESTAURANT
-└── CAFE
-```
-
----
-
-### 국가와 도시 선택 데이터의 위치
-
-국가·도시·장소의 Google Place ID 검증과 조회 DTO는 `place` 패키지가 소유한다. 국가를 바탕으로 도시 이름과 추천 이유를 생성하는 OpenAI 계약은 `ai` 패키지가 소유한다. 선택된 도시와 방문 장소의 내부 참조는 `travelplan`이 저장한다.
-
-여행 취향과 혼잡도를 입력받지 않으므로 `preference` 패키지와 `TravelPreference` Entity는 만들지 않는다.
-
----
-
-### ai
-
-국가를 기준으로 3~5개의 도시 후보 이름과 추천 이유를 구조화해 생성하는 OpenAI 통신을 담당한다.
-
-```text
-검증된 국가 정보로 Prompt 생성
-    ↓
-OpenAI API 호출
-    ↓
-구조화된 Response 수신
-    ↓
-도시 후보 DTO 변환
-```
-
-AI 패키지는 다음 기능을 구현하지 않는다.
-
-- 거리 계산
-- 경로 최적화
-- 호텔 점수 계산
-- 음식점 동선 점수 계산
-- TravelPlan DB 저장
-
-#### AI Client 경계
-
-```text
-AiService
-   │
-   ▼
-AiClient (interface)
-   ├── OpenAiClient       : 운영 OpenAI HTTP 통신
-   └── FakeAiClient       : 테스트/로컬의 결정적 응답
-```
-
-`AiService`는 프롬프트 구성, `AiClient` 호출, 도시 후보 DTO 검증, 예외 변환을 담당한다. `OpenAiClient`만 HTTP 요청·인증 헤더·timeout·재시도를 담당한다. AI가 만든 도시 이름은 `PlaceService`가 Google Places로 검증한 뒤에만 사용자에게 반환한다.
-
-AI 응답은 JSON Schema 또는 provider의 structured output으로 제한한다. DTO validation에 실패하면 추천·저장 흐름을 중단하고 `AI_RESPONSE_INVALID` 예외로 변환한다.
-
----
-
-### route와 시간표
-
-`route/client`는 Google Routes에서 정적 이동 거리·시간 행렬을 가져온다. `route/algorithm`은 HTTP Client나 Spring에 의존하지 않고 전달받은 행렬로 방문 순서를 계산한다.
-
-`TravelPlanService`는 `RouteService`가 반환한 순서와 이동 시간을 이용해 목적지 현지 시각 기준 시간표를 조합한다. 장소 유형별 기본 체류 시간과 사용자 수정값의 선택은 순수 Java `StayDurationPolicy`가 담당한다.
-
-음식점 후보 수집은 `RecommendationService`가 `PlaceService`를 통해 수행한다. 일반 식사 슬롯은 직전·직후 장소 사이의 이탈 시간을 계산하고, 긴 체류가 식사 시간대 전체를 포함하면 해당 장소 내부 후보를 우선한 뒤 인접 후보로 대체한다.
-
-`StayDurationPolicy`의 체류 시간은 전체 체류 구간을 뜻한다. 시간표 조합은 긴 체류 안의 식사·인접 음식점 왕복 이동을 중복 합산하지 않는다. `RecommendationService`는 저장된 식사 시각과 체류·주변 방문 경계를 이용해 후보의 시간 충족 여부를 검증하며, 후보에 맞춰 시간표를 변경하지 않는다. 구체 합산·경계 식은 `01-requirements.md`의 FR-11을 따른다.
-
----
-
-### route
-
-순수한 위치 / 경로 계산을 담당한다.
-
-```text
-좌표
- ↓
-거리 계산
- ↓
-Distance Matrix
- ↓
-Nearest Neighbor
- ↓
-2-opt (후속)
-```
-
-가능하면 Spring / DB / OpenAI에 의존하지 않는 순수 Java 알고리즘으로 작성한다.
-
-이렇게 하면 단위 테스트가 쉽고 알고리즘 자체를 비교하기도 쉽다.
-
----
-
-### recommendation
-
-저장 일정 기반 음식점 검색의 HTTP 처리는 `travelplan/controller`, 조회·조합은 `travelplan/service`가 담당한다. 해당 Service는 자체 내부 조회 계층에서 계획·날짜·슬롯을 검증하고 DB 조회 트랜잭션을 끝낸 뒤, 도시·호텔·하루 범위·방문 시각·식사 시각·음식을 `recommendation`의 전달 DTO로 구성해 공개 Service에 넘긴다. `recommendation`은 TravelPlan Entity·Repository·Service를 역으로 참조하지 않는다. 외부 장소 조회와 이동 비용은 각각 PlaceService·RouteService를 사용한다.
-
-추천 관련 비즈니스 규칙을 담당한다.
-
-```text
-PlaceRecommendationService
-HotelRecommendationService
-RestaurantRecommendationService
-```
-
-초기에는 서비스 수가 적다면 하나의 `RecommendationService`로 시작해도 된다.
-
-복잡해지면 역할에 따라 분리한다.
-
----
-
-### travelplan
-
-전체 여행 계획 생성 흐름을 조정하는 핵심 도메인이다.
-
-`TravelPlanService`는 각 기능의 세부 알고리즘을 직접 구현하기보다 필요한 Service를 호출한다.
-
-```text
-TravelPlanService
-     │
-     ├── RouteService
-     ├── PlaceService
-     │       Google Place ID 검증 / 장소 정보 확보
-     ├── SchedulePlacementPolicy
-     │       날짜별 배치와 식사 슬롯 결정
-     └── Repository
-```
-
-국가 기반 도시 후보 API는 `ai` 유스케이스가 `AiService`와 `PlaceService`를 조합한다. 방문 장소·호텔 후보 API는 `recommendation` 유스케이스가 `PlaceService`와 `RouteService`를 조합한다. 음식점 검색 API는 `travelplan`이 저장 일정을 읽어 전달 DTO를 만든 뒤 `RecommendationService`에 위임한다. 이 유스케이스들은 TravelPlan 생성 과정의 내부 단계가 아니다.
-
-호텔이 선택된 날짜별 경로는 `호텔 → 관광 장소들 → 호텔`로 계산한다. `TravelPlanDay`는 관광 장소·방문 순서·시각과 `TravelPlanMealSlot`의 식사 시각을 소유한다. 호텔과 음식점 추천 후보는 일정 방문 장소로 저장하지 않는다.
-
-상세 조회는 저장된 시간표·식사 슬롯을 내부 조회 DTO로 읽고 DB 조회 트랜잭션을 끝낸 뒤, `PlaceService`로 현재 장소 표시 정보를 보완한다. `RouteService`나 일정 배치 정책을 실행하지 않는다. 음식점 후보는 별도 검색 요청에서 `RecommendationService`로 조회하며 저장된 일정은 변경하지 않는다. 일정 조건 수정은 외부 검증·재계산 성공 후 저장 트랜잭션에서 방문 일정과 식사 슬롯을 함께 교체한다.
-
-수정 요청에 장소별 날짜 배정이 있으면 `TravelPlanService`가 최종 방문 장소 집합과 배정 목록의 정확한 일치, 여행 기간 안의 날짜, 날짜별 최대 개수를 검증한다. `SchedulePlacementPolicy`는 자동 날짜 배치를 건너뛰고 지정된 날짜별 그룹을 유지하며, `RouteService`와 함께 각 그룹의 방문 순서와 시간표를 다시 계산한다. 용량을 초과해도 다른 날짜로 자동 이동하지 않으며 저장 전 실패로 처리한다. 날짜 배정 없이 일정 조건이 바뀌면 기본 자동 배치 정책을 사용하고, 음식 목록만 바뀌면 저장된 배치와 시간표를 유지한다.
-
-#### Google Place ID 검증과 저장 경계
-
-`TravelPlanService`는 입력 목록의 형식·교차 중복·체류 시간 수정 대상 포함 여부를 검사하고, `PlaceService`에 다음 검증을 한 번에 요청한다.
-
-```text
-선택 도시: 존재 + 도시 유형
-방문 장소: 존재 + 관광 유형 + 선택 도시 소속
-선택 호텔: 존재 + 숙박 유형 + 선택 도시 소속
-```
-
-`PlaceService`는 Google 응답의 포함 행정구역 등 검증 가능한 근거로 도시 소속을 판정한다. 소속을 확인할 수 없는 경우 일치한다고 추측하지 않고 검증 실패로 처리한다.
-
-외부 Google 검증과 경로·시간표 계산 중에는 DB 트랜잭션을 열지 않는다. 모든 검증과 계산이 성공한 다음 트랜잭션을 시작해 `Place` 참조와 전체 TravelPlan Aggregate를 저장한다. 따라서 provider 실패나 validation 실패 시 일부 `Place`, Day, PlanPlace가 남지 않는다.
-
-향후 AI 일정 설명이 필요하다면 `AiService`도 사용한다.
-
----
+## 5. 도메인 책임
 
 ### user
 
-회원가입 / 로그인 / 여행 계획 소유권을 담당한다.
+회원가입, 비밀번호 해시, 로그인, JWT, 인증 사용자 식별과 일정 소유권을 담당한다. 일정은 처음부터 인증 사용자 소유로 저장한다.
 
-MVP 핵심 기능 이후 구현한다.
+### region
 
----
+`regions.json`을 시작 시 검증·적재하고 서울특별시·광역시·도를 상위 탐색 항목으로, 그 아래 시·군·구를 최종 선택 항목으로 제공한다. 읍·면·동은 제외하며 세종특별자치시처럼 하위 시·군·구가 없는 예외는 자체 선택을 허용한다. 지역 ID, 이름, 상위 지역, 선택 가능 여부와 대표 좌표를 제공하며 AI가 선택할 허용 목록도 소유한다. 완료 일정에는 최종 지역 하나의 `regionId`와 당시 표시 이름을 저장한다.
 
-### global
+### ai
 
-도메인과 무관한 전역 공통 기능만 포함한다.
-
-허용:
-
-- Configuration
-- Exception Handler
-- Security
-- 공통 Response
-- 공통 Utility
-
-금지:
-
-- 여행 추천
-- 경로 최적화
-- 호텔 추천
-- 음식점 추천
-
----
-
-## 6. 주요 유스케이스 흐름
-
-도시 후보 추천, 방문 장소·호텔 후보 추천, 여행 계획 생성, 음식점 검색은 서로 독립된 요청이다. 앞선 추천 결과를 사용자가 선택해 다음 요청의 입력으로 보낼 수 있지만, 서버가 하나의 TravelPlan 생성 트랜잭션 안에서 모든 추천을 다시 실행하지 않는다.
-
-### 여행 계획 생성
+여행 조건에서 정확히 3개의 허용 지역 ID와 이유를 만들고, 음식 자연어에서 최대 5개의 메뉴명·카카오 검색어·이유·대상 관광지를 구조화한다. AI는 식당 선택, 장소 검증, 거리, 방문 순서, 시간표와 추천 점수를 결정하지 않는다.
 
 ```text
-사용자 요청
-   │
-   ▼
-TravelPlanController
-   │
-   ▼
-TravelPlanService
-   │
-   ├──► PlaceService
-   │       선택된 도시·관광 장소·호텔 검증
-   │
-   ├──► RouteService
-   │       날짜별 정적 이동 행렬 / 방문 순서 계산
-   │
-   ├──► SchedulePlacementPolicy
-   │       체류 시간 / 날짜별 배치 / 식사 슬롯 계산
-   │
-   ▼
-TravelPlanRepository
-   │
-   ▼
-MySQL
+AiService → AiClient → OpenAiClient / FakeAiClient
 ```
 
-### 추천과 조회 흐름
+### place
+
+카카오 장소 검색, 반경·주소 소속 검증, 지도 영역 숙소·음식점 탐색, 응답 변환, 카테고리별 기본 체류 시간과 짧은 수명의 `selectionToken`을 담당한다.
+
+장소 유형·카테고리는 노출하거나 저장하지 않는다. 카카오 장소명은 검색 결과에만 표시하고 일정 표시 이름 입력란은 비워 둔다. 완료 일정에는 카카오 장소 ID·URL과 사용자가 작성한 이름·메모·체류 시간만 저장한다.
 
 ```text
-도시 후보 요청       → AiService → PlaceService 검증 → 후보 응답
-방문 장소 후보 요청  → RecommendationService → PlaceService → 후보 응답
-호텔 후보 요청       → RecommendationService → PlaceService / RouteService → 후보 응답
-음식점 후보 요청     → TravelPlan 조회 → RecommendationService → PlaceService / RouteService → 후보 응답
+PlaceService → KakaoPlaceClient → KakaoLocalHttpClient / FakeKakaoPlaceClient
 ```
 
-후보 응답 자체는 TravelPlan Aggregate를 생성하거나 변경하지 않는다. 음식점 검색도 저장된 방문 순서와 식사 슬롯을 유지한다.
+### route
 
----
-
-## 7. AI와 알고리즘 역할 분리
-
-### AI가 잘하는 일
+Haversine 거리, Nearest Neighbor 초안, 2-opt 개선, 이동 시간 추정과 최종 인접 구간의 외부 경로 검증을 담당한다. 제공자가 반환한 예상 이동시간은 10분 단위로 올린다.
 
 ```text
-선택 국가: 일본
-      ↓
-대표 여행 도시 후보 생성
-      ↓
-[도쿄, 오사카, 교토]
+RouteService
+  ├─ route/algorithm (순수 Java)
+  └─ RouteClient
+       ├─ KakaoMobilityRouteClient (CAR)
+       ├─ KakaoTransitRouteClient (PUBLIC_TRANSIT)
+       └─ FakeRouteClient
 ```
 
-### 백엔드가 잘하는 일
+`route/algorithm`은 Spring, JPA, HTTP와 AI에 의존하지 않는다. 일정 하나는 `CAR` 또는 `PUBLIC_TRANSIT` 하나만 사용한다.
+
+### travelplan
+
+날짜·활동 시간·장소·체류 시간 검증, 날짜별 배치, 이동 시간 조합, 종료 시각 검사, Aggregate 저장, 소유자 조회·삭제, 제한된 텍스트 수정과 공유 DTO를 담당한다. 다른 도메인의 Repository나 HTTP 구현을 직접 참조하지 않는다.
+
+### recommendation
+
+제작 중 음식점 후보의 시간 적합성과 Haversine 동선 이탈 점수·정렬을 서버 규칙으로 계산한다. 숙소에는 추천 점수를 부여하지 않고 place가 기하 중앙값·메도이드·지도 영역을 중심으로 실제 후보를 제공하며 사용자가 지도에서 선택한다. 음식 자연어 해석은 AI가 담당하지만 음식점 후보 조회와 점수 계산은 서버 책임이다.
+
+## 6. 작성 데이터 수명
 
 ```text
-A, B, C, D의 좌표
-       ↓
-거리 계산
-       ↓
-경로 후보 계산
-       ↓
-총 거리 비교
-       ↓
-최종 방문 순서
+카카오 검색 응답
+  → 브라우저 JavaScript 메모리
+  → estimate 또는 create 요청
+  → 서버가 해당 요청의 지역 변수에서만 사용
+  → 응답 전 서버 참조 폐기
+  → 완료·취소·새로고침·탭 종료 때 브라우저 상태 폐기
 ```
 
-이 구분은 프로젝트의 핵심 설계 원칙으로 유지한다.
+좌표, 주소, 카테고리와 제공자 장소명은 영속 저장하지 않는다. 브라우저의 localStorage, sessionStorage, IndexedDB에도 저장하지 않는다. MySQL 운영 테이블에는 호출량 숫자와 `requestId` 처리 상태만 두며 payload·response를 저장하지 않는다. `selectionToken`은 선택값 무결성을 위한 서명 토큰이며 서버 장소 캐시가 아니다.
 
----
+이 흐름은 2026-09-11 카카오 DevTalk 답변으로 허용 범위를 확인했다. 브라우저는 한 번의 작성 흐름 동안 메모리에서만 값을 유지할 수 있고, 서버는 estimate와 create 각 요청에서 전달받은 좌표를 사용한 뒤 응답 전에 폐기한다. 서버 저장소를 통해 요청 사이에 좌표를 넘기거나 영속 저장·캐시·로그에 남기지 않는다.
 
-## 8. 외부 API 추상화 방향
+## 7. 2단계 일정 계산
 
-외부 API는 Service에 직접 HTTP 호출 코드를 흩뿌리지 않는다.
+### 추정
 
-예:
+`POST /api/travel-plans/estimate`는 DB와 실제 경로 API를 사용하지 않는다.
 
 ```text
-AiService
-   │
-   ▼
-OpenAiClient
-   │
-   ▼
-OpenAI API
+입력·토큰 검증 → Haversine 행렬
+→ Nearest Neighbor → 2-opt
+→ 추정 이동 시간 → 체류·식사 조합
+→ routeVerified=false
 ```
 
-Google Places API도 같은 형태로 격리한다.
+### 완료
+
+`POST /api/travel-plans`는 클라이언트의 시간 계산을 신뢰하지 않는다. 모든 장소의 선택 토큰, 날짜와 순서를 다시 검증하고 사용자가 확정한 배치는 보존한 채 이동시간과 시간표를 재계산한다.
 
 ```text
-PlaceService
-   │
-   ▼
-GooglePlacesClient (interface)
-   ├── GooglePlacesHttpClient : 실제 통신
-   └── FakeGooglePlacesClient : 자동 테스트
+인증·한도·중복 검사 → 입력·토큰 검증
+→ 사용자 확정 날짜·순서 검증
+→ 최종 인접 구간만 실제 경로 조회
+   CAR: Kakao Mobility
+   PUBLIC_TRANSIT: Kakao Map
+→ 10분 단위 올림 → 종료 시각 검증
+→ 저장 금지 필드 제거 → 짧은 트랜잭션으로 저장
 ```
 
-외부 서비스 변경이 핵심 비즈니스 로직에 미치는 영향을 줄이기 위한 구조다.
+시간을 넘으면 저장하지 않으며 서버가 장소를 삭제하거나 체류 시간을 줄이지 않는다. 정상적인 경로 없음은 422다. 일시적 기술 장애는 한 번 재시도하고 재실패 때만 Haversine 추정값과 warning으로 대체할 수 있다.
 
----
-
-## 9. Transaction 기준
-
-DB 변경이 하나의 비즈니스 작업으로 묶여야 할 때 Service에 Transaction을 적용한다.
-
-예:
+## 8. 완료 일정과 조회
 
 ```text
-TravelPlan 생성
-   +
-Day 생성
-   +
-방문 장소 생성
+User
+  └─ TravelPlan
+      ├─ TravelPlanDay
+      │   └─ TravelPlanItem
+      └─ PlanPlace
 ```
 
-중간에 실패하면 불완전한 여행 계획이 저장되지 않도록 한다.
+`TravelPlan`이 Aggregate Root다. 일정, 날짜, 항목과 장소 snapshot을 하나의 생성 트랜잭션으로 저장한다.
 
-초기에는 필요한 곳에만 적용하고, 모든 메서드에 무분별하게 사용하지 않는다.
+완료 후에는 제목, 사용자 장소 표시 이름과 메모만 수정할 수 있다. 날짜, 순서, 시각, 체류 시간, 이동수단, 장소 ID·URL을 바꾸려면 새 일정을 만든다.
 
----
+완료·공유 조회는 저장 데이터만 사용한다. 카카오·OpenAI를 호출하지 않고 좌표, 주소, 카테고리와 경로선을 반환하지 않는다. 고정 HTML 화면에는 사용자 작성 이름, 시간표와 카카오 외부 링크만 표시한다.
 
-## 10. 예외 처리
+## 9. 외부 API와 장애 경계
 
-도메인 예외를 명확하게 표현한다.
+| 기능 | 위치 | 서버 책임 |
+|---|---|---|
+| OpenAI 지역·메뉴 분석 | `ai/client` | 허용 목록과 구조 검증 |
+| 카카오 장소 검색 | `place/client` | 검색 정책, 시간 변환, 금지 필드 폐기 |
+| 자동차 경로 | `route/client` | 인접 구간, 재시도, 10분 올림 |
+| 대중교통 경로 | `route/client` | 인접 구간, 재시도, 10분 올림 |
 
-예:
+실제 Client만 인증 헤더, timeout과 응답 매핑을 담당하며 테스트는 Fake Client를 사용한다. 한도는 사용자별 분·일 단위이고 일일 기준은 `Asia/Seoul`이다. 외부 API 원문, 좌표, API 키와 개인정보는 로그나 오류 응답에 남기지 않는다.
 
-```text
-PlaceNotFoundException
-TravelPlanNotFoundException
-InvalidTravelPeriodException
-RouteOptimizationException
-AiResponseParsingException
-```
+## 10. 트랜잭션과 테스트
 
-`global/exception`의 Global Exception Handler에서 HTTP 응답으로 변환한다.
+- 외부 통신과 순수 계산은 저장 트랜잭션 밖에서 수행한다.
+- 모든 검증 뒤 Aggregate 전체를 한 트랜잭션으로 저장한다.
+- 부분 저장을 허용하지 않는다.
+- 적용된 versioned migration은 고치지 않고 새 버전을 추가한다.
+- 순수 알고리즘과 시간 정책은 Spring 없이 단위 테스트한다.
+- Service는 Fake Client로 성공, 경로 없음, 재시도, fallback과 시간 초과를 검증한다.
+- Repository는 Aggregate·DB 제약, Controller는 인증·validation·상태 코드를 검증한다.
+- 실제 외부 API는 기본 자동 테스트에서 호출하지 않는다.
 
----
+세부 기준은 `docs/08-test-strategy.md`와 `docs/10-definition-of-done.md`를 따른다.
 
-## 11. 테스트 경계
+## 11. 확인된 카카오 데이터 수명 계약
 
-거리 계산과 경로 최적화처럼 결정적인 알고리즘은 Spring Context 없이 단위 테스트한다. Service·Repository·Controller 테스트의 수준별 책임과 필수 검증 항목은 `08-test-strategy.md`를 단일 기준으로 사용한다.
+다음은 2026-09-11 카카오 DevTalk 답변을 반영한 Accepted 상태의 필수 조건이다.
+
+1. 선택 좌표를 한 번의 작성 흐름 동안 브라우저 JavaScript 메모리에만 둔다.
+2. estimate와 create에 필요한 값을 브라우저가 각 요청으로 전달한다.
+3. 서버는 각 요청의 지역 변수에서 거리·순서·경로 계산에만 사용하고 응답 전에 폐기한다.
+4. 완료·취소·새로고침·탭 종료 때 브라우저 상태를 폐기한다.
+5. 완료 일정에는 카카오 장소 ID·URL과 사용자 작성 정보만 저장한다.
+
+정적 지역 데이터, 인증, 순수 알고리즘, Client 인터페이스와 Fake, 저장 모델은 좌표의 수명과 저장 금지 계약을 침범하지 않도록 분리한다.
