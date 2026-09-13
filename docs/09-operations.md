@@ -109,9 +109,10 @@ fallback 원인은 일정·좌표·경로 payload와 연결하지 않은 집계 
 외부 비용이 드는 POST 요청은 클라이언트가 생성한 UUID 형식 `requestId`를 사용한다.
 
 - 사용자·기능·requestId 조합과 처리 상태만 MySQL `request_executions`에 10분간 보관한다.
-- 요청 payload, 응답 payload, 좌표와 사용자 원문은 보관하지 않는다.
+- 결과 리소스 ID, 요청 payload, 응답 payload, 좌표와 사용자 원문은 보관하지 않는다.
 - 동일 요청이 처리 중이면 409 `REQUEST_IN_PROGRESS`를 반환한다.
-- 저장 성공 후 같은 requestId를 어떻게 응답할지는 idempotency 설계 단계에서 확정한다.
+- 동일 요청이 이미 성공했으면 409 `REQUEST_ALREADY_COMPLETED`를 반환한다.
+- 두 중복 상태에서는 외부 호출·저장 로직과 호출량 차감을 반복하지 않는다. 10분 수명이 지난 requestId는 새 요청으로 처리한다.
 - 사용자별 분·일 카운터와 API별 서비스 전체 일 카운터는 MySQL `api_usage_counters`에서 모든 서버 인스턴스가 공유한다.
 - 카운터는 조건부 UPDATE와 짧은 트랜잭션으로 확보하고 커밋한 뒤 외부 API를 호출한다. 호출 직전 장애로 보수적으로 소비된 수량은 복구하지 않는다.
 - 분·일 기간이 끝난 카운터와 만료 requestId 행은 주기 작업으로 묶어서 삭제하며 판정 시 `expires_at`을 항상 확인한다.

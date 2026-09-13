@@ -107,18 +107,7 @@ TravelPlan DB에는 완료된 일정만 저장한다. 먼저 완성된 계산 �
 
 ## 6. 작업 루틴
 
-1. 로드맵에서 작업 ID 하나를 선택한다.
-2. 적용되는 AGENTS.md와 직접 관련된 기준 문서만 읽는다.
-3. 수정 파일, 이유, Allowed·Conditional·Forbidden Paths를 설명한다.
-4. 새로운 Spring 개념과 클래스 책임을 구현 전에 설명한다.
-5. 사용자 변경이 있는지 git status와 대상 diff를 확인한다.
-6. 구현하고 필요한 단위·통합·HTTP 테스트를 실행한다.
-7. 전체 테스트와 git diff --check를 확인한다.
-8. Definition of Done의 공통·도메인 항목을 확인한다.
-9. 실제 변경 파일이 Change Envelope 안인지 대조한다.
-10. 구현 상태와 직접 바뀐 계약 문서만 갱신한다.
-
-사용자가 요청하지 않으면 git add, commit, stash, reset을 실행하지 않는다.
+구체적인 작업 선택과 종료 보고는 `docs/11-command-roadmap.md`, 쓰기 범위와 변경 전후 검사는 `docs/12-harness-boundaries.md`, 완료 판정은 `docs/10-definition-of-done.md`를 따른다. 이 문서는 반복 절차를 별도로 복제하지 않고 큰 개발 방향과 학습 순서만 관리한다.
 
 ---
 

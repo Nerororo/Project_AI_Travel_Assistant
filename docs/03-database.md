@@ -186,7 +186,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 
 `api_usage_counters`는 `scope_type`, `scope_id`, `feature`, `window_type`, `window_start` 조합을 UNIQUE로 두고 `used_count`, `expires_at`을 저장한다. USER 범위와 SERVICE 전체 범위를 분리하며 조건부 UPDATE와 짧은 트랜잭션으로 필요한 호출 수를 외부 API 호출 전에 원자적으로 확보한다.
 
-`request_executions`는 `user_id`, `feature`, `request_id` 조합을 UNIQUE로 두고 처리 상태와 `expires_at`만 저장한다. 보관 시간은 10분이며 payload·response·좌표·외부 원문은 저장하지 않는다.
+`request_executions`는 `user_id`, `feature`, `request_id` 조합을 UNIQUE로 두고 처리 상태와 `expires_at`만 저장한다. 처리 중 상태의 동일 요청은 `REQUEST_IN_PROGRESS`, 성공 상태의 동일 요청은 `REQUEST_ALREADY_COMPLETED`로 차단하며 외부 호출·저장 로직을 반복하지 않는다. 보관 시간은 10분이며 결과 리소스 ID, payload·response·좌표·외부 원문은 저장하지 않는다.
 
 만료 행은 묶어서 정리하되 모든 판정은 `expires_at`을 확인하므로 삭제 지연이 현재 한도에 영향을 주지 않아야 한다. 외부 호출 전에 카운터 확보 트랜잭션을 끝내며 실제 외부 호출을 DB 트랜잭션 안에서 수행하지 않는다.
 
@@ -211,7 +211,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 
 같은 제한을 DB뿐 아니라 Redis, Caffeine, 서버 세션, 파일, 로그, fixture, localStorage, sessionStorage, IndexedDB에도 적용한다.
 
-중복 요청 방지용 `request_executions`에는 userId, 기능, requestId, 처리 상태, 만료 시각만 최대 10분 유지한다. 외부 요청·응답과 좌표는 포함하지 않는다.
+중복 요청 방지용 `request_executions`에는 userId, 기능, requestId, 처리 상태, 만료 시각만 최대 10분 유지한다. 결과 리소스 ID, 외부 요청·응답과 좌표는 포함하지 않는다.
 
 ---
 

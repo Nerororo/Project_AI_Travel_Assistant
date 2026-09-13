@@ -21,6 +21,6 @@
 - algorithm: 결정적인 순수 계산, Spring·JPA·HTTP·AI 비의존
 - client: 외부 통신 계약·구현, DB·추천 점수·일정 조합 금지
 
-카카오 장소 Client는 `place/client`, 자동차·대중교통 Client는 `route/client`, OpenAI Client는 `ai/client`에 둔다. 호출량 예약과 `requestId` 상태는 MySQL 공유 저장소의 공개 계약을 사용하며 외부 호출 동안 트랜잭션을 유지하지 않는다.
+카카오 장소 Client는 `place/client`, 자동차·대중교통 Client는 `route/client`, OpenAI Client는 `ai/client`에 둔다. 호출량 예약과 `requestId` 상태는 MySQL 공유 저장소의 공개 계약을 사용한다. 처리 중·성공 중복 요청에서는 외부 Client와 저장 로직을 다시 호출하지 않으며 외부 호출 동안 트랜잭션을 유지하지 않는다.
 
 다른 도메인은 공개 Service·DTO만 사용한다. `docs/03-database.md`에 정의된 Aggregate 관계에 한해 Entity 참조를 허용하되 다른 도메인 정책 호출 통로로 사용하지 않는다. 순환 의존이 생기면 공통 추상화를 만들기 전에 책임 배치를 재검토한다.

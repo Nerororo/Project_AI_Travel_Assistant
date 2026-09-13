@@ -29,10 +29,10 @@ node --test src/main/resources/static/Routy/js/preview.test.cjs
 | 흐름 | API·데이터 | 화면 책임 |
 |---|---|---|
 | 회원가입·로그인 | `POST /api/users`, `POST /api/auth/login` | 인증 오류와 만료 처리 |
-| 지역 직접 검색 | `GET /api/regions?query=` | 서울·광역시·도에서 하위 최종 시·군·구 하나 선택, 세종은 자체 선택 |
+| 지역 직접 검색 | `GET /api/regions?query=` | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 구·군은 관광지 검색 필터로 구분 |
 | AI 지역 추천 | `POST /api/ai/regions/recommend` | 정확히 3개 후보와 이유 표시 |
 | 이동수단 선택 | 작성 상태의 `CAR` 또는 `PUBLIC_TRANSIT` | 일정 하나에 하나만 유지 |
-| 장소 검색 | `POST /api/places/search` | 카카오 검색 결과는 작성 중에만 표시 |
+| 장소 검색 | `POST /api/places/search` | 특별시·광역시는 선택적 구·군 필터 제공, 카카오 검색 결과는 작성 중에만 표시 |
 | 장소 확정 | `selectionToken`, 빈 사용자 이름, 체류 시간 | 유형 미노출, 이름 1~50자, 10분 조정 |
 | 숙소 탐색 | 기하 중앙값 5·10km, 메도이드, 지도 영역 | 관광지·숙소 마커와 목록 연동, 점수 순위 없이 직접 선택 |
 | 메뉴 분석 | `POST /api/ai/menus/analyze` | 자연어에서 메뉴 1~5개·검색어·이유·대상 관광지 제안 후 사용자 확정 |
@@ -43,6 +43,8 @@ node --test src/main/resources/static/Routy/js/preview.test.cjs
 | 공유 | share 생성과 공개 GET | 읽기 전용 고정 일정 표시 |
 
 정확한 endpoint와 DTO는 `docs/04-api-spec.md`를 따른다. 구현과 문서가 다르면 임시 payload나 가짜 성공으로 우회하지 않는다.
+
+최종 여행 지역이 바뀌면 기존 구·군 필터, 장소 검색 결과와 선택 token, 숙소, 추정 일정, 메뉴의 대상 관광지 연결과 음식점 후보를 폐기한다. 관광지 지도 이동 재검색은 활성 구·군 필터를 자동 변경·해제하지 않고 현재 필터를 표시하며 사용자가 직접 해제할 수 있게 한다. 관광지 필터는 숙소·음식점 검색에 자동으로 이어지지 않는다.
 
 ## 4. 작성 상태와 데이터 수명
 

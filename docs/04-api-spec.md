@@ -49,7 +49,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 | 다른 사용자의 자원 | 403 | ACCESS_DENIED |
 | 자원 없음 | 404 | TRAVEL_PLAN_NOT_FOUND |
 | 경로 없음·시간 초과 | 422 | ROUTE_NOT_FOUND, PLAN_CAPACITY_EXCEEDED |
-| 중복 처리 중 | 409 | REQUEST_IN_PROGRESS |
+| 중복 처리 중·완료 | 409 | REQUEST_IN_PROGRESS, REQUEST_ALREADY_COMPLETED |
 | 호출 한도 초과 | 429 | RATE_LIMIT_EXCEEDED |
 | 제공자 기술 장애 | 503 | PLACE_PROVIDER_UNAVAILABLE, ROUTE_PROVIDER_UNAVAILABLE, AI_UNAVAILABLE |
 | AI 계약 위반 | 503 | AI_RESPONSE_INVALID |
@@ -63,7 +63,9 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 - 값은 클라이언트가 생성한 UUID 형식 requestId다.
 - 사용자·기능·requestId 조합과 처리 상태를 MySQL `request_executions`에 10분간 유지한다.
 - 처리 중 같은 요청은 409 REQUEST_IN_PROGRESS를 반환한다.
-- 요청·응답 payload는 중복 요청 저장소에 보관하지 않는다.
+- 성공한 같은 요청은 409 REQUEST_ALREADY_COMPLETED를 반환한다.
+- 두 중복 응답 모두 외부 API와 저장 로직을 다시 실행하거나 호출량을 추가 차감하지 않는다. 10분 수명이 끝난 requestId는 새 요청으로 처리할 수 있다.
+- 결과 리소스 ID와 요청·응답 payload는 중복 요청 저장소에 보관하지 않는다. 클라이언트는 완료 상태를 받은 뒤 필요한 자원을 별도 조회 API로 확인한다.
 - 사용자·서비스 호출량은 MySQL `api_usage_counters`에서 공유하며 조건부 갱신으로 외부 호출 전에 원자적으로 확보한다.
 - 외부 호출이 실행된 뒤 실패하면 호출량에는 포함한다.
 
@@ -109,7 +111,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 
 ### GET /api/regions?query=강릉
 
-정적 regions.json에서 서울특별시·광역시·도와 그 아래 시·군·구를 검색한다. 상위 항목을 선택하면 하위 선택지를 반환하며, 최종 일정에는 선택 가능한 시·군·구 하나만 사용한다. 세종특별자치시처럼 하위 시·군·구가 없는 예외는 자체를 선택할 수 있다. 읍·면·동과 해외 지역은 반환하지 않는다.
+정적 regions.json에서 서울특별시·광역시·세종특별자치시, 도·특별자치도와 그 아래 시·군, 특별시·광역시 아래 검색 필터용 구·군을 검색한다. 서울특별시·광역시·세종특별자치시는 자체를 최종 선택할 수 있고 도·특별자치도는 그 아래 시·군 하나만 최종 선택한다. 특별시·광역시 아래 구·군은 장소 검색 필터로만 반환하며 최종 일정의 regionId로 사용할 수 없다. 읍·면·동과 해외 지역은 반환하지 않는다.
 
 ~~~json
 {
@@ -119,14 +121,35 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
       "name": "강릉시",
       "shortName": "강릉",
       "provinceName": "강원특별자치도",
+      "parentRegionId": "GANGWON",
       "type": "CITY",
-      "selectable": true
+      "selectable": true,
+      "placeSearchFilterable": false
     }
   ]
 }
 ~~~
 
-대표 좌표와 데이터 출처는 내부 검색 범위 계산에 사용하며 공개 Response의 필수 필드로 노출하지 않는다.
+### GET /api/regions?query=해운대
+
+~~~json
+{
+  "regions": [
+    {
+      "regionId": "BUSAN_HAEUNDAE",
+      "name": "해운대구",
+      "shortName": "해운대",
+      "provinceName": "부산광역시",
+      "parentRegionId": "BUSAN",
+      "type": "DISTRICT",
+      "selectable": false,
+      "placeSearchFilterable": true
+    }
+  ]
+}
+~~~
+
+`parentRegionId`, `selectable`, `placeSearchFilterable`로 최종 여행 지역과 장소 검색 필터를 구분한다. 최상위 지역의 parentRegionId는 null이다. `placeSearchFilterable=true`인 항목은 특별시·광역시 아래 구·군이며 최종 지역으로 선택할 수 없다. 대표 좌표와 데이터 출처는 내부 검색 범위 계산에 사용하며 공개 Response의 필수 필드로 노출하지 않는다.
 
 ### POST /api/ai/regions/recommend
 
@@ -163,7 +186,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 
 ~~~json
 {
-  "regionId": "BUSAN_HAEUNDAE_GU",
+  "regionId": "BUSAN",
   "request": "해운대에서 부산다운 음식과 매운 음식을 먹고 싶어",
   "attractions": [
     {"clientPlaceId": "browser-uuid", "displayName": "해운대 해수욕장"}
@@ -195,6 +218,7 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 ~~~json
 {
   "regionId": "BUSAN",
+  "districtFilterId": "BUSAN_HAEUNDAE",
   "placeRole": "ATTRACTION",
   "query": "해변",
   "center": null,
@@ -206,10 +230,14 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 
 - placeRole은 ATTRACTION, HOTEL, RESTAURANT다.
 - size는 1~15다.
-- regionId는 최종 선택 가능한 시·군·구 하나다.
+- regionId는 최종 선택 가능한 서울특별시·광역시·세종특별자치시 또는 도·특별자치도 아래 시·군 하나다.
+- districtFilterId는 ATTRACTION 검색에서만 사용하는 선택 필드다. 특별시·광역시 아래 `placeSearchFilterable=true`인 구·군 하나만 허용하고 상위 지역이 regionId와 일치해야 한다.
+- 도·특별자치도 아래 시·군과 세종특별자치시는 districtFilterId를 받을 수 없다. 선택 불가능한 항목, 다른 상위 지역의 구·군과 읍·면·동은 400 `VALIDATION_FAILED`다.
 - 최초 검색 중심은 regionId의 공공데이터 대표 좌표다.
 - 중심 이동 재검색에서만 center를 받을 수 있다.
-- 관광지는 대표 좌표 최대 20km 안에서 먼저 검색한다. 결과가 부족하거나 사용자가 지역 전체 검색을 요청하면 공식 지역명을 검색어에 포함하고, 반경 안이거나 반환 주소의 행정구역이 선택 지역과 일치하는 결과만 사용한다.
+- 관광지는 대표 좌표 최대 20km 안에서 먼저 검색한다. 결과가 부족하거나 사용자가 지역 전체 검색을 요청하면 공식 지역명을 검색어에 포함한다.
+- 특별시·광역시·세종특별자치시는 반경 20km를 전체 도시 경계로 간주하지 않고 반환 주소가 선택 도시에 속하는지 검증한다. 도·특별자치도 아래 시·군은 반경 안이거나 반환 주소의 행정구역이 선택 지역과 일치하는 결과만 사용한다.
+- districtFilterId가 있으면 반경·지역명 결합·지도 영역 검색 모두에서 반환 주소가 해당 구·군에도 속해야 한다. 지도 이동만으로 필터를 자동 변경·해제하지 않으며 빈 결과는 200과 빈 배열이다.
 - 음식점은 1→3→5km 정책 안에서 호출한다.
 - 사용자당 분당 20회, 하루 300회다.
 - 결과가 부족해도 임의 장소를 추가하지 않는다.
@@ -250,6 +278,7 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
 - `MAP_BOUNDS`: 사용자가 이동한 현재 지도 영역 안을 검색한다.
 - 숙소 결과는 점수나 거리 합으로 추천 순위를 만들지 않는다.
 - 관광지와 숙소 마커, 숙소 목록을 동기화하고 사용자가 하나를 선택한다.
+- 관광지 검색의 districtFilterId를 숙소 검색에 자동 적용하지 않는다. 숙소 후보는 선택 관광지 기반 검색 중심과 사용자가 지정한 지도 영역으로 탐색한다.
 - 좌표·주소·검색 원문은 지도 표시와 선택 지역 검증에만 사용하고 작성 흐름 종료 시 폐기한다.
 
 ---
@@ -531,6 +560,8 @@ estimate와 동일한 제작 데이터, 확정된 날짜·순서, 식사 날짜�
 
 검색 반경은 1km, 3km, 최대 5km이며 후보가 없으면 빈 배열과 이유를 반환한다. 후보는 시간 적합성을 검사하고 Haversine 동선 이탈이 작은 순으로 정렬한다. 식당을 자동 확정하지 않는다.
 
+관광지 검색의 districtFilterId를 음식점 검색에 자동 적용하지 않는다. 음식점은 식사 슬롯의 직전·직후 장소, 선택적 기준 관광지와 현재 지도 영역을 기준으로 탐색한다.
+
 Response는 후보별 `selectionToken`, 임시 카카오 장소명·링크·좌표와 예상 이탈시간을 반환한다. 제작 화면은 직전·직후 장소, 기준 관광지와 후보 마커를 목록과 연동하고 지도 이동 후 현재 영역 재검색을 제공한다. 선택한 음식점만 최종 생성 Request의 식사 항목에 전달한다. 완료 후 저장 일정으로 음식점을 다시 검색하거나 추가·교체하는 기능은 제공하지 않는다.
 
 ---
@@ -558,6 +589,7 @@ Response는 후보별 `selectionToken`, 임시 카카오 장소명·링크·좌�
 |---|---:|---:|
 | 장소 검색 | 20 | 300 |
 | 자동차 경로 | 60 | 120 |
+| 대중교통 경로 | 60 | 120 |
 | AI 지역 추천 | 2 | 10 |
 | AI 메뉴 분석 | 3 | 15 |
 
