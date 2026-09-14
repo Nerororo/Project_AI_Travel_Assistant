@@ -46,9 +46,10 @@ Routy는 Spring Boot 학습과 포트폴리오 완성을 함께 목표로 한다
 | 문서 기준 정렬 | 국내·카카오·새 저장 및 API 계약 통일 | 요구사항 추적, ADR, 변경 경계 |
 | 개발 기반 | JPA·MySQL·Flyway·profile·테스트 기반 | Dependency, Configuration, migration |
 | 인증 기반 | User, Spring Security, JWT, 소유권 | 인증·인가, 비밀번호 해시, 보안 테스트 |
-| 지역 기준 | regions.json 로딩, 직접 검색, AI 허용 목록 | Bean, Validation, 정적 기준 데이터 |
+| 지역 기준 | regions.json 로딩, 직접 검색, AI 허용 목록 제공 | Bean, Validation, 정적 기준 데이터 |
+| AI | 지역 추천·메뉴 분석 계약, Fake, OpenAI Client와 API | 구조화 출력, DI, Adapter 경계, provider 오류 변환 |
 | 순수 경로 | Haversine, Nearest Neighbor, 2-opt | 순수 Java, 결정적 알고리즘, 복잡도 |
-| 외부 Client 계약 | Place·Route·AI 인터페이스와 fake | DI, Adapter 경계, provider 오류 변환 |
+| 외부 Client 계약 | Place·Route 인터페이스와 fake | DI, Adapter 경계, provider 오류 변환 |
 | 장소 제작 흐름 | 카카오 검색과 selectionToken | 서버측 API 키, 무결성, 데이터 수명 |
 | 독립 경로 기반 | 정렬된 자동차·대중교통 구간 검증 | Client 분리, 재시도, 호출량 통제 |
 | 추정 일정 계산 | 체류·식사·Haversine 이동과 날짜별 시간 예산 | Service 조합, 정책 클래스, 실패 모델 |

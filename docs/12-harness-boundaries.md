@@ -43,18 +43,19 @@
 | 단계 | Allowed Paths | Conditional Paths | Forbidden Paths |
 |---|---|---|---|
 | D0 문서·하네스 | 해당 정렬 작업에서 지정한 `docs/*.md`, `README.md`, 루트·하위 `AGENTS.md` 중 사전 승인한 파일 | 계약상 직접 필요한 다른 문서 | 애플리케이션 코드, 테스트, 설정, migration, 정적 자산, 원본 템플릿 |
-| F0 개발 기반 | `build.gradle`, `settings.gradle`, `docker-compose.yaml`, `application*.yml`, 기반 `global/**`, 대응 기반 테스트 | 최초 versioned migration, 직접 관련된 운영·API·테스트 문서 | `ai/**`, `region/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, `user/**`, 정적 자산 |
-| U1 인증·소유권 | `user/**`, `global/security/**`, 대응 테스트, 새 versioned migration | MySQL 호출·requestId 저장소와 처리 중·성공 중복 409 계약, `global/exception/**`, `global/config/**`, `build.gradle`, `application*.yml`, 인증 관련 API·DB·ADR·테스트·운영 문서 | `ai/**`, `region/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, 정적 자산, 기존 migration |
-| G1 국내 지역 | `region/**`, 지역 추천에 직접 필요한 `ai` Service·Client·DTO·Controller, 대응 테스트, `src/main/resources/data/regions.json` | `global/exception/**`, `global/config/**`, OpenAI 설정·dependency, 데이터·API·ADR·테스트·운영 문서 | 메뉴 분석용 `ai/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, migration, 정적 자산 |
+| F0 개발 기반 | `build.gradle`, `settings.gradle`, `docker-compose.yaml`, `application*.yml`, `application*.properties`, 기반 `global/**`, 대응 기반 테스트 | 최초 versioned migration, 직접 관련된 운영·API·테스트 문서 | `ai/**`, `region/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, `user/**`, 정적 자산 |
+| U1 인증·소유권 | `user/**`, `global/security/**`, 대응 테스트, 새 versioned migration | MySQL 호출·requestId 저장소와 처리 중·성공 중복 409 계약, `global/exception/**`, `global/config/**`, `build.gradle`, `application*.yml`, `application*.properties`, 인증 관련 API·DB·ADR·테스트·운영 문서 | `ai/**`, `region/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, 정적 자산, 기존 migration |
+| G1 국내 지역 | `region/**`, 대응 테스트, `src/main/resources/data/regions.json` | `global/exception/**`, 데이터·API·ADR·테스트·운영 문서 | `ai/**`, `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, migration, 정적 자산 |
+| A1 지역·메뉴 AI | `ai/**`, 대응 ai 테스트 | `region`·`user` 공개 Service·DTO, `global/exception/**`, `global/config/**`, `application*.yml`, `application*.properties`, OpenAI dependency, 직접 관련된 API·ADR·테스트·운영 문서 | `place/**`, `route/**`, `recommendation/**`, `travelplan/**`, Entity·Repository·migration, 정적 자산 |
 | R1 순수 경로 | `route/algorithm/**`, 순수 정책·DTO, 대응 route 단위 테스트 | 추정 계수 ADR와 관련 요구사항·테스트 문서 | Spring Controller, Repository, HTTP Client, `ai/**`, `place/**`, `recommendation/**`, `travelplan/**`, migration, 정적 자산 |
-| C1 Client 계약·Fake | `place/client` 인터페이스·Fake·전달 DTO, `route/client` 인터페이스·Fake·전달 DTO, 메뉴용 `ai` 계약·Fake, 대응 테스트 | 각 도메인의 얇은 Service 골격, 공통 오류 계약, 직접 관련된 API·ADR·테스트·운영 문서 | 실제 카카오 HTTP 호출, 좌표 기반 공개 endpoint, Entity·Repository·migration, 일정 구현, 정적 자산 |
+| C1 Place·Route Client 계약·Fake | `place/client` 인터페이스·Fake·전달 DTO, `route/client` 인터페이스·Fake·전달 DTO, 대응 테스트 | 각 도메인의 얇은 Service 골격, 공통 오류 계약, 직접 관련된 API·ADR·테스트·운영 문서 | `ai/**`, 실제 카카오 HTTP 호출, 좌표 기반 공개 endpoint, Entity·Repository·migration, 일정 구현, 정적 자산 |
 | K0 답변 반영 | 답변 반영 대상으로 지정한 요구사항·API·ADR·테스트·운영·로드맵 문서 | `REMAKE.md`, 개인정보를 제거한 정책 기록 | 애플리케이션 코드, 테스트, 설정, migration, 정적 자산, 개인정보가 포함된 문의 원문의 공개 저장 |
-| P1 카카오 장소 | `place/**`, 대응 place 테스트, 작성 화면의 승인된 브라우저 메모리 상태 모듈·장소 임시 상태 전달 adapter·직접 대응 순수 상태 테스트 | `global/exception/**`, `global/config/**`, `build.gradle`, `application*.yml`, `region`·`user` 공개 계약, 직접 관련 문서 | `route/**`, `recommendation/**`, `travelplan/**`, Entity·Repository·migration, 전체 화면 구조·표현·지도·마커 렌더링, 메뉴·식사·일정·음식점 화면 상태, 완료 화면, 원본 템플릿 |
-| R2 독립 경로 기반 | `route/client/**`, `route/service/**`, 대응 route 테스트 | `place`·`user` 공개 DTO·Service 계약, `global/exception/**`, `global/config/**`, 설정·dependency, 관련 API·ADR·테스트·운영 문서 | `route/algorithm/**`의 무관한 변경, `ai/**`, `recommendation/**`, `travelplan/**`, Entity·Repository·migration, 정적 자산 |
+| P1 카카오 장소 | `place/**`, 대응 place 테스트, 작성 화면의 승인된 브라우저 메모리 상태 모듈·장소 임시 상태 전달 adapter·직접 대응 순수 상태 테스트 | `global/exception/**`, `global/config/**`, `build.gradle`, `application*.yml`, `application*.properties`, `region`·`user` 공개 계약, 직접 관련 문서 | `route/**`, `recommendation/**`, `travelplan/**`, Entity·Repository·migration, 전체 화면 구조·표현·지도·마커 렌더링, 메뉴·식사·일정·음식점 화면 상태, 완료 화면, 원본 템플릿 |
+| R2 독립 경로 기반 | `route/client/**`, `route/service/**`, 대응 route 테스트 | `place`·`user` 공개 DTO·Service 계약, `global/exception/**`, `global/config/**`, `application*.yml`, `application*.properties`, dependency, 관련 API·ADR·테스트·운영 문서 | `route/algorithm/**`의 무관한 변경, `ai/**`, `recommendation/**`, `travelplan/**`, Entity·Repository·migration, 정적 자산 |
 | S1 추정 일정·추천 | `travelplan`의 계산·음식점 검색 조정 Service·정책·전달 DTO, `recommendation/**`, 대응 테스트 | `place`·`route/algorithm`·`region`의 공개 Service·DTO, `global/exception/**`, estimate·음식점 검색 API의 Controller·DTO와 관련 요구사항·ADR·테스트 문서 | Entity·Repository·migration, `route/client/**`, `route/service/**`, `ai/**`, 완료·공유 API, 정적 자산 |
 | T1 외부 경로 통합·완료 일정·API | `travelplan/**`, 대응 테스트, 새 versioned migration | `user`·`place`·`route`·`recommendation` 공개 계약, `global/exception/**`, DB·API·ADR·테스트·DoD 문서 | 외부 Client 내부 구현, `route/algorithm/**`, `ai/**`, 기존 migration, 정적 자산 |
 | W1 실제 화면 | `src/main/resources/static/Routy/**`, 직접 대응 UI 테스트 | API 계약 오류가 확인된 경우 문서 변경 제안 | Java 코드, Repository, migration, 설정, `travela-1.0.0/**` |
-| Q1 품질·운영 | `global/**`, 운영 관련 테스트, 승인된 `application*.yml`·Docker·배포 파일 | `build.gradle`, 각 도메인의 health용 공개 계약, 운영·DoD·준비도 문서 | 도메인 비즈니스 알고리즘, migration, 정적 화면, 원본 템플릿 |
+| Q1 품질·운영 | `global/**`, 운영 관련 테스트, 승인된 `application*.yml`·`application*.properties`·Docker·배포 파일 | `build.gradle`, 각 도메인의 health용 공개 계약, 운영·DoD·준비도 문서 | 도메인 비즈니스 알고리즘, migration, 정적 화면, 원본 템플릿 |
 
 ### 확정된 카카오 데이터 수명 규칙
 
@@ -103,26 +104,27 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | G1-01 | `docs/01` 국내 지역·FR-01, `docs/06` ADR-026·ADR-035, `docs/09` 9절 | 데이터 갱신 운영 절차가 바뀔 때 `docs/09` |
 | G1-02~03 | G1-01 결정 기록, `docs/01` FR-01, `docs/08` 5·6.2절 | 공개 필드가 바뀔 때 `docs/04` 3절 |
 | G1-04 | `docs/01` FR-01, `docs/04` 1절과 `GET /api/regions`, `docs/08` 6.2절 | 지역 계약 결정이 바뀔 때 관련 ADR |
-| G1-05 | `docs/01` FR-02, `docs/04` `POST /api/ai/regions/recommend`, `docs/08` 4·6.3절 | 오류 변환 변경 시 `docs/04` 1절 |
-| G1-05A | `docs/04` 지역·메뉴 AI endpoint, `docs/07` 5절의 OpenAI 항목, `docs/09` 3·5·7·10절 | 공식 계약을 반영해 목표 계약이 바뀔 때 `docs/04`·`docs/06` |
-| G1-06 | G1-05A 결정 기록, `docs/04` 지역 AI endpoint, `docs/08` 4·6.3절, `docs/09` 3·7절 | 승인된 계약과 불일치가 발견될 때 G1-05A 재검토 |
-| G1-07 | `docs/04` 1·3·11절, `docs/09` 5~7절, `docs/08` 6.3절 | 한도 저장소 공개 계약 변경 시 `user` 공개 Service·DTO |
-| G1-08 | `docs/08` 6.2~6.3절, `docs/10` 3·5~6절 | 발견한 문제의 책임 문서 |
+| G1-05 | `docs/08` 5·6.2절, `docs/10` 3·5절 | 발견한 문제의 책임 문서 |
+| A1-01 | `docs/01` FR-02·FR-15, `docs/04` 3~4절, `docs/08` 4·6.3절 | 오류 변환 변경 시 `docs/04` 1절 |
+| A1-02 | `docs/04` 지역·메뉴 AI endpoint, `docs/07` 5절의 OpenAI 항목, `docs/09` 3·5·7·10절 | 공식 계약을 반영해 목표 계약이 바뀔 때 `docs/04`·`docs/06` |
+| A1-03 | A1-02 결정 기록, `docs/04` 지역·메뉴 AI endpoint, `docs/08` 4·6.3절, `docs/09` 3·7절 | 승인된 계약과 불일치가 발견될 때 A1-02 재검토 |
+| A1-04 | `docs/04` 1·3·11절, `docs/09` 5~7절, `docs/08` 6.3절 | 한도 저장소나 지역 허용 목록 공개 계약 변경 시 `user`·`region` 공개 Service·DTO |
+| A1-05 | `docs/01` FR-15, `docs/04` 1·4·11절, `docs/08` 4·6.3절, `docs/09` 5~7절 | 한도 저장소 공개 계약 변경 시 `user` 공개 Service·DTO |
+| A1-06 | `docs/08` 4·6.3절, `docs/10` 3·6·13절 | 발견한 문제의 책임 문서 |
 | R1-01 | `docs/01` FR-06, `docs/06` ADR-004·ADR-029, `docs/08` 6.5절, `docs/07` 5절 | 수치·동률 결정 기록을 추가할 `docs/06` |
 | R1-02~06 | R1-01 결정 기록, `docs/01` FR-06·FR-09 관련 규칙, `docs/08` 6.5절 | 결정이 바뀔 때만 관련 ADR |
 | R1-07 | `docs/08` 6.5절, `docs/10` 3절과 8절의 순수 알고리즘 | 측정 결과 기록이 필요할 때 `docs/05` 8절 |
 | C1-01~02 | `docs/01` FR-03, `docs/04` 5절, `docs/08` 4·6.4절, `docs/09` 7·9~10절 | 공통 오류 변경 시 `docs/04` 1절 |
 | C1-03~04 | `docs/01` FR-07~08, `docs/04` 7·11절, `docs/08` 4·6.7절, `docs/09` 5·7·10절 | 추정 계수 사용 시 R1-01 결정 기록 |
-| C1-05 | `docs/01` FR-15, `docs/04` 4절, `docs/08` 4·6.3절, `docs/09` 5·7·10절 | 공통 오류 변경 시 `docs/04` 1절 |
-| C1-06 | `docs/09` 5·7·9~10절과 `docs/04`의 카카오 장소·경로 endpoint | 공식 카카오 계약 변경이 확인될 때 `docs/04`·`docs/06` |
+| C1-05 | `docs/09` 5·7·9~10절과 `docs/04`의 카카오 장소·경로 endpoint | 공식 카카오 계약 변경이 확인될 때 `docs/04`·`docs/06` |
 | P1-01 | `docs/01` FR-03~05, `docs/04` 5절, `docs/08` 6.4절 | 정책 결정 변경 시 관련 ADR |
 | P1-02 | `docs/04` 5·12절, `docs/06` ADR-028, `docs/09` 3·9~10절 | 새 보안 결정 기록을 위한 `docs/06` |
 | P1-03 | P1-02 결정 기록, `docs/04` 5·12절, `docs/08` 6.4·7절 | 오류 계약 변경 시 `docs/04` 1절 |
 | P1-03A | `docs/01` 국내 지역·FR-01·FR-03, `docs/04` 지역·장소 검색 API, `docs/06` ADR-035, `docs/08` 6.2·6.4절 | `region` 공개 조회 계약 변경이 필요하면 해당 Service·DTO, 지역·필터 정책 자체가 바뀔 때만 `docs/01`·`docs/06` 변경 제안 |
-| P1-04~05 | C1-06 감사 기록, `docs/04` 1·5·11~12절, `docs/08` 4·6.4·7절, `docs/09` 3·5·7·9절 | 지역·한도 공개 계약 변경 시 해당 공개 Service·DTO |
+| P1-04~05 | C1-05 감사 기록, `docs/04` 1·5·11~12절, `docs/08` 4·6.4·7절, `docs/09` 3·5·7·9절 | 지역·한도 공개 계약 변경 시 해당 공개 Service·DTO |
 | P1-06 | `docs/01` 6절 제작 중 데이터 수명, `docs/04` 5·12절, `docs/08` 7~8절, `Routy/INTEGRATION.md` | 메뉴·식사·일정·음식점 상태는 후속 Task, API 계약 오류 발견 시 문서 변경 제안 |
 | P1-07 | `docs/08` 6.4·7~8절, `docs/10` 7·15절 | 발견한 문제의 책임 문서 |
-| R2-01~04 | C1-06 감사 기록, `docs/01` FR-07~08·FR-14, `docs/04` 7·11절, `docs/08` 4·6.7절, `docs/09` 5·7절 | 공식 계약 변경 시 C1-06 재검토 후 `docs/04`·`docs/06` |
+| R2-01~04 | C1-05 감사 기록, `docs/01` FR-07~08·FR-14, `docs/04` 7·11절, `docs/08` 4·6.7절, `docs/09` 5·7절 | 공식 계약 변경 시 C1-05 재검토 후 `docs/04`·`docs/06` |
 | R2-05~06 | `docs/01` FR-07~09, `docs/04` 7절, `docs/08` 6.7절, `docs/09` 7절 | 경로 결과 계약 변경 시 `docs/04`·관련 ADR |
 | R2-07A | `docs/01` FR-14, `docs/03` 8절, `docs/04` 11절, `docs/08` 6.7절, `docs/09` 5절 | 사용자 한도 공개 계약 변경 시 `user` 공개 Service·DTO |
 | R2-07B | R2-07A 계약, `docs/01` FR-08·FR-14, `docs/04` 7절, `docs/08` 6.7절, `docs/09` 4~5·7절 | 집계 metric 구현은 Q1-04로 이관하고 공개 관측 계약이 바뀔 때만 `global` 계약 검토 |
@@ -137,11 +139,13 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | T1-07~09 | `docs/01` FR-11~12, `docs/03` 10·12절, `docs/04` 8·10절, `docs/08` 6.9절 | 공유·삭제 결정 변경 시 관련 ADR |
 | T1-10 | `docs/08` 6.7~6.9·7절, `docs/10` 10~11·15절 | 발견한 문제의 책임 문서 |
 | W1-01A | U1 인증 결과, `docs/04` 회원가입·로그인 API, `docs/08` 6.1절과 8절의 인증 만료 복구, `Routy/INTEGRATION.md`의 인증 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-01B | G1 지역 결과와 인증 사용자 전달 계약, `docs/04` 지역 직접 검색·AI 추천 API, `docs/08` 8절의 지역 UI 항목, `Routy/INTEGRATION.md`의 지역 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-02 | P1-03A 서버 계약·P1-06 상태 모듈, `docs/04` 장소 검색 API·12절, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-03·W1-03A | `docs/04` estimate·음식점 검색 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-01B | G1 지역 결과·A1-04 지역 추천 API와 인증 사용자 전달 계약, `docs/04` 지역 직접 검색·AI 추천 API, `docs/08` 8절의 지역 UI 항목, `Routy/INTEGRATION.md`의 지역 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-02 | P1-03A 서버 계약·P1-06 상태 모듈, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03 | `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03A | `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-04~05 | `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-06 | `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md` | 발견한 문제의 책임 문서 |
+| W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
 | Q1-01~02 | `docs/09` 2~4·9절, `docs/10` 13절 | 발견한 계약 불일치의 책임 문서 |
 | Q1-03~04 | `docs/09` 4·8절, `docs/10` 13절 | dependency가 필요할 때 `build.gradle`과 관련 ADR |
 | Q1-05~06 | `docs/03` 13절, `docs/08` 10절, `docs/09` 2·10~12절 | 공식 제공자 계약 변경 시 `docs/04`·`docs/06` |
@@ -160,7 +164,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 - `docs/11-command-roadmap.md`: 작업 순서, 이월 항목이나 현재 작업이 바뀔 때
 - `docs/03-database.md`, `docs/04-api-spec.md`: DB 또는 공개 HTTP 계약이 실제로 바뀔 때
 - `build.gradle`: 승인된 dependency 또는 빌드 규칙이 필요한 경우
-- `application*.yml`: 승인된 profile·외부 연결·로그 설정이 필요한 경우
+- `application*.yml`, `application*.properties`: 승인된 profile·외부 연결·로그 설정이 필요한 경우. 같은 profile과 위치에서 동일 key를 두 형식에 중복 정의하지 않으며, 형식 통합이나 파일 제거는 대상·영향을 별도로 설명하고 승인받는다.
 
 한 작업에서 관련 없는 문서와 테스트를 정리하지 않는다. `AGENTS.md`와 이 경계표의 변경은 D0의 별도 작업으로 다룬다.
 
