@@ -38,7 +38,7 @@
 | 범주 | 예시 이름 | 원칙 |
 |---|---|---|
 | DB | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | 환경 또는 secret manager에서 주입 |
-| JWT | `JWT_SECRET`, `JWT_ACCESS_TOKEN_TTL` | 충분한 무작위 값, 코드·Git 저장 금지 |
+| JWT | `JWT_ACTIVE_KEY_ID`, key ID별 JWT secret, `JWT_ACCESS_TOKEN_TTL` | 최소 256-bit 무작위 secret, access token 1시간, 코드·Git 저장 금지 |
 | OpenAI | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT_MS` | 서버 전용 |
 | 카카오 장소 | `KAKAO_LOCAL_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 자동차 | `KAKAO_MOBILITY_API_KEY` | 서버 전용, 필요한 API만 허용 |
@@ -48,6 +48,7 @@
 - 키·비밀번호·서명 secret은 소스, Git, 이미지, fixture와 문서 예시에 저장하지 않는다.
 - 클라이언트에 노출되는 키가 필요하면 서버 키와 분리하고 허용 origin·도메인·API 범위를 최소화한다.
 - 키를 교체할 수 있도록 설정과 Client 생성 코드를 분리한다.
+- JWT key 교체 시 새 active key로만 발급하고 이전 key는 1시간 동안 검증한 뒤 제거한다. token header의 알고리즘과 key ID는 서버 allowlist에 있는 값만 허용한다.
 - 운영 키가 노출되면 즉시 폐기·재발급하고 접근 로그와 호출량을 점검한다.
 
 ## 4. 로그와 관측 정보
@@ -192,7 +193,7 @@ fallback 원인은 일정·좌표·경로 payload와 연결하지 않은 집계 
 | 카카오 Mobility | 자동차 endpoint, 구간 묶음, timeout, 오류, 과금·쿼터 |
 | 카카오 대중교통 | 카카오맵 REST endpoint·인증 재확인, 사용자 한도, 응답 사용 조건 |
 | selectionToken | 서명 알고리즘, 만료, 키 교체, payload 최소화 |
-| JWT | 비밀번호 규칙, access token 만료, 재발급·로그아웃 범위 |
+| JWT | ADR-037의 비밀번호 규칙, 1시간 access token, key 교체 설정과 User 존재 검증 구현 확인 |
 
 기술 선택이나 계약이 바뀌면 `docs/04-api-spec.md`와 `docs/06-decisions.md`를 같은 변경 단위에서 갱신한다. 자동 테스트는 결정 후에도 Fake Client를 유지한다.
 

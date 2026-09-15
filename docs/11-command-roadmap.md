@@ -224,4 +224,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`F0-05`에서 MySQL 8.4 Testcontainers를 포함한 전체 테스트, 운영 설정의 환경 변수 주입, 비밀값 부재와 변경 형식을 재점검해 F0 기반 작업을 완료했다. 다음 시작 작업은 인증·소유권 계약을 확정하는 `U1-01`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
+`U1-02`에서 User Entity·Repository와 V1 `users` migration을 구현하고 MySQL 8.4에서 Repository 저장·조회, 이메일 대소문자 UNIQUE, 비밀번호 hash 컬럼만 존재함과 Hibernate schema validate를 검증했다. 다음 시작 작업은 회원가입 Service·API를 구현하는 `U1-03`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.

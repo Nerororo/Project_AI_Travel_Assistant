@@ -41,7 +41,7 @@ User
 | created_at | DATETIME | N | 생성 시각 |
 | updated_at | DATETIME | N | 수정 시각 |
 
-닉네임은 현재 필수 요구사항이 아니므로 초기 스키마에 넣지 않는다. 계정 삭제와 일정 처리 방식은 인증 설계 ADR에서 확정한다.
+닉네임은 현재 필수 요구사항이 아니므로 초기 스키마에 넣지 않는다. ADR-037에 따라 계정 삭제 시 User, 소유 TravelPlan Aggregate와 사용자 범위 운영 행을 한 번의 짧은 트랜잭션으로 영구 삭제한다.
 
 ---
 
@@ -259,6 +259,7 @@ travel_plan_items(travel_plan_day_id, item_order) UNIQUE
 - TravelPlan 저장은 PlanPlace, Day, Item 전체가 성공하거나 전체가 rollback되어야 한다.
 - TravelPlan 삭제 시 하위 PlanPlace, Day, Item을 함께 삭제한다.
 - User FK와 모든 Aggregate FK를 DB 제약으로 보장한다.
+- User 삭제 시 소유 TravelPlan Aggregate, 해당 User의 `api_usage_counters`와 `request_executions`, User가 모두 삭제되거나 모두 rollback되어야 한다. 실제 FK cascade와 명시적 Repository 삭제의 조합은 새 migration과 구현에서 정하되 이 원자성과 삭제 범위를 바꾸지 않는다.
 - Day를 삭제하면 해당 Item을 함께 삭제한다.
 - 참조 중인 PlanPlace를 개별 삭제하는 완료 후 기능은 제공하지 않는다.
 - URL 도메인, 역할별 nullable 조합, 일정 기간, 시간표 겹침처럼 DB CHECK로 표현하기 복잡한 규칙은 Service에서 검증하고 테스트한다.
@@ -298,8 +299,6 @@ F0-02에서 DB 통합 테스트는 운영과 같은 MySQL 8.4 이미지를 사�
 다음은 제품 정책이 아니라 구현 전에 API·ADR·migration 단계에서 확정할 세부사항이다.
 
 - 실제 테이블·컬럼 이름과 VARCHAR 길이의 DB별 최종 값
-- User 삭제와 공유 토큰의 저장 방식
 - 공유 토큰의 테이블 분리, 해시 방식과 만료 정책
-- User 삭제 시 일정 보존·삭제 정책
 
 미확정 사항을 임시 컬럼이나 nullable 완화로 우회하지 않는다.

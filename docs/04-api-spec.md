@@ -8,7 +8,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 
 ### 인증
 
-- 공개 API를 제외한 모든 API는 Bearer JWT가 필요하다.
+- 공개 API는 `POST /api/users`, `POST /api/auth/login`, `GET /api/shared/travel-plans/{shareToken}`다. 그 밖의 `/api/**`는 Bearer JWT가 필요하다.
 - 인증 사용자 ID는 토큰에서 얻으며 Request body의 userId를 신뢰하지 않는다.
 - 자신의 일정만 조회·수정·삭제할 수 있다.
 - 공유 조회는 별도 읽기 전용 토큰을 사용한다.
@@ -143,9 +143,15 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 }
 ~~~
 
-구체적인 비밀번호 길이, JWT 만료·재발급·로그아웃 계약은 인증 설계 단계에서 확정한다.
+비밀번호는 8~64 Unicode code point, UTF-8 기준 72바이트 이하이며 제어 문자를 허용하지 않는다. 서버는 앞뒤 공백 제거 또는 Unicode 정규화 없이 입력 그대로 검증·해시한다. 길이·바이트 수 위반은 `password`의 `INVALID_SIZE`, 제어 문자는 `INVALID_FORMAT`으로 반환한다. 비밀번호 문자 종류 조합 규칙은 두지 않는다.
+
+access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 endpoint는 MVP에서 제공하지 않으며 브라우저는 token을 메모리에서 제거해 로그아웃한다. 서버는 보호 API마다 JWT와 token의 User 존재 여부를 확인하므로 탈퇴한 사용자의 기존 token도 401로 거부한다.
 
 로그인 자격 증명 불일치, 존재하지 않는 이메일과 보호 API의 누락·잘못된·만료 Bearer token은 모두 401 `AUTHENTICATION_REQUIRED`의 같은 message를 사용한다. 이메일 존재 여부와 token 실패 원인을 Response에서 구분하지 않는다. 인증은 성공했지만 소유권 또는 권한이 없으면 403 `ACCESS_DENIED`다.
+
+### DELETE /api/users/me
+
+인증된 현재 사용자의 계정, 소유 TravelPlan Aggregate와 사용자 범위 호출 카운터·requestId 처리 행을 한 번의 짧은 DB 트랜잭션으로 영구 삭제한다. 외부 API는 호출하지 않는다. 성공 시 204를 반환하며 복구·유예 기간은 없다. 다른 사용자를 지정하는 path 또는 request body의 userId는 받지 않는다.
 
 ---
 

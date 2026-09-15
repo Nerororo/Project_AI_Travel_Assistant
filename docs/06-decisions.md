@@ -343,6 +343,33 @@ Accepted (2026-09-13), ADR-033 보완, 구현 전
 
 ---
 
+# ADR-037 - 짧은 수명의 access JWT만 사용하고 회원 탈퇴 시 소유 데이터를 삭제
+
+## 상태
+
+Accepted (2026-09-15), 구현 전
+
+## 문제
+
+인증 구현 전에 비밀번호 입력 경계, JWT 수명과 키 교체, 공개 endpoint, refresh·로그아웃 범위와 User 삭제 시 소유 일정 처리를 확정해야 한다. 이 값이 미정이면 API validation, Security 설정과 첫 User migration이 서로 다른 가정을 갖게 된다.
+
+## 결정
+
+- 비밀번호는 8~64 Unicode code point이며 UTF-8 인코딩 기준 72바이트 이하여야 한다. 앞뒤 공백을 제거하거나 Unicode를 정규화하지 않고 입력 그대로 검증·해시하며, 제어 문자는 거부한다. 문자 종류 조합 규칙은 두지 않는다.
+- 검증된 adaptive one-way password hash를 사용한다. U1-03 구현에서는 Spring Security `PasswordEncoder`의 BCrypt를 기본으로 사용하고 strength는 12로 시작한다. 평문은 요청 처리 중 검증·해시에만 사용하고 응답, 로그, DB와 fixture에 남기지 않는다.
+- access JWT의 수명은 발급 시점부터 1시간이다. refresh token, 서버 저장 세션, token denylist와 로그아웃 endpoint는 MVP에서 제공하지 않는다. 사용자는 브라우저 메모리의 token을 버리는 방식으로 로그아웃하며 만료 후 다시 로그인한다.
+- JWT에는 `sub`로 내부 User ID, `iss`, `iat`, `exp`, `jti`와 서명 key ID만 넣고 이메일·비밀번호·권한 상세와 개인정보는 넣지 않는다. 서버는 서명, 허용 알고리즘, issuer, 만료와 User 존재 여부를 매 요청 검증한다.
+- JWT 서명 key는 최소 256-bit 무작위 secret을 환경 또는 secret manager에서 key ID별로 주입한다. 새 key로만 발급하고 이전 key는 access token 최대 수명인 1시간 동안 검증한 뒤 제거하는 방식으로 교체한다. 알고리즘과 key ID를 token header 값만 믿어 동적으로 선택하지 않고 서버 allowlist와 대조한다.
+- 공개 API는 `POST /api/users`, `POST /api/auth/login`, `GET /api/shared/travel-plans/{shareToken}`뿐이다. 명세된 공개 정적 화면과 운영 health endpoint가 후속 작업에서 생기면 API와 보안 allowlist를 같은 변경 단위에서 명시한다. 그 밖의 `/api/**`는 인증이 필요하다.
+- 인증 사용자는 `DELETE /api/users/me`로 탈퇴한다. 한 번의 짧은 DB 트랜잭션에서 소유 TravelPlan Aggregate, 사용자 범위 호출 카운터와 requestId 처리 행, User를 영구 삭제한다. 외부 API는 호출하지 않는다.
+- 탈퇴 성공은 204이며 응답 body를 반환하지 않는다. 삭제 후 기존 JWT는 User 존재 검증에 실패해 다른 잘못된 token과 같은 401 `AUTHENTICATION_REQUIRED`로 처리한다. 별도의 복구·유예 기간은 MVP에 두지 않는다.
+
+## 이유와 영향
+
+짧은 access token만 두면 별도 refresh token 저장소와 폐기 목록 없이 인증 경계를 학습할 수 있다. User 존재를 함께 검사하면 stateless JWT의 서명 검증만으로는 처리할 수 없는 탈퇴 직후 token 무효화를 보장한다. 회원 탈퇴 때 소유 데이터를 함께 삭제하면 개인정보 최소화와 소유권 모델이 단순해지지만 복구할 수 없으므로 화면은 삭제 전 명시적 확인을 받아야 한다. User와 TravelPlan FK, 사용자 종속 운영 행의 실제 삭제 방식은 새 migration에서 이 원자적 삭제 계약을 만족하도록 정한다.
+
+---
+
 ## 4. 후속 결정 필요
 
 다음 사항은 현재 Accepted로 가장하지 않는다.
@@ -351,6 +378,5 @@ Accepted (2026-09-13), ADR-033 보완, 구현 전
 - 전체 AI 월간 예산
 - selectionToken 만료와 서명 방식
 - 공유 토큰의 해시·만료 정책
-- User 삭제 시 일정 처리
 
 각 항목은 구현 작업 전에 관련 요구사항·DB·API 문서와 함께 갱신한다.

@@ -34,15 +34,15 @@
 | Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
-| 인증·보안 | 구현 전 | User·Security·JWT 코드와 dependency 없음 |
+| 인증·보안 | 부분 구현 | User Entity·Repository와 V1 migration 검증 완료, 회원가입·Security·JWT는 구현 전 |
 | 지역 | 하네스만 존재 | `region/AGENTS.md`만 있고 Java 코드·`regions.json` 없음 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
-| DB migration | 검증 기반만 구현 | 빈 MySQL에서 Flyway history 생성과 0개 migration 검증 성공, 업무 schema의 첫 versioned migration은 아직 없음 |
-| 자동 테스트 | DB 기반 smoke 통과 | Testcontainers MySQL 연결·Flyway pending 없음·JPA 초기화를 검증하는 테스트 1개, 업무 규칙·API 테스트는 아직 없음 |
+| DB migration | User schema 구현·검증 | V1 `users` migration을 MySQL 8.4에 적용하고 Hibernate validate 통과, 후속 업무 schema는 구현 전 |
+| 자동 테스트 | User DB 기반 통합 검증 | 전체 24개 통과, User Repository 저장·조회와 이메일 대소문자 UNIQUE·비밀번호 hash 컬럼만 존재함을 MySQL 8.4에서 검증 |
 | 화면 | 정적 시안 | `static/Routy` HTML·CSS·JavaScript·미리보기 테스트, 새 API 미연동 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
@@ -75,6 +75,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 사용자 장소 이름 | 확정 | 구현 전 | 빈 입력에서 직접 작성, trim 후 1~50자 |
 | 시간 초과 | 확정 | 구현 전 | 저장 차단, 자동 삭제·체류 축소 없음 |
 | 완료 후 편집·조회·공유 | 확정 | 구현 전 | 제한 텍스트 편집, 외부 호출·지도 없는 조회 |
+| 인증·회원 탈퇴 | 확정 | 구현 전 | ADR-037: 비밀번호 8~64자·UTF-8 72바이트 이하, 1시간 access JWT만 사용, 공개 API 3개, 탈퇴 시 소유 데이터 삭제 |
 | 호출 한도·저장소 | 확정 | 구현 전 | MySQL 공유 카운터·requestId 상태, 처리 중·성공 중복 409, 경로 쿼터 사전 확보 |
 | 이동시간 출처 | 확정 | 구현 전 | 숫자만 저장, 생성 warning 비영속, 집계 metric |
 | 카카오 좌표 활용 계약 | 정책 확인 완료 | 구현 전 | 2026-09-11 DevTalk 답변과 ADR-028 |
@@ -87,7 +88,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 항목 | 로드맵 시점 | 기록 위치 |
 |---|---|---|
 | 테스트 DB 방식과 JPA·MySQL·Flyway dependency | 결정 완료 | MySQL 8.4 Testcontainers, Spring Boot 관리 버전, `docs/08` 3절과 `docs/09` 11절 |
-| JWT 만료·재발급·로그아웃, User 삭제 | U1-01 | API·DB·보안 ADR·운영 |
+| JWT 만료·재발급·로그아웃, User 삭제 | 결정 완료 | ADR-037, `docs/03` User 삭제, `docs/04` 1~2절, `docs/09` 3·10절 |
 | 지역 공공데이터 출처·기준일·생성 절차 | G1-01 | 데이터 ADR·운영 |
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | R1-01 | ADR·테스트 |
 | OpenAI 모델·전체 예산 | A1-03 전 | 운영·AI 계약 |
@@ -117,6 +118,10 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 현재 실제 기능은 구현 전이다. 활성 구현 작업과 다음 실행 순서는 `docs/11-command-roadmap.md`를 따른다.
 
 F0-01에 필요한 코드 기준선은 문서 작업 중 읽기 전용으로 확인했지만 정식 작업 완료로 표시하지 않는다. 사용자가 개발 시작을 별도로 요청할 때만 F0 이후 작업을 진행한다.
+
+U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
+
+U1-02에서 User Entity·Repository와 V1 `users` migration을 구현했다. MySQL 8.4에서 production migration 적용, Hibernate `ddl-auto: validate`, Repository 저장·조회, 이메일 대소문자 UNIQUE와 `password_hash`만 존재하는 schema를 통합 테스트로 검증했다. 회원가입 시 이메일 정규화·해시 생성·중복 오류 변환은 U1-03, 인증과 JWT는 U1-04 범위다.
 
 ## 8. 완료 해석
 
