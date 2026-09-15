@@ -168,6 +168,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 
 한 작업에서 관련 없는 문서와 테스트를 정리하지 않는다. `AGENTS.md`와 이 경계표의 변경은 D0의 별도 작업으로 다룬다.
 
+구현 Task를 완료 처리하면서 `docs/07-implementation-readiness.md`의 실제 상태 또는 `docs/11-command-roadmap.md`의 다음 시작 작업을 바꾸는 경우에는 두 파일을 Change Envelope의 Conditional Paths에 파일별 조건과 이유를 적어 포함한다. 검증 증거 없이 상태만 앞당기는 변경은 허용하지 않는다.
+
 ## 7. Change Envelope 형식
 
 모든 변경 작업은 편집 전에 다음을 알린다.
@@ -210,6 +212,8 @@ Verification:
 6. `git diff --check`로 공백 오류를 확인한다.
 7. `docs/10-definition-of-done.md`의 공통·도메인 항목을 확인한다.
 8. 미검증·차단·조건부 항목을 완료로 표시하지 않는다.
+9. 완료 처리하는 작업은 `docs/07`의 실제 상태와 `docs/11` 16절의 다음 시작 작업이 같은 검증 결과를 가리키는지 확인한다.
+10. 완료 보고에 실제 변경 경로, 승인된 Conditional 사용 여부와 실행하지 못한 검증을 남긴다.
 
 문서 전용 작업은 Gradle 테스트를 생략할 수 있지만 이유와 미검증 범위를 기록한다. 검사 목적으로 사용자 변경을 stash, reset, checkout하거나 삭제하지 않는다.
 

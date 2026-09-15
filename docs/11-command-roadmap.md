@@ -219,6 +219,8 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 6. 남은 미확정 사항과 외부 제공자 재확인 항목
 7. 처음 사용한 Spring 개념 설명
 
+완료 판정 뒤에는 `docs/07-implementation-readiness.md`의 실제 구현 상태와 이 문서 16절의 다음 시작 작업을 함께 갱신한다. 두 파일은 Change Envelope에 실제 상태 변경을 위한 Conditional Paths로 미리 적고, 관련 테스트·전체 테스트·`git diff --check`·DoD 증거가 없으면 완료 또는 다음 작업으로 이동했다고 기록하지 않는다. 점검 작업에서 문제를 발견했지만 수정하지 않았다면 상태만 사실대로 기록하고 해당 수정은 별도 Task ID와 Change Envelope로 제안한다.
+
 ## 16. 지금 시작할 작업
 
 현재 활성 구현 작업은 없다. 완료된 선행 기준 외 실제 기능은 구현하지 않았으며 다음 시작 작업은 `F0-01`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
