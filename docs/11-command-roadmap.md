@@ -39,11 +39,12 @@ F0 개발 기반
 
 | ID | 작업 | 완료 확인 |
 |---|---|---|
-| F0-01 | 현재 코드·설정·dependency 실행 가능성 감사 | 구현·미구현과 설정 불일치 설명 |
+| F0-01 | **현재 코드·설정·dependency 실행 가능성 감사 | 구현·미구현과 설정 불일치 설명 |
 | F0-02 | JPA·MySQL·Flyway·DB 테스트 방식 설계 | dependency 이유와 Testcontainers 또는 전용 DB 선택 |
 | F0-03 | 승인된 dependency와 profile·migration 테스트 기반 구현 | 컴파일, 빈 DB migration, `ddl-auto: validate` 준비 |
 | F0-04A | 공통 오류 응답·상태 코드 설계 | validation·인증·not found·422·429·503의 DTO·변환 계약 확정 |
 | F0-04B | Exception Handler 구현 | F0-04A 계약에 따른 예외 변환과 HTTP 테스트 |
+| F0-04C | 일반 404 오류 보완 | 미매핑 URL·정적 리소스의 `RESOURCE_NOT_FOUND` 변환과 HTTP 테스트 |
 | F0-05 | 기반 회귀 점검 | 전체 테스트와 운영 설정의 비밀값 부재 확인 |
 
 요청 예시: `F0-02를 설명만 해줘. dependency 선택지와 수정 파일, 테스트 DB 방식을 초보자 기준으로 설명해줘.`
@@ -223,4 +224,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-현재 활성 구현 작업은 없다. 완료된 선행 기준 외 실제 기능은 구현하지 않았으며 다음 시작 작업은 `F0-01`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
+`F0-05`에서 MySQL 8.4 Testcontainers를 포함한 전체 테스트, 운영 설정의 환경 변수 주입, 비밀값 부재와 변경 형식을 재점검해 F0 기반 작업을 완료했다. 다음 시작 작업은 인증·소유권 계약을 확정하는 `U1-01`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.

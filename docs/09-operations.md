@@ -29,6 +29,7 @@
 - 기본 local 실행과 `./gradlew test`는 실제 외부 API를 호출하지 않는다.
 - smoke profile은 운영 배포와 분리하고 제한된 키와 작은 호출 예산을 사용한다.
 - `.env.example`에 실제 값이나 실제 값처럼 보이는 샘플을 넣지 않는다.
+- `test`의 DB 연결 정보는 Testcontainers와 Spring Boot service connection이 주입한다. 개발자 로컬 DB 환경 변수에 의존하거나 H2로 대체하지 않는다.
 
 ## 3. 환경 변수와 비밀값
 
@@ -196,6 +197,23 @@ fallback 원인은 일정·좌표·경로 payload와 연결하지 않은 집계 
 기술 선택이나 계약이 바뀌면 `docs/04-api-spec.md`와 `docs/06-decisions.md`를 같은 변경 단위에서 갱신한다. 자동 테스트는 결정 후에도 Fake Client를 유지한다.
 
 ## 11. DB와 배포 절차
+
+### 승인된 DB dependency 계약
+
+F0-03에서는 아래 dependency만 DB 기반 목적으로 추가한다. 현재 적용된 Spring Boot dependency management BOM이 관리하는 버전을 사용하고 개별 버전을 임의로 덮어쓰지 않는다.
+
+| Gradle scope·dependency | 목적 | 대안과 판단 |
+|---|---|---|
+| `implementation 'org.springframework.boot:spring-boot-starter-data-jpa'` | JPA·Hibernate·Repository와 트랜잭션 기반 | JDBC 직접 구현은 현재 학습 목표와 Entity 중심 설계에 맞지 않아 제외 |
+| `implementation 'org.springframework.boot:spring-boot-starter-flyway'` | 애플리케이션 시작 시 versioned migration 실행 | Hibernate schema 생성은 migration 이력과 운영 통제를 보장하지 못해 제외 |
+| `runtimeOnly 'org.flywaydb:flyway-mysql'` | Flyway의 MySQL 지원 | MySQL 사용이 확정되어 다른 DB 모듈은 추가하지 않음 |
+| `runtimeOnly 'com.mysql:mysql-connector-j'` | MySQL JDBC 연결 | 운영 DB와 다른 JDBC driver는 사용하지 않음 |
+| `testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'` | Spring Boot 4의 JPA 테스트 지원 | 범용 테스트 dependency만으로 조립하지 않고 공식 테스트 starter 사용 |
+| `testImplementation 'org.springframework.boot:spring-boot-testcontainers'` | `@ServiceConnection` 기반 연결 정보 주입 | 동적 URL을 수동 property로 복제하지 않음 |
+| `testImplementation 'org.testcontainers:testcontainers-mysql'` | MySQL 8.4 컨테이너 제공 | H2와 외부 공용 DB는 제외 |
+| `testImplementation 'org.testcontainers:testcontainers-junit-jupiter'` | JUnit 생명주기에서 컨테이너 관리 | 수동 start·stop 코드로 생명주기를 분산하지 않음 |
+
+Testcontainers는 테스트 전용이며 production runtime에 포함하지 않는다. MySQL 컨테이너 이미지는 운영 Compose와 같은 `mysql:8.4` 계열로 맞춘다.
 
 1. 새 versioned migration을 추가한다.
 2. 빈 DB와 기존 검증 DB에 migration을 적용한다.

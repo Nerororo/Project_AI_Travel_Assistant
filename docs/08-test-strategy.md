@@ -12,7 +12,7 @@
 |---|---|---|---|
 | 단위 | 값 객체, 정책, 경로 알고리즘 | 경계값, 결정성, 반올림, 불변식 | 없음 |
 | Service | 도메인 use case | 규칙 조합, 호출 순서, 실패 변환 | Repository·Client fake/mock |
-| Repository 통합 | Entity, Repository, migration | 실제 SQL, UNIQUE·CHECK·FK, rollback | 전용 MySQL 또는 Testcontainers |
+| Repository 통합 | Entity, Repository, migration | 실제 SQL, UNIQUE·CHECK·FK, rollback | Testcontainers MySQL 8.4 |
 | API | Controller, Security, 예외 처리 | 인증, validation, 상태 코드, JSON 계약 | MockMvc, Service mock/fake |
 | 핵심 통합 | 인증부터 Aggregate 저장·조회 | 계층 연결, 원자성, 외부 호출 경계 | 테스트 DB, 외부 Client fake |
 | 브라우저 | 작성·완료·공유 화면 | 입력 유지, 단계 전환, 오류 복구, 저장 금지 | 테스트 서버, 외부 Client fake |
@@ -27,6 +27,32 @@
 - 시간 기반 규칙에는 주입한 `Clock`과 `Asia/Seoul`을 사용한다.
 - 비밀값, 개인정보, AI 사용자 원문, 외부 API 원문과 실제 좌표를 fixture·로그·실패 메시지에 남기지 않는다.
 - 좌표가 필요한 알고리즘 fixture는 명시적인 가상 좌표 또는 사용 허가가 분명한 공개 기준값을 사용한다.
+
+### 공통 HTTP 오류 계약
+
+- 모든 오류 테스트는 `code`, `message`, `fieldErrors`, `details`, `adjustments`, `retryAfterSeconds` 여섯 필드가 생략되지 않는지 검증한다.
+- validation 테스트는 필드 경로와 안정적인 reason의 정렬·중복 제거를 확인하고 Spring·Jackson의 exception message가 노출되지 않는지 확인한다.
+- 401은 token 없음·잘못됨·만료와 로그인 실패가 같은 공개 응답인지, 403은 인증 성공 후 권한 부족에만 사용되는지 검증한다.
+- 404·409·422는 도메인 예외의 code와 HTTP 상태가 정확히 대응하고 명세되지 않은 details가 추가되지 않는지 검증한다.
+- 429는 본문의 `retryAfterSeconds`와 `Retry-After` 헤더가 같은 양의 정수인지 검증한다.
+- 503과 예상하지 못한 500은 provider 원문, URL, stack trace, exception class, 비밀값과 사용자 입력을 포함하지 않는지 검증한다.
+- 각 테스트는 HTTP status만 확인하지 않고 전체 오류 JSON 계약을 확인한다.
+
+### DB 테스트 기반 선택
+
+Repository·migration·핵심 통합 테스트는 MySQL 8.4 Testcontainers를 사용한다.
+
+| 선택지 | 판단 | 이유 |
+|---|---|---|
+| Testcontainers MySQL 8.4 | 선택 | 테스트마다 격리된 실제 MySQL을 제공해 migration과 MySQL 제약을 같은 엔진에서 검증할 수 있음 |
+| 개발자 전용 또는 공용 MySQL | 기본 자동 테스트에서 제외 | 별도 설치·계정이 필요하고 잔여 데이터와 실행 순서에 의존할 수 있음 |
+| H2 | 제외 | MySQL dialect, CHECK·FK·UNIQUE와 migration 호환성을 운영 DB와 동일하게 보장하지 못함 |
+
+- Spring Boot의 `@ServiceConnection`으로 컨테이너 JDBC·Flyway 연결 정보를 주입하며 테스트 설정에 URL·사용자명·비밀번호를 고정하지 않는다.
+- DB 통합 테스트는 production migration만으로 생성된 빈 schema에서 시작한다. 테스트 데이터는 테스트 준비 코드로 넣고 schema를 만드는 별도 test migration으로 production migration의 누락을 감추지 않는다.
+- migration 적용 성공 뒤 `ddl-auto: validate`가 통과해야 하며, Repository 제약·rollback 테스트는 같은 MySQL 의미론에서 실행한다.
+- 테스트 클래스 간 상태를 공유하지 않는다. 컨테이너 재사용 최적화는 격리 보장이 확인되기 전에는 적용하지 않는다.
+- Docker를 사용할 수 없으면 DB 테스트를 H2로 대체하거나 성공 처리하지 않고 환경 원인과 미실행 범위를 명확히 실패로 보고한다.
 
 ## 4. 외부 Client 테스트
 
@@ -272,9 +298,11 @@ Nearest Neighbor:
 
 | 명령·환경 | 목적 | 실제 외부 API |
 |---|---|---|
-| `./gradlew test` | 단위·Service·API·DB 회귀 | 호출 금지 |
+| `./gradlew test` | 단위·Service·API 회귀와 Testcontainers MySQL 8.4 기반 DB 회귀 | 호출 금지 |
 | 로컬 smoke profile | 인증 설정과 제공자 연결 확인 | 명시적 실행 때만 |
 | 브라우저 테스트 profile | 핵심 사용자 흐름 | Fake Client |
 | 배포 전 검증 | migration, 보안, 카카오 데이터 수명 계약, 핵심 흐름 | 별도 키와 비용 한도 |
 
 테스트 실행이 환경 문제로 불가능하면 실패로 위장하지 않고 원인, 실행하지 못한 범위와 대체 확인 결과를 기록한다.
+
+DB 테스트가 포함된 `./gradlew test`의 선행 조건은 Docker Engine 사용 가능 상태다. 별도의 로컬 MySQL 계정이나 실제 비밀번호는 선행 조건이 아니다.

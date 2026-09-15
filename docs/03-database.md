@@ -275,6 +275,8 @@ travel_plan_items(travel_plan_day_id, item_order) UNIQUE
 - migration 변경은 별도 구현 작업과 Change Envelope에서 수행한다.
 - 파괴적 변경에는 기존 데이터 처리, 백업, 호환 기간, 복구 방법이 필요하다.
 
+F0-02에서 DB 통합 테스트는 운영과 같은 MySQL 8.4 이미지를 사용하는 Testcontainers로 결정했다. H2처럼 SQL dialect와 제약 동작이 다른 대체 DB는 migration·Repository 검증에 사용하지 않는다. 각 검증은 Flyway가 빈 schema에 production migration을 먼저 적용하고, 그 다음 Hibernate `ddl-auto: validate`가 Entity와 schema의 일치를 확인해야 한다. migration 성공과 JPA validate 성공은 서로 다른 검증 결과로 구분한다.
+
 이 문서 교체만으로 Entity나 migration이 구현된 것으로 간주하지 않는다.
 
 ---

@@ -25,15 +25,15 @@
 | 부분 구현 | 일부 코드·설정만 있고 완료 기준을 충족하지 않음 |
 | 구현·검증 완료 | 코드와 적용 가능한 완료 기준을 검증함 |
 
-## 2. 코드 기준선 (2026-09-11)
+## 2. 코드 기준선 (2026-09-15, F0-01 감사 완료)
 
 | 영역 | 상태 | 확인 근거 |
 |---|---|---|
-| Spring Boot | 기본 골격 | `TravelApplication`, `HelloController` 존재 |
-| Java·Gradle | 설정 일부 존재 | Java 21, Spring Boot 4.1.1, Gradle wrapper |
-| Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter |
-| JPA·MySQL·Flyway | 설정 초안만 존재 | `application.yml`에 datasource·JPA 초안이 있으나 dependency와 migration 없음 |
-| Docker MySQL | 구성 파일 존재 | 실제 연결 성공 여부는 F0에서 확인 필요 |
+| Spring Boot | 기본 골격 실행 가능 | `TravelApplication` 기동과 `GET /hello` HTTP 200 확인 |
+| Java·Gradle | 현재 골격 실행 가능 | JDK 21.0.12.1, Gradle 9.7.1, Spring Boot 4.1.1로 빌드 확인 |
+| Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
+| JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
+| Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | 구현 전 | User·Security·JWT 코드와 dependency 없음 |
 | 지역 | 하네스만 존재 | `region/AGENTS.md`만 있고 Java 코드·`regions.json` 없음 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
@@ -41,11 +41,19 @@
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
-| DB migration | 구현 전 | `src/main/resources/db/migration`과 versioned 파일 없음 |
-| 자동 테스트 | 기본 smoke | `TravelApplicationTests`만 존재 |
+| DB migration | 검증 기반만 구현 | 빈 MySQL에서 Flyway history 생성과 0개 migration 검증 성공, 업무 schema의 첫 versioned migration은 아직 없음 |
+| 자동 테스트 | DB 기반 smoke 통과 | Testcontainers MySQL 연결·Flyway pending 없음·JPA 초기화를 검증하는 테스트 1개, 업무 규칙·API 테스트는 아직 없음 |
 | 화면 | 정적 시안 | `static/Routy` HTML·CSS·JavaScript·미리보기 테스트, 새 API 미연동 |
 
-`application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니다. F0에서 dependency와 테스트 DB 방식을 설명하고 승인받은 뒤 설정의 유효성까지 함께 검증한다.
+F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
+
+F0-03에서 Spring Boot 관리 버전의 JPA·MySQL·Flyway·Testcontainers dependency와 local·test·prod·smoke profile 기반을 적용했다. Testcontainers가 제공한 빈 MySQL 8.4에서 Flyway가 schema history를 만든 뒤 Hibernate `ddl-auto: validate`까지 통과했다. 현재 Entity와 production migration이 0개인 상태를 검증한 것이므로 업무 schema 구현 완료를 뜻하지 않는다.
+
+F0-04A에서 공통 오류 DTO의 고정 필드, validation reason, 인증·인가·not found·409·422·429·503·500 변환 계약을 확정했다. F0-04B에서 공통 DTO·오류 코드·비즈니스 예외·전역 Exception Handler를 구현하고 validation, 잘못된 JSON, 상태별 비즈니스 예외, 429 header, 안전한 500 응답을 MockMvc로 검증했다. 실제 Spring Security의 401·403 연결은 U1 구현 범위다.
+
+F0-05 회귀 점검에서 발견한 미매핑 URL·정적 리소스의 500 오분류는 F0-04C에서 보완했다. 일반 404 `RESOURCE_NOT_FOUND` 계약과 Spring MVC 예외 변환을 추가하고, 내부 요청 경로·상세를 노출하지 않는 고정 오류 DTO를 MockMvc로 검증했다. 보완 후 전체 테스트도 통과했으며 F0-05 완료 판정은 별도 점검 Task에서 수행한다.
+
+F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스트가 실패·오류·건너뜀 없이 통과했다. 운영·smoke DB 자격 증명은 기본값 없는 환경 변수로만 주입되고, 소스·설정·fixture·문서에서 실제 비밀값과 자격 증명 패턴이 발견되지 않았으며 `git diff --check`도 통과했다. 이 판정은 F0 기반과 공통 오류 처리 범위에 한정하고, 인증·보안과 실제 외부 Client의 운영 검증은 후속 작업에서 수행한다.
 
 `AGENTS.md`는 구현 경계이며 기능 코드가 아니다. 도메인 하네스가 존재해도 해당 기능을 구현됨으로 표시하지 않는다.
 
@@ -78,7 +86,7 @@
 
 | 항목 | 로드맵 시점 | 기록 위치 |
 |---|---|---|
-| 테스트 DB 방식과 JPA·MySQL·Flyway dependency | F0-02 | 개발 기반 Change Envelope와 운영·테스트 문서 |
+| 테스트 DB 방식과 JPA·MySQL·Flyway dependency | 결정 완료 | MySQL 8.4 Testcontainers, Spring Boot 관리 버전, `docs/08` 3절과 `docs/09` 11절 |
 | JWT 만료·재발급·로그아웃, User 삭제 | U1-01 | API·DB·보안 ADR·운영 |
 | 지역 공공데이터 출처·기준일·생성 절차 | G1-01 | 데이터 ADR·운영 |
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | R1-01 | ADR·테스트 |

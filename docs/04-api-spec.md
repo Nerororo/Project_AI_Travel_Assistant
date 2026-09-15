@@ -28,7 +28,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
   "code": "VALIDATION_FAILED",
   "message": "요청 값이 올바르지 않습니다.",
   "fieldErrors": [
-    {"field": "title", "reason": "must not be blank"}
+    {"field": "title", "reason": "REQUIRED"}
   ],
   "details": null,
   "adjustments": [],
@@ -36,23 +36,63 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 }
 ~~~
 
-- fieldErrors는 필드 검증 실패일 때만 채운다.
-- details는 날짜·한도처럼 구조화된 추가 정보가 있을 때만 채운다.
-- adjustments는 사용자가 직접 해결할 수 있는 조정 방법이 있을 때만 채운다.
-- retryAfterSeconds는 429처럼 재시도 시각을 안내할 때만 채운다.
+- 모든 오류는 위 여섯 필드를 같은 JSON 타입으로 반환한다. 값이 없을 때 `fieldErrors`와 `adjustments`는 빈 배열, `details`와 `retryAfterSeconds`는 `null`이며 필드를 생략하지 않는다. JSON 객체의 필드 순서는 계약이 아니다.
+- `code`는 클라이언트 분기용 안정적인 대문자 snake case 값이다. `message`는 사용자에게 표시 가능한 안전한 한국어 문장이며 exception message, Bean Validation 기본 문구와 외부 제공자 문구를 그대로 반환하지 않는다.
+- `fieldErrors` 원소는 JSON 필드 경로 `field`와 안정적인 `reason`으로 구성한다. 배열 원소는 `places[0].stayMinutes`처럼 표현하며 `field`, `reason` 오름차순으로 정렬하고 중복을 제거한다.
+- 공통 `reason`은 `REQUIRED`, `INVALID_FORMAT`, `OUT_OF_RANGE`, `INVALID_SIZE`, `DUPLICATE`, `INVALID_COMBINATION`이다. 이 목록으로 표현할 수 없는 객체 단위 검증은 `fieldErrors`를 비우고 공통 message만 반환한다.
+- `details`는 오류 코드별로 명세된 구조화 DTO가 있을 때만 객체로 채운다. 자유 문자열, stack trace와 임의의 exception 속성은 넣지 않는다.
+- `adjustments`는 오류 코드별로 명세된 조정 코드만 담고 중복을 제거한 명세 순서를 유지한다.
+- `retryAfterSeconds`는 429에서만 1 이상의 정수로 채우고 HTTP `Retry-After` 헤더에도 같은 초 값을 반환한다.
 - API 키, 좌표, 자연어 원문, 외부 요청·응답 원문을 오류에 넣지 않는다.
 
-| 상황 | 상태 | 코드 예시 |
-|---|---:|---|
-| 형식·범위 오류 | 400 | VALIDATION_FAILED |
-| 인증 필요·실패 | 401 | AUTHENTICATION_REQUIRED |
-| 다른 사용자의 자원 | 403 | ACCESS_DENIED |
-| 자원 없음 | 404 | TRAVEL_PLAN_NOT_FOUND |
-| 경로 없음·시간 초과 | 422 | ROUTE_NOT_FOUND, PLAN_CAPACITY_EXCEEDED |
-| 중복 처리 중·완료 | 409 | REQUEST_IN_PROGRESS, REQUEST_ALREADY_COMPLETED |
-| 호출 한도 초과 | 429 | RATE_LIMIT_EXCEEDED |
-| 제공자 기술 장애 | 503 | PLACE_PROVIDER_UNAVAILABLE, ROUTE_PROVIDER_UNAVAILABLE, AI_UNAVAILABLE |
-| AI 계약 위반 | 503 | AI_RESPONSE_INVALID |
+| 검증 원인 | reason |
+|---|---|
+| `NotNull`, `NotBlank`, `NotEmpty`, 필수 request parameter·header 누락 | `REQUIRED` |
+| JSON 파싱, enum·날짜·시각·UUID·숫자 타입 변환, `Pattern`, `Email` | `INVALID_FORMAT` |
+| `Min`, `Max`, `Positive`, `PositiveOrZero`, 허용 범위 밖 값 | `OUT_OF_RANGE` |
+| `Size`로 제한한 문자열·배열 길이 | `INVALID_SIZE` |
+| 중복 금지 배열·날짜·순서 | `DUPLICATE` |
+| 여러 필드의 조합 규칙 위반 | `INVALID_COMBINATION` |
+
+JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류는 `fieldErrors`를 비운다. 하나의 필드에 여러 제약이 동시에 실패하면 각각의 reason을 정렬해 반환한다.
+
+| 변환 대상 | 상태 | 코드 | 응답 규칙 |
+|---|---:|---|---|
+| DTO·메서드 validation, 잘못된 JSON·타입·필수 header | 400 | `VALIDATION_FAILED` | 필드 검증이면 `fieldErrors`, 그 밖에는 빈 배열 |
+| Bearer token 없음·잘못됨·만료, 로그인 인증 실패 | 401 | `AUTHENTICATION_REQUIRED` | 원인을 구분하지 않는 같은 message, `WWW-Authenticate: Bearer` |
+| 인증됐지만 다른 사용자의 자원 또는 권한 없음 | 403 | `ACCESS_DENIED` | 대상 소유자와 권한 상세 비노출 |
+| 존재하지 않거나 공개적으로 숨겨야 하는 자원 | 404 | endpoint별 not-found 코드 | 현재 일정은 `TRAVEL_PLAN_NOT_FOUND`; 공유 토큰의 무효·만료도 같은 일정 not-found 응답 |
+| 매핑되지 않은 URL·정적 리소스 | 404 | `RESOURCE_NOT_FOUND` | 요청 경로와 Spring 내부 오류 비노출 |
+| 같은 requestId가 처리 중·이미 성공 | 409 | `REQUEST_IN_PROGRESS`, `REQUEST_ALREADY_COMPLETED` | `request_executions` 상태에 따라 구분, 결과 ID 비노출 |
+| 유효한 요청이지만 경로 없음·일정 시간 초과 | 422 | `ROUTE_NOT_FOUND`, `PLAN_CAPACITY_EXCEEDED` | 명세된 경우에만 `details`·`adjustments` 제공 |
+| 사용자 또는 서비스 호출 한도 초과 | 429 | `RATE_LIMIT_EXCEEDED` | `retryAfterSeconds`와 `Retry-After` 필수 |
+| 장소·경로·AI 제공자 기술 장애 | 503 | `PLACE_PROVIDER_UNAVAILABLE`, `ROUTE_PROVIDER_UNAVAILABLE`, `AI_UNAVAILABLE` | provider 상태·URL·payload 비노출 |
+| AI 응답 schema·허용 목록 계약 위반 | 503 | `AI_RESPONSE_INVALID` | AI 원문과 validation 상세 비노출 |
+| 예상하지 못한 서버 오류 | 500 | `INTERNAL_SERVER_ERROR` | 고정된 일반 message만 반환 |
+
+F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환하고, 비즈니스 예외는 자신이 가진 공통 오류 code와 상태로 변환한다. 이미 응답이 시작된 오류를 다시 쓰지 않으며 예상하지 못한 예외는 500으로 변환한다. 같은 원인에 Controller별 handler를 두지 않고 전역 handler 하나를 사용한다.
+
+오류별 기본 message는 서버에서 code와 함께 관리한다. 사용자 입력값을 message에 이어 붙이지 않는다. `PLAN_CAPACITY_EXCEEDED`처럼 명세가 허용한 날짜·시각·분 값은 문자열 조합 대신 `details` DTO로 전달하며 message는 `일정이 허용 시간을 초과합니다.`로 고정한다.
+
+| code | 기본 message |
+|---|---|
+| `VALIDATION_FAILED` | 요청 값이 올바르지 않습니다. |
+| `AUTHENTICATION_REQUIRED` | 인증이 필요합니다. |
+| `ACCESS_DENIED` | 접근 권한이 없습니다. |
+| `RESOURCE_NOT_FOUND` | 요청한 리소스를 찾을 수 없습니다. |
+| `TRAVEL_PLAN_NOT_FOUND` | 일정을 찾을 수 없습니다. |
+| `REQUEST_IN_PROGRESS` | 같은 요청을 처리 중입니다. |
+| `REQUEST_ALREADY_COMPLETED` | 이미 처리된 요청입니다. |
+| `ROUTE_NOT_FOUND` | 이동 경로를 찾을 수 없습니다. |
+| `PLAN_CAPACITY_EXCEEDED` | 일정이 허용 시간을 초과합니다. |
+| `RATE_LIMIT_EXCEEDED` | 호출 한도를 초과했습니다. |
+| `PLACE_PROVIDER_UNAVAILABLE` | 장소 검색 서비스를 일시적으로 사용할 수 없습니다. |
+| `ROUTE_PROVIDER_UNAVAILABLE` | 경로 서비스를 일시적으로 사용할 수 없습니다. |
+| `AI_UNAVAILABLE` | AI 서비스를 일시적으로 사용할 수 없습니다. |
+| `AI_RESPONSE_INVALID` | AI 응답을 처리할 수 없습니다. |
+| `INTERNAL_SERVER_ERROR` | 서버 오류가 발생했습니다. |
+
+429의 `retryAfterSeconds`는 초 단위 현재 시각에서 적용된 분 또는 일 한도 창이 끝날 때까지 남은 시간을 올림하고 최소 1로 계산한다. 여러 한도가 동시에 막으면 가장 오래 기다려야 하는 값을 사용한다. 일 한도 종료는 `Asia/Seoul`의 다음 자정이다.
 
 날짜는 yyyy-MM-dd, 시각은 HH:mm 형식이다. ID는 양의 정수이며 배열 입력은 별도 허용이 없으면 중복을 거부한다.
 
@@ -104,6 +144,8 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 ~~~
 
 구체적인 비밀번호 길이, JWT 만료·재발급·로그아웃 계약은 인증 설계 단계에서 확정한다.
+
+로그인 자격 증명 불일치, 존재하지 않는 이메일과 보호 API의 누락·잘못된·만료 Bearer token은 모두 401 `AUTHENTICATION_REQUIRED`의 같은 message를 사용한다. 이메일 존재 여부와 token 실패 원인을 Response에서 구분하지 않는다. 인증은 성공했지만 소유권 또는 권한이 없으면 403 `ACCESS_DENIED`다.
 
 ---
 
@@ -176,7 +218,7 @@ Base Path는 /api이며 JSON을 사용한다. Entity와 외부 제공자 응답�
 }
 ~~~
 
-허용 목록 밖의 ID, 중복, 잘못된 JSON은 503 AI_RESPONSE_INVALID다. 요청 자연어와 AI 원문은 저장하지 않는다.
+AI 응답에 허용 목록 밖의 ID·중복이 있거나 AI 응답 JSON을 해석할 수 없으면 503 `AI_RESPONSE_INVALID`다. 클라이언트 요청 JSON을 해석할 수 없는 경우는 400 `VALIDATION_FAILED`다. 요청 자연어와 AI 원문은 저장하지 않는다.
 
 ---
 
@@ -426,7 +468,8 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 ~~~json
 {
   "code": "PLAN_CAPACITY_EXCEEDED",
-  "message": "2일차 일정이 30분 초과합니다.",
+  "message": "일정이 허용 시간을 초과합니다.",
+  "fieldErrors": [],
   "details": {
     "date": "2026-10-02",
     "plannedEndTime": "20:30",
@@ -439,7 +482,8 @@ Request는 estimate 입력에 다음 필드를 추가한다.
     "REMOVE_PLACE",
     "EXCLUDE_MEAL",
     "CHANGE_ORDER"
-  ]
+  ],
+  "retryAfterSeconds": null
 }
 ~~~
 
