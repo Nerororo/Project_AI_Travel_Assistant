@@ -34,7 +34,7 @@
 | Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
-| 인증·보안 | 부분 구현 | User Entity·Repository와 V1 migration 검증 완료, 회원가입·Security·JWT는 구현 전 |
+| 인증·보안 | 부분 구현 | User Entity·Repository·V1 migration과 회원가입 Service·API 검증 완료, Security·JWT는 구현 전 |
 | 지역 | 하네스만 존재 | `region/AGENTS.md`만 있고 Java 코드·`regions.json` 없음 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
@@ -42,7 +42,7 @@
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
 | DB migration | User schema 구현·검증 | V1 `users` migration을 MySQL 8.4에 적용하고 Hibernate validate 통과, 후속 업무 schema는 구현 전 |
-| 자동 테스트 | User DB 기반 통합 검증 | 전체 24개 통과, User Repository 저장·조회와 이메일 대소문자 UNIQUE·비밀번호 hash 컬럼만 존재함을 MySQL 8.4에서 검증 |
+| 자동 테스트 | 회원가입·User DB 통합 검증 | 전체 34개 통과, 회원가입 validation·중복 409·BCrypt 해시 저장과 User Repository·schema를 MySQL 8.4에서 검증 |
 | 화면 | 정적 시안 | `static/Routy` HTML·CSS·JavaScript·미리보기 테스트, 새 API 미연동 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
@@ -122,6 +122,8 @@ F0-01에 필요한 코드 기준선은 문서 작업 중 읽기 전용으로 확
 U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
 
 U1-02에서 User Entity·Repository와 V1 `users` migration을 구현했다. MySQL 8.4에서 production migration 적용, Hibernate `ddl-auto: validate`, Repository 저장·조회, 이메일 대소문자 UNIQUE와 `password_hash`만 존재하는 schema를 통합 테스트로 검증했다. 회원가입 시 이메일 정규화·해시 생성·중복 오류 변환은 U1-03, 인증과 JWT는 U1-04 범위다.
+
+U1-03에서 회원가입 Service와 `POST /api/users`를 구현했다. 이메일 소문자 정규화, BCrypt strength 12 해시 저장, 선조회와 DB UNIQUE 경쟁 상황의 중복 이메일 409 변환, 비밀번호 code point·UTF-8 byte·제어 문자 validation을 Service·HTTP·MySQL 8.4 통합 테스트로 검증했다. Spring Security 필터와 JWT 로그인은 U1-04 범위다.
 
 ## 8. 완료 해석
 

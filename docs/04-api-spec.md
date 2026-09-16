@@ -63,6 +63,7 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 인증됐지만 다른 사용자의 자원 또는 권한 없음 | 403 | `ACCESS_DENIED` | 대상 소유자와 권한 상세 비노출 |
 | 존재하지 않거나 공개적으로 숨겨야 하는 자원 | 404 | endpoint별 not-found 코드 | 현재 일정은 `TRAVEL_PLAN_NOT_FOUND`; 공유 토큰의 무효·만료도 같은 일정 not-found 응답 |
 | 매핑되지 않은 URL·정적 리소스 | 404 | `RESOURCE_NOT_FOUND` | 요청 경로와 Spring 내부 오류 비노출 |
+| 이미 사용 중인 회원가입 이메일 | 409 | `EMAIL_ALREADY_EXISTS` | 이메일과 기존 사용자 정보 비노출 |
 | 같은 requestId가 처리 중·이미 성공 | 409 | `REQUEST_IN_PROGRESS`, `REQUEST_ALREADY_COMPLETED` | `request_executions` 상태에 따라 구분, 결과 ID 비노출 |
 | 유효한 요청이지만 경로 없음·일정 시간 초과 | 422 | `ROUTE_NOT_FOUND`, `PLAN_CAPACITY_EXCEEDED` | 명세된 경우에만 `details`·`adjustments` 제공 |
 | 사용자 또는 서비스 호출 한도 초과 | 429 | `RATE_LIMIT_EXCEEDED` | `retryAfterSeconds`와 `Retry-After` 필수 |
@@ -81,6 +82,7 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 | `ACCESS_DENIED` | 접근 권한이 없습니다. |
 | `RESOURCE_NOT_FOUND` | 요청한 리소스를 찾을 수 없습니다. |
 | `TRAVEL_PLAN_NOT_FOUND` | 일정을 찾을 수 없습니다. |
+| `EMAIL_ALREADY_EXISTS` | 이미 사용 중인 이메일입니다. |
 | `REQUEST_IN_PROGRESS` | 같은 요청을 처리 중입니다. |
 | `REQUEST_ALREADY_COMPLETED` | 이미 처리된 요청입니다. |
 | `ROUTE_NOT_FOUND` | 이동 경로를 찾을 수 없습니다. |
@@ -124,7 +126,7 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 }
 ~~~
 
-성공 시 201을 반환한다. 비밀번호는 Response나 로그에 포함하지 않고 해시만 DB에 저장한다.
+성공 시 body 없이 201을 반환한다. 이메일은 소문자로 정규화해 저장한다. 이미 사용 중인 이메일은 409 `EMAIL_ALREADY_EXISTS`로 반환한다. 비밀번호는 Response나 로그에 포함하지 않고 해시만 DB에 저장한다.
 
 ### POST /api/auth/login
 

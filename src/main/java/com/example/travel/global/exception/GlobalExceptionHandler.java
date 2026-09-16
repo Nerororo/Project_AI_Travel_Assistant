@@ -130,6 +130,12 @@ public class GlobalExceptionHandler {
         if (hasCode(codeList, "Size")) {
             return ValidationReason.INVALID_SIZE;
         }
+        if (hasCode(codeList, "PasswordSize")) {
+            return ValidationReason.INVALID_SIZE;
+        }
+        if (hasCode(codeList, "PasswordFormat")) {
+            return ValidationReason.INVALID_FORMAT;
+        }
         return ValidationReason.INVALID_COMBINATION;
     }
 

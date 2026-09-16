@@ -224,4 +224,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`U1-02`에서 User Entity·Repository와 V1 `users` migration을 구현하고 MySQL 8.4에서 Repository 저장·조회, 이메일 대소문자 UNIQUE, 비밀번호 hash 컬럼만 존재함과 Hibernate schema validate를 검증했다. 다음 시작 작업은 회원가입 Service·API를 구현하는 `U1-03`이다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
+`U1-03`에서 회원가입 Service·API를 구현하고 이메일 정규화, BCrypt strength 12 해시 저장, 중복 이메일 409, 비밀번호 validation을 Service·HTTP·MySQL 8.4 통합 테스트로 검증했다. 다음 시작 작업은 Spring Security·JWT 로그인을 구현하는 `U1-04`다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
