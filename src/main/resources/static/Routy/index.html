@@ -55,15 +55,25 @@
           <div class="route-sun"></div>
           <div class="route-grid"></div>
           <svg class="route-line" viewBox="0 0 640 660" role="presentation">
-            <path d="M92 570 C 125 495, 55 427, 163 363 S 353 360, 340 258 S 481 181, 553 83" />
+            <defs>
+              <marker id="route-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+                <path d="M1 1 L11 6 L1 11 Z" />
+              </marker>
+            </defs>
+            <path class="route-path" d="M92 570 C 125 495, 55 427, 163 363 S 353 360, 340 258 S 481 181, 553 83" />
           </svg>
           <span class="route-stop stop-one"><b>1</b><i>START</i></span>
-          <span class="route-stop stop-two"><b>2</b><i>12:40</i></span>
-          <span class="route-stop stop-three"><b>3</b><i>NEXT</i></span>
+          <span class="route-stop stop-two"><b>2</b><i>ROUTE</i></span>
+          <span class="route-stop stop-three"><b>3</b><i>TRIP</i></span>
           <article class="floating-ticket ticket-main">
             <header><span>ROUTY JOURNEY 01</span><strong>BUSAN</strong></header>
-            <div class="ticket-scene"><span class="scene-sun"></span><span class="scene-hill"></span><span class="scene-sea"></span></div>
+            <div class="ticket-scene"><img src="img/hero-busan.png" alt="" width="1536" height="1024" decoding="async"></div>
             <footer><span>바다를 따라 걷는 하루</span><b>↗</b></footer>
+          </article>
+          <article class="floating-ticket ticket-main ticket-seoul">
+            <header><span>ROUTY JOURNEY 02</span><strong>SEOUL</strong></header>
+            <div class="ticket-scene"><img src="img/hero-seoul.png" alt="" width="1536" height="1024" decoding="async"></div>
+            <footer><span>남산에서 만나는 서울</span><b>↗</b></footer>
           </article>
           <article class="floating-ticket ticket-note">
             <span>TRAVEL NOTE</span>

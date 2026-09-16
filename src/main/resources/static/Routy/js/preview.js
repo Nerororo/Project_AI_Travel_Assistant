@@ -306,11 +306,14 @@
       if (tiltFrame) window.cancelAnimationFrame(tiltFrame);
       const rect = routeArt.getBoundingClientRect();
       tiltFrame = window.requestAnimationFrame(() => {
-        routeArt.style.setProperty('--ry', `${(((event.clientX - rect.left) / rect.width) - .5) * 7}deg`);
-        routeArt.style.setProperty('--rx', `${-(((event.clientY - rect.top) / rect.height) - .5) * 5}deg`);
+        tiltFrame = 0;
+        routeArt.style.setProperty('--ry', `${(((event.clientX - rect.left) / rect.width) - .5) * 24}deg`);
+        routeArt.style.setProperty('--rx', `${-(((event.clientY - rect.top) / rect.height) - .5) * 18}deg`);
       });
     });
     routeArt.addEventListener('pointerleave', () => {
+      if (tiltFrame) window.cancelAnimationFrame(tiltFrame);
+      tiltFrame = 0;
       routeArt.style.setProperty('--rx', '0deg');
       routeArt.style.setProperty('--ry', '0deg');
     });
