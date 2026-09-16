@@ -25,7 +25,7 @@
 | 부분 구현 | 일부 코드·설정만 있고 완료 기준을 충족하지 않음 |
 | 구현·검증 완료 | 코드와 적용 가능한 완료 기준을 검증함 |
 
-## 2. 코드 기준선 (2026-09-15, F0-01 감사 완료)
+## 2. 코드 기준선 (2026-09-16, U1-06 회귀 점검 완료)
 
 | 영역 | 상태 | 확인 근거 |
 |---|---|---|
@@ -34,16 +34,16 @@
 | Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
-| 인증·보안 | 부분 구현 | User Entity·Repository·V1 migration과 회원가입 Service·API 검증 완료, Security·JWT는 구현 전 |
+| 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | 하네스만 존재 | `region/AGENTS.md`만 있고 Java 코드·`regions.json` 없음 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
-| DB migration | User schema 구현·검증 | V1 `users` migration을 MySQL 8.4에 적용하고 Hibernate validate 통과, 후속 업무 schema는 구현 전 |
-| 자동 테스트 | 회원가입·User DB 통합 검증 | 전체 34개 통과, 회원가입 validation·중복 409·BCrypt 해시 저장과 User Repository·schema를 MySQL 8.4에서 검증 |
-| 화면 | 정적 시안 | `static/Routy` HTML·CSS·JavaScript·미리보기 테스트, 새 API 미연동 |
+| DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`를 MySQL 8.4에 적용하고 Hibernate validate 통과 |
+| 자동 테스트 | 인증·호출 한도·중복 요청 통합 검증 | 전체 68개 통과, JWT·호출 한도·10분 requestId 상태·중복 차감 방지·다중 인스턴스 동시성을 MySQL 8.4에서 검증 |
+| 화면 | W1-00·W1-01A 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격과 회원가입·로그인 API adapter, 메모리 인증·만료·보호 화면을 검증, 지역·장소·일정 API 연결은 후속 범위 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -75,8 +75,8 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 사용자 장소 이름 | 확정 | 구현 전 | 빈 입력에서 직접 작성, trim 후 1~50자 |
 | 시간 초과 | 확정 | 구현 전 | 저장 차단, 자동 삭제·체류 축소 없음 |
 | 완료 후 편집·조회·공유 | 확정 | 구현 전 | 제한 텍스트 편집, 외부 호출·지도 없는 조회 |
-| 인증·회원 탈퇴 | 확정 | 구현 전 | ADR-037: 비밀번호 8~64자·UTF-8 72바이트 이하, 1시간 access JWT만 사용, 공개 API 3개, 탈퇴 시 소유 데이터 삭제 |
-| 호출 한도·저장소 | 확정 | 구현 전 | MySQL 공유 카운터·requestId 상태, 처리 중·성공 중복 409, 경로 쿼터 사전 확보 |
+| 인증·회원 탈퇴 | 확정 | 부분 구현 | 회원가입·1시간 access JWT 로그인·보호 API 인증 구현 완료, 탈퇴와 종속 데이터 삭제는 후속 작업 |
+| 호출 한도·저장소 | 확정 | 구현·검증 완료 | MySQL 공유 사용자·서비스 카운터와 10분 requestId PROCESSING·SUCCESS 상태, 원자 선점·중복 차단 구현 완료 |
 | 이동시간 출처 | 확정 | 구현 전 | 숫자만 저장, 생성 warning 비영속, 집계 metric |
 | 카카오 좌표 활용 계약 | 정책 확인 완료 | 구현 전 | 2026-09-11 DevTalk 답변과 ADR-028 |
 | 운영 배포 | 차단 | 구현 전 | 기능·테스트·운영 검증 필요 |
@@ -124,6 +124,18 @@ U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로
 U1-02에서 User Entity·Repository와 V1 `users` migration을 구현했다. MySQL 8.4에서 production migration 적용, Hibernate `ddl-auto: validate`, Repository 저장·조회, 이메일 대소문자 UNIQUE와 `password_hash`만 존재하는 schema를 통합 테스트로 검증했다. 회원가입 시 이메일 정규화·해시 생성·중복 오류 변환은 U1-03, 인증과 JWT는 U1-04 범위다.
 
 U1-03에서 회원가입 Service와 `POST /api/users`를 구현했다. 이메일 소문자 정규화, BCrypt strength 12 해시 저장, 선조회와 DB UNIQUE 경쟁 상황의 중복 이메일 409 변환, 비밀번호 code point·UTF-8 byte·제어 문자 validation을 Service·HTTP·MySQL 8.4 통합 테스트로 검증했다. Spring Security 필터와 JWT 로그인은 U1-04 범위다.
+
+U1-04에서 `POST /api/auth/login`과 stateless Spring Security 필터 체인을 구현했다. JWT는 환경 설정으로 주입하는 key ID별 최소 256-bit HMAC key 중 active key로만 발급하고, `sub`·`iss`·`iat`·`exp`·`jti`, HS256 allowlist, key ID, 서명과 User 존재 여부를 보호 요청마다 검증한다. 로그인 성공·동일 401 실패 응답, 1시간 수명, 만료·변조·알 수 없는 key, 공개 endpoint의 HTTP method 경계와 보호 API 차단을 단위·HTTP·MySQL 8.4 통합 테스트로 검증했으며 전체 47개 테스트가 통과했다. 회원 탈퇴, 호출 한도와 TravelPlan 소유권은 후속 작업 범위다.
+
+U1-05A에서 V2 `api_usage_counters` migration과 공개 `ApiUsageService`를 구현했다. 사용자별 분·일 창과 기능별 서비스 전체 일 창을 MySQL에서 공유하고, `Asia/Seoul` 자정 기준 창 계산, 여러 호출 수의 조건부 원자 확보, 실패 시 전체 rollback과 retryAfterSeconds 계산을 적용했다. 카카오 공식 일일 쿼터의 90%인 장소 90,000·자동차 9,000·대중교통 900 서비스 차단선을 정책 한 곳에 두었고, AI 서비스 전체 예산은 모델·가격 확정 전까지 설정하지 않았다. MySQL 8.4에서 migration·schema 저장 금지 열, 경계값, 부분 차감 방지와 병렬 다중 인스턴스 상당 경쟁을 검증했으며 전체 56개 테스트가 통과했다. requestId 실행 상태는 U1-05B 범위다.
+
+U1-05B에서 V3 `request_executions` migration과 공개 `RequestExecutionService`를 구현했다. 사용자·기능·UUID requestId별 PROCESSING·SUCCESS 상태와 10분 만료만 MySQL에 저장하며, requestId 선점을 호출량 확보보다 먼저 커밋해 처리 중·성공 중복이 외부 실행·저장·호출량 차감을 반복하지 않도록 했다. 실패 해제, 만료 재선점, 이전 lease의 새 실행 변경 차단, 제한 batch 만료 삭제와 User FK cascade를 구현했다. MySQL 8.4 병렬 경쟁에서 정확히 한 실행만 선점되고 나머지가 `REQUEST_IN_PROGRESS`로 차단되는 것을 검증했으며 전체 68개 테스트가 통과했다. 실제 기능 endpoint 연결은 각 A1·P1·R2·T1 작업 범위다.
+
+U1-06에서 인증·보안 회귀를 점검했다. `POST /api/users`, `POST /api/auth/login`, `GET /api/shared/travel-plans/{shareToken}`만 공개하고 그 밖의 `/api/**` 요청은 인증을 강제하는 HTTP method 경계, 로그인 성공·동일 401 실패, JWT 만료·변조·알 수 없는 key·삭제된 사용자 차단, 비밀값 비노출, 호출 한도와 requestId 중복 방지를 관련 47개 테스트와 전체 68개 테스트로 재검증했다. 전체 테스트는 실패·오류·skip 없이 통과했고 `git diff --check`도 통과했다. 회원 탈퇴와 TravelPlan 소유권, 실제 배포 환경의 origin·도메인 제한·health·smoke 검증은 각 후속 작업과 운영 준비 범위다.
+
+W1-00에서 `Routy/INTEGRATION.md`의 신규 화면 원칙을 공통 app shell과 page-level view 골격으로 구현했다. 랜딩·인증·Journey Workspace·내 여행·완료 일정·공유 일정의 정보 구조, 팝업이 아닌 8단계 제작 흐름, 초기·로딩·빈 결과·오류 상태를 만들었으며 실제 API·브라우저 저장소·가짜 성공 처리는 연결하지 않았다. Node 정적 검사와 7개 화면 골격 테스트, 390px 모바일 overflow 측정, 실제 Tab 포커스 순서, 데스크톱·모바일 렌더링, 전체 68개 Gradle 테스트와 `git diff --check`를 통과했다. 실제 인증·지역·장소·일정 API 연결은 W1-01A 이후 작업 범위다.
+
+W1-01A에서 회원가입·로그인 화면을 `POST /api/users`, `POST /api/auth/login` 계약에 연결했다. 서버 성공 뒤에만 회원가입 완료·보호 화면 진입을 처리하고 validation·중복 이메일·401·네트워크 실패를 안전한 문구로 표시한다. JWT는 현재 탭 메모리에만 보관하며 로그아웃·만료·pagehide 때 인증 및 작성 골격 상태를 폐기하고, 중복 제출·취소 뒤 늦은 응답·다른 세션의 오래된 401을 차단한다. Node 순수 테스트 20개와 Chromium 브라우저 테스트 9개 시나리오(상위 테스트 포함 총 Node 30개), 전체 Gradle 테스트 68개가 실패·오류·skip 없이 통과했다. 데스크톱·390px 모바일 캡처, Tab·Shift+Tab·Enter, reduced motion, DOM·console 비밀값 비노출과 브라우저 저장소 부재를 확인했고 `git diff --check`도 통과했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 수행하지 않았다. 후속 보호 API와 장소 메모리 모듈은 이 인증 수명 계약에 연결해야 한다.
 
 ## 8. 완료 해석
 

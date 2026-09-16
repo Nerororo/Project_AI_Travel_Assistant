@@ -14,3 +14,9 @@ spring:
   flyway:
     enabled: true
     validate-migration-naming: true
+
+routy:
+  jwt:
+    issuer: ${JWT_ISSUER:routy}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT1H}
+    active-key-id: ${JWT_ACTIVE_KEY_ID}

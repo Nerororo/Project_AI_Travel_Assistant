@@ -103,8 +103,9 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [x] 국내·카카오 기반 정책과 도메인 경계 정리
 * [x] 카카오 좌표의 일시 사용·즉시 폐기 정책 확인과 문서 반영
 * [x] UI 검토용 Travela 원본과 Routy 정적 파일 배치
-* [ ] Spring Data JPA·MySQL·Flyway 개발 기반 구성
-* [ ] 회원·JWT 인증과 일정 소유권 구현
+* [x] Spring Data JPA·MySQL·Flyway 개발 기반 구성과 MySQL 8.4 migration 검증
+* [x] 회원가입·JWT 로그인·공개 API 경계와 보호 API 인증 구현
+* [x] 사용자·서비스 호출 한도와 10분 `requestId` 중복 요청 상태 구현
 * [ ] 국내 행정구역 기준 데이터와 검색 구현
 * [ ] Haversine·Nearest Neighbor·2-opt 순수 Java 알고리즘 구현
 * [ ] OpenAI·카카오 장소·자동차·대중교통 Client 계약과 Fake 구현
@@ -112,10 +113,10 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [ ] 자동차·대중교통 경로 검증과 호출 한도 fallback 구현
 * [ ] 추정 일정·숙소 탐색·음식점 추천 구현
 * [ ] 완료 일정 Aggregate와 저장·조회·편집·삭제·공유 API 구현
-* [ ] Routy 전용 UI와 API 연동
+* [x] Routy 전용 app shell과 회원가입·로그인 UI API 연동
 * [ ] 전체 자동 테스트·브라우저 흐름·운영·배포 검증
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 D0 문서·하네스 정렬만 완료됐으며 실제 기능 구현은 시작하지 않았습니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도 기반과 W1-01A 인증 화면 연결까지 구현·검증됐으며, 지역·장소·일정 도메인과 실제 외부 API 연결은 후속 작업입니다.
 
 ---
 
@@ -155,13 +156,13 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
   <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white">
 </p>
 
-Spring Data JPA·MySQL·Flyway·Spring Security·JWT와 실제 외부 API Client는 목표 기술이며 아직 dependency 또는 기능 구현이 완료되지 않았습니다.
+Spring Data JPA·MySQL·Flyway·Spring Security·JWT는 구현·검증됐습니다. OpenAI·카카오 장소·경로 Client는 목표 기술이며 아직 구현하지 않았습니다.
 
 ### Frontend (계획)
 
-Spring Boot의 `src/main/resources/static/Routy/**`에서 별도 프론트 빌드 도구 없이 동작하는 Vanilla HTML·CSS·JavaScript UI를 구현합니다. `travela-1.0.0/**`은 참고용 원본 템플릿으로 보존하고 실제 서비스 화면에는 `Routy/**`만 사용합니다.
+Spring Boot의 `src/main/resources/static/Routy/**`에서 별도 프론트 빌드 도구 없이 동작하는 Vanilla HTML·CSS·JavaScript UI를 구현했습니다. Landing, Auth, Journey Workspace, My Trips, Trip Detail, Shared Trip의 화면 골격과 8단계 Workspace를 만들었고, 회원가입·로그인 API와 메모리 인증 상태를 연결했습니다. `travela-1.0.0/**`은 참고용 원본 템플릿으로 보존하고 실제 서비스 화면에는 `Routy/**`만 사용합니다.
 
-작성 중 카카오 좌표는 브라우저 JavaScript 메모리와 해당 서버 요청에서만 일시적으로 사용하고, 완료·취소·새로고침·탭 종료와 요청 처리가 끝나면 즉시 폐기합니다.
+JWT는 현재 탭 JavaScript 메모리에만 보관하고 로그아웃·만료·새로고침·탭 종료 시 폐기합니다. 작성 중 카카오 좌표는 후속 장소 기능에서 브라우저 JavaScript 메모리와 해당 서버 요청에서만 일시적으로 사용하고, 완료·취소·새로고침·탭 종료와 요청 처리가 끝나면 즉시 폐기할 예정입니다.
 
 ---
 
@@ -236,6 +237,6 @@ docs/
 
 ## 📌 Project Status
 
-> 현재 설계와 개발 기반을 정리한 뒤 기능 구현을 준비 중인 개인 학습 프로젝트입니다.
+> 인증·호출 한도 기반과 인증 화면을 구현·검증한 개인 학습 프로젝트입니다. 지역·장소·일정 기능과 외부 API 연결을 단계적으로 이어가고 있습니다.
 
 구현이 완료된 기능은 위 체크리스트와 구현 준비도 문서에 지속적으로 반영합니다.

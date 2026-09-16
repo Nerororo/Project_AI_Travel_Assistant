@@ -38,4 +38,44 @@ out/
 .vscode/
 
 
+### Local environment and secrets ###
 .env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+.direnv/
+secrets/
+src/main/resources/application-secret*.yml
+src/main/resources/application-secret*.yaml
+src/main/resources/application-secret*.properties
+*-credentials.json
+service-account*.json
+
+### Private keys and keystores ###
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+### Logs, dumps and local runtime files ###
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+*.hprof
+*.heapdump
+*.pid
+
+### Local Compose overrides ###
+compose.override.yml
+compose.override.yaml
+docker-compose.override.yml
+docker-compose.override.yaml
+
+### Operating system files ###
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -138,13 +138,14 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | T1-04~06 | `docs/01` FR-07~10·FR-14, `docs/02` 7·10절, `docs/04` 7·11~12절, `docs/08` 6.7~6.8절 | 공개 Service·DTO 계약 변경 시 소유 도메인 기준 |
 | T1-07~09 | `docs/01` FR-11~12, `docs/03` 10·12절, `docs/04` 8·10절, `docs/08` 6.9절 | 공유·삭제 결정 변경 시 관련 ADR |
 | T1-10 | `docs/08` 6.7~6.9·7절, `docs/10` 10~11·15절 | 발견한 문제의 책임 문서 |
-| W1-01A | U1 인증 결과, `docs/04` 회원가입·로그인 API, `docs/08` 6.1절과 8절의 인증 만료 복구, `Routy/INTEGRATION.md`의 인증 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-01B | G1 지역 결과·A1-04 지역 추천 API와 인증 사용자 전달 계약, `docs/04` 지역 직접 검색·AI 추천 API, `docs/08` 8절의 지역 UI 항목, `Routy/INTEGRATION.md`의 지역 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-02 | P1-03A 서버 계약·P1-06 상태 모듈, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-00 | `docs/01`의 목표 사용자 흐름, `docs/08` 8절, `docs/10` 14절, `Routy/AGENTS.md`, `Routy/INTEGRATION.md`의 현재 시안과 목표 흐름 | 정보 구조가 목표 계약과 충돌할 때 해당 책임 문서 변경 제안 |
+| W1-01A | W1-00 공통 골격, U1 인증 결과, `docs/04` 회원가입·로그인 API, `docs/08` 6.1절과 8절의 인증 만료 복구, `Routy/INTEGRATION.md`의 인증 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-01B | W1-00 공통 골격, G1 지역 결과·A1-04 지역 추천 API와 인증 사용자 전달 계약, `docs/04` 지역 직접 검색·AI 추천 API, `docs/08` 8절의 지역 UI 항목, `Routy/INTEGRATION.md`의 지역 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-02 | W1-00 공통 골격, P1-03A 서버 계약·P1-06 상태 모듈, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-03 | `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-03A | `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-04~05 | `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03A | W1-00 공통 골격, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-04~05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
 | Q1-01~02 | `docs/09` 2~4·9절, `docs/10` 13절 | 발견한 계약 불일치의 책임 문서 |
 | Q1-03~04 | `docs/09` 4·8절, `docs/10` 13절 | dependency가 필요할 때 `build.gradle`과 관련 ADR |

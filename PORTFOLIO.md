@@ -25,12 +25,12 @@ Routy는 사용자가 국내 지역, 여행 기간, 이동수단과 방문 장�
 
 | 구분 | 현재 확인된 상태 | 포트폴리오 표현 |
 |---|---|---|
-| 애플리케이션 | Java 21·Spring Boot 골격과 `GET /hello` 코드가 존재한다. | 실행 환경 감사 전에는 코드 기준선까지만 사실로 쓴다. |
-| DB 기반 | Docker Compose와 datasource 설정 초안은 있으나 JPA·MySQL·Flyway dependency와 migration은 없다. | DB 연결·migration 완료로 쓰지 않는다. |
-| 설계 | 국내·카카오 방향의 요구사항, API, DB, 테스트, 운영, ADR, 로드맵과 하네스가 정렬돼 있다. | 설계·정책 게이트 완료와 기능 구현 완료를 구분해 표현한다. |
-| 핵심 도메인 | User, Region, AI, Place, Route, Recommendation, TravelPlan 코드는 구현 전이다. | 구현 경험으로 쓰지 않는다. |
+| 애플리케이션 | Java 21·Spring Boot 기반에서 Web·Validation·JPA·Security를 구성하고 전체 테스트를 실행했다. | 인증·호출 한도 기반의 구현·검증 경험으로 쓴다. |
+| DB 기반 | MySQL 8.4 Testcontainers에서 Flyway V1~V3 migration과 Hibernate validate를 검증했다. | User·호출 카운터·중복 요청 상태 schema까지 구현 사실로 쓴다. |
+| 설계 | 국내·카카오 방향의 요구사항, API, DB, 테스트, 운영, ADR, 로드맵과 하네스가 정렬돼 있다. | 설계·정책 게이트와 구현 완료 범위를 구분해 표현한다. |
+| 핵심 도메인 | User 회원가입·JWT 로그인, 호출 한도·`requestId` 실행 상태는 구현·검증됐고 Region·AI·Place·Route·Recommendation·TravelPlan은 구현 전이다. | 구현된 인증·운영 기반과 후속 도메인을 구분해 쓴다. |
 | 외부 연동 | OpenAI·카카오 Client는 구현 전이다. | 장애 처리·비용 절감 경험으로 쓰지 않는다. |
-| 화면 | Routy 정적 시안은 있으나 새 API 흐름과 인증에 연결되지 않았다. | 완성된 프런트엔드로 표현하지 않는다. |
+| 화면 | Routy app shell·6개 page-level view·8단계 Workspace 골격과 회원가입·로그인 API 연결이 구현·검증됐다. | 인증 화면 연결 경험으로 쓰되 지역·장소·일정 화면 구현 완료로 확장하지 않는다. |
 | 정책 | 2026-09-11 DevTalk 답변으로 좌표의 일시 저장·참조 후 즉시 폐기 구조를 확정했다. | 정책 확인과 구현 완료를 구분하고, 실제 폐기 동작은 구현·테스트로 증명한다. |
 
 ### 목표 사용자 흐름
@@ -132,7 +132,7 @@ AI·카카오 호출에는 사용자별 한도가 필요하고 일정에는 처�
 
 ### 4.12 프런트엔드 방향
 
-`static/Routy`의 정적 시안을 새 API 흐름으로 연결한다. 프런트 작업은 백엔드 전체가 끝날 때까지 미루지 않고 U1·A1·P1·S1·T1의 선행 조건을 충족한 W1 작업부터 하나씩 연결한다. `P1-06`에서는 시각 UI보다 먼저 브라우저 메모리 한정 장소 상태 모듈을 만들고, 작성 중 데이터와 서버가 확정한 완료 상태를 분리한다. 완료·공유 화면은 지도 없이 고정 HTML에 저장된 시간표와 카카오 링크만 표시한다.
+`W1-00`에서 `static/Routy`의 app shell, 6개 page-level view와 8단계 Workspace 골격을 구현했고, `W1-01A`에서 회원가입·로그인 API, 메모리 인증·만료·로그아웃과 보호 화면 진입을 연결했다. 프런트 작업은 백엔드 전체가 끝날 때까지 미루지 않고 U1·A1·P1·S1·T1의 선행 조건을 충족한 W1 작업부터 하나씩 연결한다. `P1-06`에서는 시각 UI보다 먼저 브라우저 메모리 한정 장소 상태 모듈을 만들고, 작성 중 데이터와 서버가 확정한 완료 상태를 분리한다. 완료·공유 화면은 지도 없이 고정 HTML에 저장된 시간표와 카카오 링크만 표시한다.
 
 **구현 후 확인할 점**
 
@@ -173,22 +173,22 @@ AI에 맡기지 않는 항목:
 | Java 21 | 구성됨 | 정적 타입과 Spring 생태계 학습 |
 | Spring Boot 4.1.1 | 기본 골격 | 웹 요청 처리와 DI 기반 계층 구조 |
 | Gradle | 구성됨 | dependency·빌드·테스트 관리 |
-| MySQL 8.4·Docker Compose | 설정 초안 | 재현 가능한 로컬 DB 환경 |
-| Spring Data JPA | 도입 예정 | Aggregate 영속성과 Repository 학습 |
-| Flyway | 도입 예정 | versioned schema와 DB 제약 관리 |
-| Spring Security·JWT | 도입 예정 | 인증·인가와 일정 소유권 |
+| MySQL 8.4·Docker Compose | Testcontainers migration 검증 | 재현 가능한 실제 MySQL DB 검증 |
+| Spring Data JPA | 구현·검증 | User·운영 상태 영속성과 Repository 학습 |
+| Flyway | 구현·검증 | V1~V3 versioned schema와 DB 제약 관리 |
+| Spring Security·JWT | 구현·검증 | 회원가입·로그인, 공개 API 경계와 보호 API 인증 |
 | 카카오 Local | 연동 예정·임시 사용 조건 확인 | 국내 장소 검색 |
 | 카카오모빌리티 | 연동 예정·임시 사용 조건 확인 | 자동차 경로 |
 | 카카오맵 대중교통 | REST 계약 확인·연동 예정 | 대중교통 예상 경로, 서비스 일일 900건 차단 |
 | OpenAI API | 연동 예정 | 지역 후보와 메뉴·검색어·이유·대상 관광지 구조화 |
-| JUnit·Fake·Mock | 확장 예정 | 외부 호출 없는 자동 테스트 |
-| HTML·CSS·JavaScript | 정적 시안·API 미연동 | 단계별 W1 연결, 브라우저 메모리 수명과 접근성 검증 |
+| JUnit·Fake·Mock | 구현·확장 중 | MySQL 통합·동시성·보안 회귀와 외부 호출 없는 자동 테스트 |
+| HTML·CSS·JavaScript | W1-01A 인증 연결 완료 | 단계별 W1 연결, 브라우저 메모리 수명과 접근성 검증 |
 
 ## 7. 자소서 문장 초안
 
 ### 현재 사실에 기반한 문장
 
-> 여행 계획에서 장소 탐색과 이동 동선 설계에 반복적으로 시간이 드는 문제를 해결하고자 Spring Boot 여행 일정 서비스 Routy를 기획했습니다. 구현 전에 국내 지역 기준, AI와 서버의 책임, 외부 장소 데이터 수명, 일정 계산과 저장 경계를 요구사항·API·DB·ADR로 분리해 설계하고 있습니다.
+> 여행 계획에서 장소 탐색과 이동 동선 설계에 반복적으로 시간이 드는 문제를 해결하고자 Spring Boot 여행 일정 서비스 Routy를 기획했습니다. 국내 지역 기준, AI와 서버의 책임, 외부 장소 데이터 수명, 일정 계산과 저장 경계를 요구사항·API·DB·ADR로 분리해 설계했고, 회원가입·JWT 로그인과 호출 한도·중복 요청 기반을 MySQL 통합 테스트로 구현·검증했습니다.
 
 > AI 결과를 일정의 정답으로 사용하지 않고 지역·메뉴 후보 생성에 제한했습니다. 거리, 방문 순서, 시간 예산과 추천 점수는 서버의 결정적인 규칙으로 두어 테스트 가능한 구조를 설계했습니다.
 
@@ -234,6 +234,8 @@ AI는 자연어 후보와 설명에는 적합하지만 거리, 순서, 시간 �
 
 | 날짜 | 작업 ID | 문제 | 해결 방식 | 검증 결과 | 자소서·면접 키워드 |
 |---|---|---|---|---|---|
+| 2026-09 | U1-02~06 | 인증 전 사용자별 호출 한도와 중복 요청을 안전하게 처리할 기반이 필요했다. | Flyway V1~V3, BCrypt 회원가입, 1시간 access JWT, 조건부 카운터 확보와 10분 `requestId` 상태를 MySQL 공유 저장소에 구현했다. | MySQL 8.4 Testcontainers를 포함한 전체 68개 테스트가 통과했다. | Security Filter Chain, JWT 검증, atomic update, idempotency, 동시성 테스트 |
+| 2026-09 | W1-00·W1-01A | 팝업 중심 시안과 인증 미연결 상태에서는 실제 작성 흐름을 검증할 수 없었다. | 전체 페이지 Workspace와 인증 화면을 만들고, JWT를 메모리에만 두며 만료·로그아웃·늦은 응답을 처리했다. | Node 테스트 30개, Chromium 인증 흐름 9개 시나리오와 전체 Gradle 68개 테스트가 통과했다. 실제 Spring 브라우저 smoke는 후속 검증으로 남겼다. | 접근성, keyboard flow, memory-only token, async race handling |
 |  |  |  |  |  |  |
 
 기록할 수 있는 근거:

@@ -4,7 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-const files = new Map([['/', 'index.html'],['/index.html','index.html'],['/css/style.css','css/style.css'],['/js/preview.js','js/preview.js'],['/img/mark.svg','img/mark.svg']]);
+const files = new Map([['/', 'index.html'],['/index.html','index.html'],['/css/style.css','css/style.css'],['/js/preview.js','js/preview.js'],['/js/auth.js','js/auth.js'],['/img/mark.svg','img/mark.svg']]);
 const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};
 http.createServer((req,res)=>{
   const file=files.get(new URL(req.url,'http://localhost').pathname);
