@@ -107,23 +107,24 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [x] 정확·접두·부분 일치 및 결정적 정렬을 적용한 인증 지역 검색 API 구현
 * [x] 지역 후보 3개·메뉴 1~5개를 검증하는 AI DTO·Client 계약·Fake·Service 구현
 * [x] OpenAI Responses API strict schema 매핑, timeout과 선택적 1회 재시도를 적용한 실제 Client 구현
-* [ ] Haversine·Nearest Neighbor·2-opt 순수 Java 알고리즘 구현
-* [ ] 지역 추천·메뉴 분석 API의 인증·호출 한도·`requestId` 연결
-* [ ] 카카오 장소·자동차·대중교통 Client 계약과 Fake 구현
-* [ ] 실제 카카오 장소 검색과 일회성 `selectionToken` 구현
-* [ ] 자동차·대중교통 경로 검증과 호출 한도 fallback 구현
-* [ ] 추정 일정·숙소 탐색·음식점 추천 구현
-* [ ] 완료 일정 Aggregate와 저장·조회·편집·삭제·공유 API 구현
+* [ ] **R1-02~R1-07 — 순수 Java 이동·방문 순서 알고리즘**: `route/algorithm`에 좌표·Haversine 거리, Nearest Neighbor 초기 순서, 2-opt 개선, 이동수단별 시간 계수와 10분 단위 올림을 구현하고 경계값·동률·빈 입력을 테스트한다.
+* [ ] **A1-04~A1-07 — AI API 실행 흐름 연결**: 지역 추천과 메뉴 분석 Controller에 JWT 인증, 사용자별 기능 한도, `requestId` 선점/성공/실패 처리를 연결하고, Region 허용 목록·메뉴 수·관광지 수·중복·필수 필드를 Service에서 검증한다.
+* [ ] **C1-01~C1-05 — 외부 장소·경로 Client 계약**: `place/client`, `route/client`에 요청·응답 DTO, 오류 분류, timeout 계약과 Fake를 추가하고 실제 Kakao Local·자동차·대중교통 응답을 내부 모델로 매핑한다.
+* [ ] **P1-01~P1-07 — 장소 검색과 선택 흐름**: 장소 유형별 체류 시간, 지역·주소 검증, 검색 결과 수명과 좌표 일시 사용 정책을 구현하고, 실제 선택에 필요한 일회성 `selectionToken`의 발급·검증·만료·폐기를 연결한다.
+* [ ] **R2-01~R2-07B — 실제 경로 검증과 fallback**: 최종 후보 인접 구간만 자동차·대중교통 경로 API로 검증하고, 예상 종료 시각 초과·정상 경로 없음·기술 장애·쿼터 부족을 구분한다. 필요한 쿼터를 확보하지 못하면 외부 호출 없이 전체 Haversine 추정과 warning을 반환한다.
+* [ ] **S1-01~S1-07 — 추정 일정·숙소·음식점 추천**: 1~7일과 하루 최대 5개, 점심·저녁 60분 시간대, 한쪽 이동 여유 15분을 반영해 일정을 계산한다. 숙소는 지도 중심 탐색 결과를 제공하고 사용자가 선택하게 하며, 음식점은 시간·동선·거리 기반 후보 점수를 계산한다.
+* [ ] **T1-01~T1-10 — 완료 일정 Aggregate와 API**: TravelPlan·Day·Item·PlanPlace 모델과 migration, 계산 완료 후 짧은 트랜잭션 저장, 목록·상세·제한 편집·삭제·공유 조회를 구현한다. 완료/공유 조회에는 외부 API를 호출하지 않고 저장 데이터와 Kakao 링크만 사용한다.
 * [x] Routy app shell·8단계 제작 화면 골격과 메모리 JWT 기반 회원가입·로그인 UI 연동
-* [ ] 전체 자동 테스트·브라우저 흐름·운영·배포 검증
+* [ ] **W1-00~W1-06 — 화면과 백엔드 연결**: 인증 이후 지역 선택·AI 추천·메뉴 분석·이동수단/장소 선택·추정 일정·음식점 선택·완료 일정·공유 화면을 순서대로 연결하고, 로딩·실패·재시도·취소·만료 상태를 화면에 반영한다.
+* [ ] **Q1-01~Q1-07 — 전체 검증과 운영 준비**: 외부 원문·좌표·개인정보 비노출 로그, profile별 Fake/실제 Client 분리, health/metric, migration·Docker·배포 smoke, 전체 자동 테스트와 브라우저 흐름을 검증하고 DoD를 갱신한다.
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도, G1 지역 기준·검색, A1의 AI 계약·OpenAI Client와 W1-01A 인증 화면 연결까지 구현·검증됐습니다. 다음 작업은 지역 추천 API에 인증·호출 한도·`requestId`와 Region 허용 목록을 연결하는 A1-04입니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도, G1 지역 기준·검색, A1의 AI 계약·OpenAI Client와 W1-01A 인증 화면 연결까지 구현·검증됐습니다. 다음 작업은 지역 추천 API에 인증·호출 한도·`requestId`와 Region 허용 목록을 연결하는 A1-04이며, 이후 C1/P1/R2/S1/T1 순서로 핵심 여행 일정 흐름을 완성합니다.
 
 ---
 
 ## 🧩 현재 구현 클래스 구조
 
-아래 구조와 다이어그램은 목표 설계가 아니라 **현재 저장소에 실제로 구현된 Java 코드**를 기준으로 합니다. 사용자·보안 기반에 더해 국내 지역 기준 데이터와 검색, 지역 추천·메뉴 분석 AI 계약, 환경별 Fake와 실제 OpenAI Client가 구현되어 있습니다. `place`, `route`, `recommendation`, `travelplan` 도메인은 후속 구현 시 이 절에 추가합니다.
+아래 구조는 목표 설계가 아니라 **현재 저장소에 실제로 존재하는 Java 클래스**를 기준으로 합니다. 아직 클래스가 없는 `place`, `route`, `recommendation`, `travelplan` 도메인은 표시하지 않습니다.
 
 ```text
 com.example.travel
@@ -131,26 +132,28 @@ com.example.travel
 ├── controller
 │   └── HelloController
 ├── user
-│   ├── controller     # 회원가입·로그인 HTTP 요청 처리
-│   ├── service        # 인증, 호출 한도, 중복 요청 유스케이스
-│   ├── repository     # User·카운터·요청 상태 DB 접근
-│   ├── domain         # JPA Entity와 상태 enum
-│   ├── dto            # API 및 도메인 간 전달 객체
-│   ├── validation     # 비밀번호 커스텀 검증
-│   └── config         # PasswordEncoder 구성
+│   ├── controller     # AuthController, UserController
+│   ├── service        # 회원가입·로그인·호출 한도·requestId 실행 상태
+│   ├── repository     # User·ApiUsageCounter·RequestExecution Repository
+│   ├── domain         # User, ApiUsageCounter, RequestExecution과 상태 enum
+│   ├── dto            # 인증·호출 한도·requestId 전달 객체
+│   ├── validation     # PasswordFormat, PasswordSize 검증
+│   ├── config         # PasswordConfig
+│   └── ...
 ├── region
 │   ├── controller     # 인증 지역 검색 HTTP 요청 처리
-│   ├── service        # 메모리 Catalog와 결정적 지역 검색
+│   ├── service        # RegionCatalog, RegionSearchService, AiAllowedRegionService
 │   ├── loader         # regions.json 적재와 시작 시 무결성 검증
 │   ├── domain         # Region·주소 경계·대표 좌표 값 객체
-│   └── dto            # 지역 검색 응답 전달 객체
+│   └── dto            # 검색 응답과 AI 허용 지역 전달 객체
 ├── ai
-│   ├── client         # AiClient, 환경별 Fake와 OpenAI HTTP 구현·설정
-│   ├── service        # 지역 추천·메뉴 분석 결과 계약 검증
+│   ├── controller     # RegionRecommendationController, MenuAnalysisController
+│   ├── client         # AiClient, OpenAiClient, ProfileFakeAiClient와 설정
+│   ├── service        # RegionRecommendationService, MenuAnalysisService
 │   └── dto            # AI 기능 요청·응답과 허용 후보 전달 객체
 └── global
-    ├── security       # JWT 발급·검증과 Spring Security 필터
-    └── exception      # 공통 오류 코드·응답·예외 변환
+    ├── security       # JwtService, JwtAuthenticationFilter, SecurityConfig 등
+    └── exception      # ApiException, ErrorCode, ErrorResponse, Handler 등
 ```
 
 ```mermaid
