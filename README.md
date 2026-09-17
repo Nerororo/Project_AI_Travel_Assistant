@@ -120,6 +120,201 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 
 ---
 
+## 🧩 현재 구현 클래스 구조
+
+아래 구조와 다이어그램은 목표 설계가 아니라 **현재 저장소에 실제로 구현된 Java 코드**를 기준으로 합니다. 현재는 사용자 회원가입·로그인, JWT 인증, API 호출 한도와 `requestId` 중복 요청 방지, 공통 예외 처리가 구현되어 있습니다. `region`, `ai`, `place`, `route`, `recommendation`, `travelplan` 도메인은 후속 구현 시 이 절에 추가합니다.
+
+```text
+com.example.travel
+├── TravelApplication
+├── controller
+│   └── HelloController
+├── user
+│   ├── controller     # 회원가입·로그인 HTTP 요청 처리
+│   ├── service        # 인증, 호출 한도, 중복 요청 유스케이스
+│   ├── repository     # User·카운터·요청 상태 DB 접근
+│   ├── domain         # JPA Entity와 상태 enum
+│   ├── dto            # API 및 도메인 간 전달 객체
+│   ├── validation     # 비밀번호 커스텀 검증
+│   └── config         # PasswordEncoder 구성
+└── global
+    ├── security       # JWT 발급·검증과 Spring Security 필터
+    └── exception      # 공통 오류 코드·응답·예외 변환
+```
+
+```mermaid
+classDiagram
+direction TB
+
+class UserController {
+  <<RestController>>
+  +register(UserRegistrationRequest) void
+}
+class AuthController {
+  <<RestController>>
+  +login(LoginRequest) LoginResponse
+}
+class UserRegistrationService {
+  <<Service>>
+  +register(email, password) void
+}
+class LoginService {
+  <<Service>>
+  +login(email, password) LoginResponse
+  +userExists(userId) boolean
+}
+class UserRepository {
+  <<JpaRepository>>
+  +findByEmail(email) Optional~User~
+  +existsByEmail(email) boolean
+}
+class User {
+  <<Entity>>
+  -Long id
+  -String email
+  -String passwordHash
+  -Instant createdAt
+  -Instant updatedAt
+}
+
+class JwtAuthenticationFilter {
+  <<Security Filter>>
+}
+class JwtService {
+  <<Service>>
+  +issue(userId) String
+  +verify(token) AuthenticatedUser
+}
+class JwtProperties {
+  <<ConfigurationProperties>>
+  +String issuer
+  +Duration accessTokenTtl
+  +String activeKeyId
+}
+class AuthenticatedUser {
+  <<record>>
+  +long userId
+}
+class SecurityConfig {
+  <<Configuration>>
+}
+class RestAuthenticationEntryPoint {
+  <<Component>>
+}
+class RestAccessDeniedHandler {
+  <<Component>>
+}
+
+class RequestExecutionService {
+  <<Service>>
+  +tryStart(userId, feature, requestId, amount) RequestStartResult
+  +markSucceeded(lease) boolean
+  +releaseAfterFailure(lease) boolean
+}
+class RequestExecutionTransaction {
+  <<Transactional Service>>
+}
+class RequestExecutionRepository {
+  <<JpaRepository>>
+}
+class RequestExecution {
+  <<Entity>>
+  -Long userId
+  -UsageFeature feature
+  -UUID requestId
+  -RequestExecutionStatus status
+  -Instant expiresAt
+}
+
+class ApiUsageService {
+  <<Service>>
+  +tryAcquire(userId, feature, amount) UsageReservationResult
+  +acquireOrThrow(userId, feature, amount) void
+}
+class ApiUsageReservationTransaction {
+  <<Transactional Service>>
+}
+class ApiUsagePolicy {
+  <<Component>>
+  +windows(userId, feature) List~UsageWindow~
+}
+class ApiUsageCounterRepository {
+  <<JpaRepository>>
+}
+class ApiUsageCounter {
+  <<Entity>>
+  -UsageScopeType scopeType
+  -String scopeId
+  -UsageFeature feature
+  -UsageWindowType windowType
+  -long usedCount
+  -Instant expiresAt
+}
+
+class GlobalExceptionHandler {
+  <<RestControllerAdvice>>
+}
+class ApiException
+class ErrorCode {
+  <<enumeration>>
+}
+class ErrorResponse {
+  <<record>>
+}
+
+UserController --> UserRegistrationService
+AuthController --> LoginService
+UserRegistrationService --> UserRepository
+UserRegistrationService ..> User
+LoginService --> UserRepository
+LoginService --> JwtService
+UserRepository --> User
+
+SecurityConfig --> JwtAuthenticationFilter
+SecurityConfig --> RestAuthenticationEntryPoint
+SecurityConfig --> RestAccessDeniedHandler
+JwtAuthenticationFilter --> JwtService
+JwtAuthenticationFilter --> LoginService
+JwtAuthenticationFilter --> RestAuthenticationEntryPoint
+JwtService --> JwtProperties
+JwtService ..> AuthenticatedUser
+
+RequestExecutionService --> RequestExecutionTransaction
+RequestExecutionService --> ApiUsageService
+RequestExecutionTransaction --> RequestExecutionRepository
+RequestExecutionRepository --> RequestExecution
+
+ApiUsageService --> ApiUsageReservationTransaction
+ApiUsageReservationTransaction --> ApiUsagePolicy
+ApiUsageReservationTransaction --> ApiUsageCounterRepository
+ApiUsageCounterRepository --> ApiUsageCounter
+
+UserRegistrationService ..> ApiException
+LoginService ..> ApiException
+ApiUsageService ..> ApiException
+RequestExecutionTransaction ..> ApiException
+GlobalExceptionHandler --> ApiException
+GlobalExceptionHandler ..> ErrorResponse
+ApiException --> ErrorCode
+ErrorResponse --> ErrorCode
+```
+
+주요 요청은 다음과 같이 흐릅니다.
+
+```text
+회원가입: UserController → UserRegistrationService → UserRepository → User
+로그인:   AuthController → LoginService → UserRepository + JwtService
+인증:     JwtAuthenticationFilter → JwtService → LoginService.userExists()
+외부 기능 실행 준비:
+          RequestExecutionService
+          ├── RequestExecutionTransaction  (동일 requestId 중복 실행 방지)
+          └── ApiUsageService              (사용자·서비스 호출량 확보)
+```
+
+Controller는 HTTP와 DTO 검증만 담당하고, Service가 유스케이스와 트랜잭션 순서를 조합하며, Repository는 같은 `user` 도메인의 DB 접근만 담당합니다. `RequestExecutionService`는 중복 요청 상태를 먼저 확보한 뒤 호출량을 예약하며, 처리 실패 시 실행 상태를 해제할 수 있도록 구성되어 있습니다.
+
+---
+
 ## 🛠 Tech Stack
 
 ### Backend

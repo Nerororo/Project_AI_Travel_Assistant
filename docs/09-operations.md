@@ -31,7 +31,7 @@
 - `.env.example`에 실제 값이나 실제 값처럼 보이는 샘플을 넣지 않는다.
 - `test`의 DB 연결 정보는 Testcontainers와 Spring Boot service connection이 주입한다. 개발자 로컬 DB 환경 변수에 의존하거나 H2로 대체하지 않는다.
 - 로컬 Compose의 `travel-mysql`은 개발용 영속 DB이며 자동 테스트가 재사용하지 않는다. 통합 테스트는 데이터 격리와 재현성을 위해 매 실행마다 Testcontainers가 관리하는 별도 MySQL을 사용한다.
-- Windows Java 프로세스가 Docker Desktop named pipe 접근을 거부당하는 개발 환경에서는 저장소 설정이나 테스트 DB 대상을 바꾸지 않는다. Docker 소켓을 사용할 수 있는 WSL에서 Gradle/JDK 컨테이너를 실행하고 `/var/run/docker.sock`을 연결하며, Docker Desktop 공개 포트 접근에는 `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`을 사용한다. 컨테이너 안의 Mockito 동적 agent가 필요한 현재 테스트 구성은 attach listener와 동적 agent 허용 옵션 및 `SYS_PTRACE` 권한을 테스트 컨테이너 실행에만 적용한다. 프로젝트 Gradle 캐시 잠금 충돌을 피하도록 컨테이너 내부 임시 `--project-cache-dir`을 사용한다.
+- Windows Java 프로세스가 Docker Desktop named pipe 접근을 거부당하는 이 개발 환경에서는 저장소 설정이나 테스트 DB 대상을 바꾸지 않고 루트 `test.ps1`로 전체 테스트를 실행한다. 스크립트는 WSL의 `/var/run/docker.sock`, `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`, Mockito attach에 필요한 컨테이너 한정 권한·JVM 옵션과 임시 프로젝트 캐시를 일관되게 적용한다. Docker Desktop의 WSL integration이 켜져 있어야 하며 첫 실행에는 고정된 Gradle/JDK 이미지 다운로드가 필요할 수 있다.
 
 ## 3. 환경 변수와 비밀값
 
