@@ -10,11 +10,10 @@ import java.util.List;
 public record MenuAnalysisRequest(
 		@NotBlank String regionId,
 		@NotBlank @Size(max = 200) String request,
-		@NotNull @Valid List<AttractionContext> attractions
+		@NotNull @Size(max = 35) @Valid List<AttractionContext> attractions
 ) {
 
 	public MenuAnalysisRequest {
-		regionId = regionId == null ? null : regionId.trim();
 		request = request == null ? null : request.trim();
 		attractions = attractions == null ? null : List.copyOf(attractions);
 	}

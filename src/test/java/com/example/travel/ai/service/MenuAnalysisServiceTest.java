@@ -6,6 +6,9 @@ import com.example.travel.ai.dto.AttractionContext;
 import com.example.travel.ai.dto.MenuAnalysisRequest;
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
+import com.example.travel.region.service.AiAllowedRegionService;
+import com.example.travel.user.service.ApiUsageService;
+import com.example.travel.user.service.RequestExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class MenuAnalysisServiceTest {
 
@@ -28,7 +32,11 @@ class MenuAnalysisServiceTest {
 	@BeforeEach
 	void setUp() {
 		client = new FakeAiClient();
-		service = new MenuAnalysisService(client);
+		service = new MenuAnalysisService(
+				client,
+				mock(AiAllowedRegionService.class),
+				mock(RequestExecutionService.class),
+				mock(ApiUsageService.class));
 	}
 
 	@Test

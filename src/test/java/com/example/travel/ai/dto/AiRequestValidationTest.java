@@ -37,9 +37,9 @@ class AiRequestValidationTest {
 	@Test
 	void validatesMenuRequestAndNestedAttractionFields() {
 		var valid = new MenuAnalysisRequest(
-				" region-a ",
+				"region-a",
 				"  " + "나".repeat(200) + "  ",
-				List.of(new AttractionContext("place-a", "사용자 장소 A"))
+				List.of(new AttractionContext("place-a", "  사용자 장소 A  "))
 		);
 		var invalid = new MenuAnalysisRequest(
 				" ",
@@ -49,9 +49,51 @@ class AiRequestValidationTest {
 
 		assertThat(valid.regionId()).isEqualTo("region-a");
 		assertThat(valid.request()).hasSize(200);
+		assertThat(valid.attractions().getFirst().clientPlaceId()).isEqualTo("place-a");
+		assertThat(valid.attractions().getFirst().displayName()).isEqualTo("사용자 장소 A");
 		assertThat(validator.validate(valid)).isEmpty();
 		assertThat(validator.validate(invalid))
 				.extracting(violation -> violation.getPropertyPath().toString())
 				.contains("regionId", "request", "attractions[0].clientPlaceId", "attractions[0].displayName");
+	}
+
+	@Test
+	void preservesOpaqueIdsAndRejectsWhitespaceInClientPlaceId() {
+		var request = new MenuAnalysisRequest(
+				" KR-26 ",
+				"지역 음식",
+				List.of(new AttractionContext(" place-a ", "장소 A")));
+
+		assertThat(request.regionId()).isEqualTo(" KR-26 ");
+		assertThat(request.attractions().getFirst().clientPlaceId()).isEqualTo(" place-a ");
+		assertThat(validator.validate(request))
+				.extracting(violation -> violation.getPropertyPath().toString())
+				.contains("attractions[0].clientPlaceId");
+	}
+
+	@Test
+	void limitsMenuAttractionCountAndNestedFieldLengths() {
+		List<AttractionContext> maximumAttractions = java.util.stream.IntStream.range(0, 35)
+				.mapToObj(index -> new AttractionContext("place-" + index, "장소 " + index))
+				.toList();
+		var maximum = new MenuAnalysisRequest("KR-26", "지역 음식", maximumAttractions);
+		var tooMany = new MenuAnalysisRequest(
+				"KR-26",
+				"지역 음식",
+				java.util.stream.IntStream.range(0, 36)
+						.mapToObj(index -> new AttractionContext("place-" + index, "장소 " + index))
+						.toList());
+		var tooLong = new MenuAnalysisRequest(
+				"KR-26",
+				"지역 음식",
+				List.of(new AttractionContext("p".repeat(101), "장".repeat(51))));
+
+		assertThat(validator.validate(maximum)).isEmpty();
+		assertThat(validator.validate(tooMany))
+				.extracting(violation -> violation.getPropertyPath().toString())
+				.contains("attractions");
+		assertThat(validator.validate(tooLong))
+				.extracting(violation -> violation.getPropertyPath().toString())
+				.contains("attractions[0].clientPlaceId", "attractions[0].displayName");
 	}
 }

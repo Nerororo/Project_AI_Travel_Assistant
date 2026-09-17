@@ -103,6 +103,42 @@ class ApiUsageConcurrencyIntegrationTest {
 	}
 
 	@Test
+	void regionAiAllowsTwoPerMinuteAndTenPerDayThenRejectsTheNextCall() {
+		assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 2);
+		assertThat(usageService.tryAcquire(41L, UsageFeature.AI_REGION_RECOMMENDATION, 1).acquired())
+				.isFalse();
+
+		for (int minute = 1; minute < 5; minute++) {
+			clock.set(Instant.parse("2026-09-16T00:0" + minute + ":00Z"));
+			assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 2);
+		}
+		clock.set(Instant.parse("2026-09-16T00:05:00Z"));
+
+		assertThat(usageService.tryAcquire(41L, UsageFeature.AI_REGION_RECOMMENDATION, 1).acquired())
+				.isFalse();
+		assertThat(counter(UsageScopeType.USER, "41", UsageFeature.AI_REGION_RECOMMENDATION,
+				UsageWindowType.DAY).usedCount()).isEqualTo(10L);
+	}
+
+	@Test
+	void menuAiAllowsThreePerMinuteAndFifteenPerDayThenRejectsTheNextCall() {
+		assertCallsAllowed(42L, UsageFeature.AI_MENU_ANALYSIS, 3);
+		assertThat(usageService.tryAcquire(42L, UsageFeature.AI_MENU_ANALYSIS, 1).acquired())
+				.isFalse();
+
+		for (int minute = 1; minute < 5; minute++) {
+			clock.set(Instant.parse("2026-09-16T00:0" + minute + ":00Z"));
+			assertCallsAllowed(42L, UsageFeature.AI_MENU_ANALYSIS, 3);
+		}
+		clock.set(Instant.parse("2026-09-16T00:05:00Z"));
+
+		assertThat(usageService.tryAcquire(42L, UsageFeature.AI_MENU_ANALYSIS, 1).acquired())
+				.isFalse();
+		assertThat(counter(UsageScopeType.USER, "42", UsageFeature.AI_MENU_ANALYSIS,
+				UsageWindowType.DAY).usedCount()).isEqualTo(15L);
+	}
+
+	@Test
 	void failedServiceLimitReservationRollsBackEveryUserWindow() {
 		for (long userId = 1; userId <= 8; userId++) {
 			assertThat(usageService.tryAcquire(userId, UsageFeature.PUBLIC_TRANSIT_ROUTE, 60).acquired()).isTrue();
@@ -153,6 +189,12 @@ class ApiUsageConcurrencyIntegrationTest {
 				.filter(counter -> counter.windowType() == windowType)
 				.findFirst()
 				.orElseThrow();
+	}
+
+	private void assertCallsAllowed(long userId, UsageFeature feature, int count) {
+		for (int call = 0; call < count; call++) {
+			assertThat(usageService.tryAcquire(userId, feature, 1).acquired()).isTrue();
+		}
 	}
 
 	private static String randomSecret() {

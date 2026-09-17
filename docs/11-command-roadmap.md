@@ -87,6 +87,7 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 | A1-04 | 지역 추천 API와 인증·한도·`requestId` 연결 | 2회/분·10회/일, 중복 실행·차감 방지와 HTTP 오류 계약 |
 | A1-05 | 메뉴 분석 API와 인증·한도·`requestId` 연결 | 3회/분·15회/일, 구조 오류 1회 재시도, 재실패 오류와 직접 입력 fallback 계약 |
 | A1-06 | AI 단계 DoD 점검 | 실제 OpenAI 없는 자동 테스트, 원문·비밀값 미저장, 지역·메뉴 API 계약 통과 |
+| A1-07 | 메뉴 분석 지역·관광지 입력 경계 보완 | 최종 선택 가능한 국내 regionId, 관광지 0~35개·식별자 중복과 문자열 경계를 외부 호출·차감 전에 검증 |
 
 ## 7. R1 — 순수 거리와 방문 순서
 
@@ -225,4 +226,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`G1-02~05`에서 검증 가능한 국내 지역 기준 데이터, 시작 검증과 결정적 직접 검색 API를 구현하고 G1 단계를 완료했다. `A1-01`에서 지역 추천·메뉴 분석 DTO, `AiClient`, local·test Fake와 Spring Service의 계약 검증을 완료하고, `A1-02`에서 ADR-039로 `gpt-5.6-luna` Responses API 계약을 확정했다. `A1-03`에서 공통 Java HTTP transport를 재사용하는 prod·smoke 실제 Client와 기능별 strict schema·응답 매핑을 구현했다. `store: false`, reasoning effort·출력 상한, refusal·incomplete·구조 오류 거절, 400·소진 quota 무재시도와 일시적 5xx 1회 재시도, 전체 timeout을 실제 OpenAI 없는 테스트로 검증했으며 전체 108개 테스트가 통과했다. 다음 시작 작업은 지역 추천 API에 인증·사용자 한도·`requestId`와 Region 허용 목록을 연결하는 `A1-04`다. `W1-01B`는 A1-04 완료 뒤 진행할 수 있다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.
+`G1-02~05`에서 검증 가능한 국내 지역 기준 데이터, 시작 검증과 결정적 직접 검색 API를 구현하고 G1 단계를 완료했다. `A1-01~05`에서 지역·메뉴 DTO와 Service, Fake와 prod·smoke 실제 Responses API Client, 인증된 HTTP API, 국내 허용 지역 목록, 기능별 사용자 한도와 10분 `requestId` 상태를 연결했다. `A1-06` 회귀 점검에서 발견한 메뉴 AI 한도 경계 테스트 누락은 별도 `A1-06A`에서 보강했다. 지역 AI 2회/분·10회/일과 메뉴 AI 3회/분·15회/일의 마지막 허용 호출·초과 차단·Asia/Seoul 자정 전환을 MySQL 공유 저장소로 검증했고, 실제 OpenAI 호출 없이 전체 127개 테스트가 통과해 A1 단계를 완료했다. 다음 시작 작업은 순수 거리·방문 순서 계약을 확정하는 `R1-01`이다. `W1-01B`와 `W1-02A`도 각 선행 UI 작업이 충족되면 진행할 수 있다. 작업을 시작할 때 현재 Git 상태를 확인하고 하나의 작업 ID와 Change Envelope를 정한다.

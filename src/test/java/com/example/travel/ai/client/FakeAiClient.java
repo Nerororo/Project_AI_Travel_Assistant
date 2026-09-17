@@ -6,6 +6,7 @@ public class FakeAiClient implements AiClient {
 	private MenuAnalysisResult menuResult;
 	private RegionRecommendationPrompt lastRegionPrompt;
 	private MenuAnalysisPrompt lastMenuPrompt;
+	private RuntimeException regionFailure;
 
 	public void regionResult(RegionRecommendationResult regionResult) {
 		this.regionResult = regionResult;
@@ -15,9 +16,16 @@ public class FakeAiClient implements AiClient {
 		this.menuResult = menuResult;
 	}
 
+	public void regionFailure(RuntimeException regionFailure) {
+		this.regionFailure = regionFailure;
+	}
+
 	@Override
 	public RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt) {
 		lastRegionPrompt = prompt;
+		if (regionFailure != null) {
+			throw regionFailure;
+		}
 		return regionResult;
 	}
 

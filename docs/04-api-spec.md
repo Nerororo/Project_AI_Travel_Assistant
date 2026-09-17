@@ -247,6 +247,9 @@ AI 응답에 허용 목록 밖의 ID·중복이 있거나 AI 응답 JSON을 해�
 ~~~
 
 - request는 trim 후 1~200자다.
+- regionId는 trim하거나 구조를 해석하지 않으며 최종 선택 가능한 국내 지역 ID와 정확히 일치해야 한다.
+- attractions는 0~35개다. clientPlaceId는 공백 없는 1~100자이며 요청 안에서 중복될 수 없고, displayName은 trim 후 1~50자다.
+- 잘못된 regionId, 관광지 개수·필드·중복은 외부 호출과 호출량 차감 전에 400 `VALIDATION_FAILED`로 거절한다.
 - 사용자당 분당 3회, 하루 15회다.
 - 잘못된 구조화 응답은 최대 1회 재시도하며 재시도도 한도에 포함한다.
 

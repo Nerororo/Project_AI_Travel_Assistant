@@ -41,14 +41,19 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
-	void policyKeepsAiServiceBudgetUnconfiguredWhileApplyingUserLimits() {
+	void policyKeepsAiServiceBudgetUnconfiguredWhileApplyingExactUserLimits() {
 		ApiUsagePolicy policy = new ApiUsagePolicy(
 				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
 
-		var windows = policy.windows(1L, UsageFeature.AI_REGION_RECOMMENDATION);
+		var regionWindows = policy.windows(1L, UsageFeature.AI_REGION_RECOMMENDATION);
+		var menuWindows = policy.windows(1L, UsageFeature.AI_MENU_ANALYSIS);
 
-		assertThat(windows).hasSize(2);
-		assertThat(windows).extracting(ApiUsagePolicy.UsageWindow::limit).containsExactly(2L, 10L);
+		assertThat(regionWindows).hasSize(2);
+		assertThat(regionWindows).extracting(ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(2L, 10L);
+		assertThat(menuWindows).hasSize(2);
+		assertThat(menuWindows).extracting(ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(3L, 15L);
 	}
 
 	@Test

@@ -6,6 +6,12 @@ import com.example.travel.ai.dto.RegionRecommendationRequest;
 import com.example.travel.ai.dto.RegionRecommendationResponse;
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
+import com.example.travel.region.dto.AiAllowedRegion;
+import com.example.travel.region.service.AiAllowedRegionService;
+import com.example.travel.user.dto.RequestExecutionLease;
+import com.example.travel.user.dto.RequestStartResult;
+import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.service.RequestExecutionService;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -13,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class RegionRecommendationService {
@@ -21,9 +28,44 @@ public class RegionRecommendationService {
 	private static final int MAX_REASON_LENGTH = 200;
 
 	private final AiClient aiClient;
+	private final AiAllowedRegionService allowedRegionService;
+	private final RequestExecutionService requestExecutionService;
 
-	public RegionRecommendationService(AiClient aiClient) {
+	public RegionRecommendationService(
+			AiClient aiClient,
+			AiAllowedRegionService allowedRegionService,
+			RequestExecutionService requestExecutionService
+	) {
 		this.aiClient = aiClient;
+		this.allowedRegionService = allowedRegionService;
+		this.requestExecutionService = requestExecutionService;
+	}
+
+	public RegionRecommendationResponse recommend(
+			long userId,
+			UUID requestId,
+			RegionRecommendationRequest request
+	) {
+		RequestStartResult start = requestExecutionService.tryStart(
+				userId, UsageFeature.AI_REGION_RECOMMENDATION, requestId, 1);
+		if (!start.started()) {
+			throw new ApiException(ErrorCode.RATE_LIMIT_EXCEEDED, null, List.of(), start.retryAfterSeconds());
+		}
+
+		RequestExecutionLease lease = start.lease();
+		try {
+			List<RegionCandidate> allowedRegions = allowedRegionService.findAll().stream()
+					.map(this::toCandidate)
+					.toList();
+			RegionRecommendationResponse response = recommend(request, allowedRegions);
+			if (!requestExecutionService.markSucceeded(lease)) {
+				throw new IllegalStateException("Request execution could not be completed");
+			}
+			return response;
+		} catch (RuntimeException exception) {
+			requestExecutionService.releaseAfterFailure(lease);
+			throw exception;
+		}
 	}
 
 	public RegionRecommendationResponse recommend(
@@ -95,6 +137,10 @@ public class RegionRecommendationService {
 				candidate.provinceName(),
 				recommendation.reason()
 		);
+	}
+
+	private RegionCandidate toCandidate(AiAllowedRegion region) {
+		return new RegionCandidate(region.regionId(), region.name(), region.provinceName());
 	}
 
 	private boolean isBlank(String value) {
