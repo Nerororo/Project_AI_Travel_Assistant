@@ -405,12 +405,41 @@ Accepted (2026-09-17), G1-01 결정 완료, 데이터 생성은 G1-02에서 구�
 
 ---
 
+# ADR-039 - OpenAI Responses API와 제공자 비용 차단 계약
+
+## 상태
+
+Accepted (2026-09-17, A1-02 공식 계약 감사 완료)
+
+## 문제
+
+지역 추천과 메뉴 분석은 짧은 자연어를 서버 계약에 맞는 JSON으로 구조화해야 한다. 모델, API 저장 기본값, 구조화 출력, timeout과 재시도를 명시하지 않으면 제공자 변경·장애·비용 증가 때 동작이 달라질 수 있다. 사용자 원문과 AI 원문을 Routy가 저장하지 않더라도 Responses API의 저장 옵션을 생략하면 제공자에 애플리케이션 상태가 남을 수 있다.
+
+## 결정
+
+- 공통 endpoint는 `POST https://api.openai.com/v1/responses`이며 서버 전용 project API key를 `Authorization: Bearer`로 전달한다. 키는 환경 변수 또는 secret manager로만 주입한다.
+- 기본 모델은 `gpt-5.6-luna`, reasoning effort는 `none`이다. 모델은 설정으로 주입하되 운영 배포 전에 지원 여부·가격·Structured Outputs 지원을 smoke에서 다시 확인한다.
+- 요청마다 `store: false`를 명시하고 conversation, previous response, background, streaming, tool과 metadata를 사용하지 않는다. Routy DB·cache·session·로그에도 사용자 원문, 제공자 원문, token usage와 비용을 저장하지 않는다. `store: false`는 OpenAI의 기본 abuse-monitoring 보존과 별도이므로 운영 계정에서 이용 가능한 데이터 통제 조건을 배포 전에 확인한다.
+- 응답은 `text.format.type=json_schema`, `strict: true`를 사용한다. 모든 object schema는 모든 속성을 `required`에 열거하고 `additionalProperties: false`로 제한하며 nullable 값은 `null`을 union에 명시한다. 지역 추천과 메뉴 분석은 서로 다른 schema 이름과 DTO 매핑을 사용한다.
+- 지역 추천 `max_output_tokens`는 512, 메뉴 분석은 768이다. refusal, incomplete, 빈 output, JSON 해석 실패, schema 불일치와 서버의 허용 목록·중복·개수 계약 위반은 성공 결과로 사용하지 않는다.
+- 연결 timeout은 3초, 최초 호출부터 재시도까지 포함한 기능별 전체 요청 시간 예산은 15초다. 인증·권한·잘못된 요청·결제 또는 소진된 quota는 재시도하지 않는다. 연결 실패·timeout·일시적 5xx와 일시적 rate limit만 전체 시간 예산 안에서 최대 한 번 재시도한다. 유효한 `Retry-After`가 있으면 그 이상 기다리되 15초 예산을 넘으면 재시도하지 않고 `AI_UNAVAILABLE`로 변환한다. `Retry-After`가 없으면 짧은 exponential backoff와 jitter를 사용한다. SDK와 애플리케이션의 중첩 재시도는 허용하지 않는다.
+- 구조화 출력 계약 위반 재시도는 메뉴 분석에서만 최대 한 번 수행하고 각 실제 외부 호출을 사용자 사용량에 포함한다. 지역 추천 구조 위반은 재시도하지 않고 `AI_RESPONSE_INVALID`로 끝낸다.
+- 월 계획 예산은 USD 5이며 전용 OpenAI project의 월 hard spend limit을 USD 4로 설정해 20% 완충분을 둔다. 비용 차단은 OpenAI project가 담당하며 Routy는 별도 비용 ledger나 서비스 전체 일일 호출 카운터를 추가하지 않는다. 기존 사용자별 지역 추천 2회/분·10회/일과 메뉴 분석 3회/분·15회/일만 MySQL 공유 호출 카운터로 적용한다.
+- 가격 기준은 2026-09-17 공식 문서의 `gpt-5.6-luna` short-context standard 가격인 입력 USD 0.20/1M tokens, cached input USD 0.02/1M tokens, cache write USD 0.25/1M tokens, 출력 USD 1.20/1M tokens다. 모델·가격·project spend-limit 지원은 변경될 수 있으므로 배포 전과 월 1회 공식 문서·Costs 대시보드로 재확인한다.
+
+공식 근거는 OpenAI의 [GPT-5.6 Luna 모델 문서](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [Responses API](https://developers.openai.com/api/reference/cli/resources/responses/methods/create), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [오류 처리](https://developers.openai.com/api/docs/guides/error-codes), [rate limit](https://developers.openai.com/api/docs/guides/rate-limits), [가격](https://developers.openai.com/api/docs/pricing), [project hard spend limit API](https://developers.openai.com/api/reference/typescript/resources/admin/subresources/organization/subresources/projects)에 둔다.
+
+## 결과
+
+단일 저비용 모델과 짧은 동기 요청으로 구현 범위를 제한하면서 schema와 서버 검증을 함께 적용할 수 있다. 비용 상태를 서버에 추가 저장하지 않아 데이터 경계와 구현이 단순하지만 제공자 project 설정이 빠지면 비용 차단이 작동하지 않으므로 배포 체크리스트에서 hard spend limit을 필수 확인한다. 모델 alias의 동작과 가격은 바뀔 수 있어 smoke·공식 계약 재확인을 운영 게이트로 유지한다.
+
+---
+
 ## 4. 후속 결정 필요
 
 다음 사항은 현재 Accepted로 가장하지 않는다.
 
 - 자동차·대중교통 초기 추정 계수
-- 전체 AI 월간 예산
 - selectionToken 만료와 서명 방식
 - 공유 토큰의 해시·만료 정책
 

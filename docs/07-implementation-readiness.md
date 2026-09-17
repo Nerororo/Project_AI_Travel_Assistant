@@ -36,13 +36,13 @@
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API를 전체 테스트로 검증했으며 AI 허용 목록 연결과 완료 일정 snapshot은 후속 A1·T1 책임 |
-| AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
+| AI | A1-03 Client 구현·검증 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client, strict schema 요청·기능별 응답 매핑·기술 장애 재시도 검증 완료. 공개 API·사용자 한도·requestId 연결은 A1-04~05 후속 작업 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`를 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | 인증·호출 한도·중복 요청 통합 검증 | 전체 68개 통과, JWT·호출 한도·10분 requestId 상태·중복 차감 방지·다중 인스턴스 동시성을 MySQL 8.4에서 검증 |
+| 자동 테스트 | 인증·지역·AI Client 통합 검증 | 전체 108개 통과, JWT·호출 한도·10분 requestId 상태·지역 기준 데이터·AI DTO와 실제 Client 요청·응답·재시도 계약을 검증 |
 | 화면 | W1-00·W1-01A 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격과 회원가입·로그인 API adapter, 메모리 인증·만료·보호 화면을 검증, 지역·장소·일정 API 연결은 후속 범위 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
@@ -66,7 +66,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 주제 | 설계 상태 | 구현 상태 | 근거 또는 다음 조치 |
 |---|---|---|---|
 | 국내 범위 | 확정 | 기준 데이터 구현·검증 | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 광역자치단체의 구·군은 검색 필터, 읍·면·동·해외 제외 |
-| 지역 직접 검색·AI 추천 | 확정 | 기준 데이터만 구현 | 같은 `regions.json` 허용 목록을 사용하며 Loader·검색 Service·API·AI 연결은 후속 작업 |
+| 지역 직접 검색·AI 추천 | 확정 | 지역 기준·AI 계약 구현 | 같은 `regions.json` 허용 목록을 사용하는 실제 연결과 HTTP API는 A1-04 후속 작업 |
 | 이동수단 | 확정 | 구현 전 | 일정당 CAR 또는 PUBLIC_TRANSIT 하나 |
 | 순수 경로 | 확정 | 구현 전 | Haversine, Nearest Neighbor, 2-opt |
 | 실제 경로 호출 시점 | 확정 | 구현 전 | 최종 후보의 인접 구간만 조회 |
@@ -91,7 +91,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | JWT 만료·재발급·로그아웃, User 삭제 | 결정 완료 | ADR-037, `docs/03` User 삭제, `docs/04` 1~2절, `docs/09` 3·10절 |
 | 지역 공공데이터 출처·기준일·생성 절차 | 결정 완료 | ADR-038, `docs/09` 9절 지역 기준 데이터 갱신 |
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | R1-01 | ADR·테스트 |
-| OpenAI 모델·전체 예산 | A1-03 전 | 운영·AI 계약 |
+| OpenAI 모델·전체 예산 | 결정 완료 | ADR-039의 `gpt-5.6-luna`, 월 USD 5 계획과 OpenAI project USD 4 hard spend limit |
 | selectionToken 서명·만료·키 교체 | P1-02 | 보안 ADR·API·운영 |
 | 자동차 요청 단위·공식 쿼터 | R2-01 | API·운영 |
 | AI 메뉴·식사·음식점 흐름 | 확정 | 메뉴 1~5개 사용자 확정, 식사 60분·한쪽 여유 15분, estimate 후 지도 선택, 저장 후 재검색 없음 |
@@ -144,6 +144,12 @@ G1-03에서 Region 불변 값 객체와 정적 데이터 Loader·메모리 Catal
 G1-04에서 공식 이름·짧은 이름·별칭을 정확 일치, 접두 일치, 부분 일치 순으로 검색하고 동률은 표준 이름·상위 지역 이름·regionId 순으로 고정했다. 응답은 상위 표시 이름과 `parentRegionId`, 타입, 최종 선택 가능 여부, 장소 검색 필터 가능 여부를 분리하며 결과가 없으면 빈 배열을 반환한다. 인증된 `GET /api/regions`의 성공·빈 결과·필수 query·공백 query와 무인증 401을 Service·Controller·통합 테스트로 검증했다. AI 지역 추천 연결과 지역 단계 전체 DoD 점검은 각각 A1-04와 G1-05 범위다.
 
 G1-05에서 지역 단계 DoD를 점검하고 실제 데이터의 161개 최종 선택 지역, 76개 장소 검색 필터, 9개 상위 탐색 항목을 회귀 테스트로 고정했다. 광주 5개 구의 검색 필터 역할, 세종의 1단계 전용 주소 경계, 수원 일반구의 주소 경계 전용 포함, 모든 항목의 1단계 주소 경계와 국내 범위도 함께 검증했다. Loader의 주소 경계 누락 거절 테스트를 보강했고 루트 `test.ps1`에서 Testcontainers MySQL 8.4를 포함한 전체 91개 테스트가 통과했다. 같은 허용 목록을 사용하는 AI 연결과 완료 일정의 `regionId`·표시 이름 snapshot은 각각 A1·T1 단계에서 검증한다.
+
+A1-01에서 지역 추천·메뉴 분석 요청·응답 DTO와 `AiClient` 계약, local·test 전용 Fake와 두 Spring Service를 구현했다. 지역 추천은 서버 허용 목록 안의 중복 없는 정확히 3개 ID와 1~200자 이유만 허용하고, 메뉴 분석은 중복 없는 1~5개 메뉴·검색어·이유와 요청에 포함된 선택적 대상 관광지만 허용한다. 계약 위반은 원문과 상세를 노출하지 않는 `AI_RESPONSE_INVALID`로 변환하며 DTO trim·validation과 Fake·Service 경계값을 자동 테스트했다. 실제 OpenAI 공식 계약 감사와 HTTP Client, 지역 Catalog·인증·한도·requestId·Controller 연결 및 메뉴 재시도는 A1-02~05 범위다.
+
+A1-02에서 공식 OpenAI 문서를 감사해 ADR-039를 확정했다. 공통 Responses API에 `gpt-5.6-luna`, reasoning effort `none`, `store: false`, strict JSON Schema, 지역 512·메뉴 768 output token 상한을 사용한다. 연결 3초·전체 15초 안에서 기술 장애만 최대 한 번 재시도하고, 월 USD 5 계획 예산에 OpenAI project USD 4 hard spend limit을 둔다. Routy에는 비용·token usage·서비스 전체 일일 카운터를 추가 저장하지 않는다. 실제 HTTP Client와 설정·응답 매핑은 A1-03, 사용자 한도·requestId·API 연결은 A1-04~05 범위다.
+
+A1-03에서 Java 21 `HttpClient`를 재사용하는 prod·smoke 전용 `OpenAiClient`를 구현했다. 지역 추천과 메뉴 분석은 공통 transport 위에서 서로 다른 instructions·strict JSON Schema·출력 token 상한과 응답 DTO 매핑을 사용한다. 요청의 Bearer 인증, `store: false`, reasoning effort `none`, 도구·metadata·conversation 미사용, refusal·incomplete·빈 output·필수 필드 누락 거절, 400·소진 quota 무재시도와 일시적 5xx 1회 재시도, 전체 timeout을 실제 OpenAI 없는 로컬 fake HTTP 테스트로 검증했다. local·test는 기존 Fake를 유지하며 전체 108개 테스트가 통과했다. 사용자 한도·requestId와 지역·메뉴 HTTP endpoint 연결, 메뉴 구조 오류 재시도는 A1-04~05 범위다.
 
 ## 8. 완료 해석
 

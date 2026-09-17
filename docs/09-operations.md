@@ -31,7 +31,7 @@
 - `.env.example`에 실제 값이나 실제 값처럼 보이는 샘플을 넣지 않는다.
 - `test`의 DB 연결 정보는 Testcontainers와 Spring Boot service connection이 주입한다. 개발자 로컬 DB 환경 변수에 의존하거나 H2로 대체하지 않는다.
 - 로컬 Compose의 `travel-mysql`은 개발용 영속 DB이며 자동 테스트가 재사용하지 않는다. 통합 테스트는 데이터 격리와 재현성을 위해 매 실행마다 Testcontainers가 관리하는 별도 MySQL을 사용한다.
-- Windows Java 프로세스가 Docker Desktop named pipe 접근을 거부당하는 이 개발 환경에서는 저장소 설정이나 테스트 DB 대상을 바꾸지 않고 루트 `test.ps1`로 전체 테스트를 실행한다. 스크립트는 WSL의 `/var/run/docker.sock`, `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`, Mockito attach에 필요한 컨테이너 한정 권한·JVM 옵션과 임시 프로젝트 캐시를 일관되게 적용한다. Docker Desktop의 WSL integration이 켜져 있어야 하며 첫 실행에는 고정된 Gradle/JDK 이미지 다운로드가 필요할 수 있다.
+- Windows 개발 환경에서는 저장소 설정이나 테스트 DB 대상을 바꾸지 않고 루트 `test.ps1`로 전체 테스트를 실행한다. 스크립트는 Docker Desktop의 Windows named pipe 연결을 먼저 확인한 뒤 Gradle Wrapper를 실행하며, Testcontainers가 격리된 MySQL 8.4를 생성한다. Docker Desktop이 실행 중이어야 하고 Docker CLI의 현재 context가 해당 엔진에 연결되어 있어야 한다.
 
 ## 3. 환경 변수와 비밀값
 
@@ -41,7 +41,7 @@
 |---|---|---|
 | DB | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | 환경 또는 secret manager에서 주입 |
 | JWT | `JWT_ACTIVE_KEY_ID`, key ID별 JWT secret, `JWT_ACCESS_TOKEN_TTL` | 최소 256-bit 무작위 secret, access token 1시간, 코드·Git 저장 금지 |
-| OpenAI | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_TIMEOUT_MS` | 서버 전용 |
+| OpenAI | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_CONNECT_TIMEOUT_MS`, `OPENAI_REQUEST_TIMEOUT_MS` | 서버 전용, ADR-039 기본값은 `gpt-5.6-luna`·3초·15초 |
 | 카카오 장소 | `KAKAO_LOCAL_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 자동차 | `KAKAO_MOBILITY_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 대중교통 | `KAKAO_REST_API_KEY` | 카카오맵 REST 대중교통 경로 전용, 앱·API 제한 확인 |
@@ -100,7 +100,8 @@ metric label에는 사용자 ID, 장소 ID, 검색어처럼 cardinality가 큰 �
 - 카카오맵 대중교통 경로는 공식 일일 1,000건을 기준으로 900건에서 신규 호출을 차단한다.
 - 공식 무료 쿼터 제공 조건은 카카오 디벨로퍼스에서 해당 기능을 처음 활성화한 앱인지 운영 전에 확인한다.
 - 유료 초과 사용을 자동 승인하지 않는다.
-- 서비스 전체 AI 예산은 실제 모델·요금을 확인한 뒤 확정한다.
+- OpenAI 월 계획 예산은 USD 5이며 전용 project의 월 hard spend limit을 USD 4로 설정한다. 비용 차단은 OpenAI project가 담당하고 Routy는 비용·token usage와 서비스 전체 일일 호출량을 별도 저장하지 않는다.
+- 가격 기준은 2026-09-17 `gpt-5.6-luna` short-context standard의 입력 USD 0.20/1M tokens, cached input USD 0.02/1M tokens, cache write USD 0.25/1M tokens, 출력 USD 1.20/1M tokens다. 배포 전과 월 1회 공식 가격과 Costs 대시보드를 대조한다.
 
 완료 생성은 호출 전에 필요한 실제 제공자 요청 수를 계산하고 사용자·서비스 쿼터를 원자적으로 확보한다. 확보에 실패하면 일부 구간만 호출하지 않고 외부 경로 API 호출을 0건으로 유지한 채 전체 구간을 Haversine 기반 예상시간으로 계산한다. 이 fallback은 응답 warning과 metric에 남긴다.
 
@@ -136,6 +137,8 @@ fallback 원인은 일정·좌표·경로 payload와 연결하지 않은 집계 
 경로의 기술적 장애가 한 번 재시도 뒤에도 계속되면 Haversine 추정 시간을 10분 단위로 올려 일정 생성을 계속할 수 있고 응답에 warning을 포함한다. 정상 경로 없음에는 fallback을 적용하지 않는다.
 
 장소 검색과 AI는 오류를 임의 데이터로 대체하지 않는다. timeout과 전체 요청 시간 예산은 실제 Client 구현 전 제공자별 공식 문서와 사용자 경험을 기준으로 확정한다.
+
+OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예산 15초를 사용한다. 인증·권한·잘못된 요청·결제·소진 quota는 재시도하지 않는다. 연결 실패·timeout·일시적 5xx와 일시적 rate limit만 최대 한 번 재시도하며, 유효한 `Retry-After`가 15초 예산 안에 있을 때만 준수하고 없으면 짧은 exponential backoff와 jitter를 사용한다. 메뉴 구조 오류는 최대 한 번 재시도하지만 지역 추천 구조 오류는 즉시 `AI_RESPONSE_INVALID`로 변환한다. SDK 자체 재시도와 애플리케이션 재시도를 중첩하지 않는다.
 
 ## 8. Health와 의존성 상태
 
@@ -198,7 +201,7 @@ fallback 원인은 일정·좌표·경로 payload와 연결하지 않은 집계 
 
 | Client | 구현 전 확정할 항목 |
 |---|---|
-| OpenAI | 모델, 구조화 출력, timeout, 재시도, 전체 예산 |
+| OpenAI | ADR-039로 `gpt-5.6-luna`, Responses API, strict JSON Schema, `store: false`, 3초·15초 timeout, 제한 재시도, 월 USD 5·project hard limit USD 4 확정. 구현 전 공식 지원·가격 재확인 |
 | 카카오 Local | endpoint, 필드, 반경·페이지 제한, 저장·표시 정책, 쿼터 |
 | 카카오 Mobility | 자동차 endpoint, 구간 묶음, timeout, 오류, 과금·쿼터 |
 | 카카오 대중교통 | 카카오맵 REST endpoint·인증 재확인, 사용자 한도, 응답 사용 조건 |
