@@ -35,7 +35,7 @@
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
-| 지역 | G1-02 기준 데이터 구축 완료 | 공식 법정동 코드·행정구역 경계로 `regions.json` 246개를 생성·대조했으며 Loader·시작 검증·검색 API는 후속 작업 |
+| 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API를 전체 테스트로 검증했으며 AI 허용 목록 연결과 완료 일정 snapshot은 후속 A1·T1 책임 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
@@ -138,6 +138,12 @@ W1-00에서 `Routy/INTEGRATION.md`의 신규 화면 원칙을 공통 app shell�
 W1-01A에서 회원가입·로그인 화면을 `POST /api/users`, `POST /api/auth/login` 계약에 연결했다. 서버 성공 뒤에만 회원가입 완료·보호 화면 진입을 처리하고 validation·중복 이메일·401·네트워크 실패를 안전한 문구로 표시한다. JWT는 현재 탭 메모리에만 보관하며 로그아웃·만료·pagehide 때 인증 및 작성 골격 상태를 폐기하고, 중복 제출·취소 뒤 늦은 응답·다른 세션의 오래된 401을 차단한다. Node 순수 테스트 20개와 Chromium 브라우저 테스트 9개 시나리오(상위 테스트 포함 총 Node 30개), 전체 Gradle 테스트 68개가 실패·오류·skip 없이 통과했다. 데스크톱·390px 모바일 캡처, Tab·Shift+Tab·Enter, reduced motion, DOM·console 비밀값 비노출과 브라우저 저장소 부재를 확인했고 `git diff --check`도 통과했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 수행하지 않았다. 후속 보호 API와 장소 메모리 모듈은 이 인증 수명 계약에 연결해야 한다.
 
 G1-02에서 법정동 코드와 브이월드 행정구역 경계를 대조해 정적 `regions.json` 246개를 구축했다. 최종 선택 지역 161개와 장소 검색 필터 76개를 분리하고, 광주는 사용자 표시 지역과 `전남광주통합특별시` 주소 경계를 분리했으며 수원 등 도 산하 분구시는 시만 선택 가능하게 유지했다. 원천 코드 집합·역할·부모·주소 경계·좌표 범위·대표점의 경계 내부 포함을 독립 검증했고 전체 Gradle 테스트와 `git diff --check`가 통과했다. Java Loader와 애플리케이션 시작 시 검증, 검색 Service·API는 각각 G1-03·G1-04 범위다.
+
+G1-03에서 Region 불변 값 객체와 정적 데이터 Loader·메모리 Catalog를 구현했다. 애플리케이션 시작 시 schema version, 출처 참조, ID·필수값 중복과 누락, 타입별 선택·검색 필터 역할, 부모 존재·자기 참조·순환 관계, 주소 경계와 대표 좌표 범위를 검증하며 잘못된 데이터로 시작하지 않는다. `regionId`는 공공 코드에서 최초 파생됐더라도 구조를 해석하지 않는 Routy 소유의 안정적인 식별자로 취급하고 `KR-GWANGJU-URBAN` 같은 논리 ID도 허용한다. 실제 246개 적재와 오류 사례를 자동 테스트했고 격리 Testcontainers MySQL을 포함한 전체 테스트가 통과했다. 직접 검색·정렬과 지역 HTTP API는 G1-04 범위다.
+
+G1-04에서 공식 이름·짧은 이름·별칭을 정확 일치, 접두 일치, 부분 일치 순으로 검색하고 동률은 표준 이름·상위 지역 이름·regionId 순으로 고정했다. 응답은 상위 표시 이름과 `parentRegionId`, 타입, 최종 선택 가능 여부, 장소 검색 필터 가능 여부를 분리하며 결과가 없으면 빈 배열을 반환한다. 인증된 `GET /api/regions`의 성공·빈 결과·필수 query·공백 query와 무인증 401을 Service·Controller·통합 테스트로 검증했다. AI 지역 추천 연결과 지역 단계 전체 DoD 점검은 각각 A1-04와 G1-05 범위다.
+
+G1-05에서 지역 단계 DoD를 점검하고 실제 데이터의 161개 최종 선택 지역, 76개 장소 검색 필터, 9개 상위 탐색 항목을 회귀 테스트로 고정했다. 광주 5개 구의 검색 필터 역할, 세종의 1단계 전용 주소 경계, 수원 일반구의 주소 경계 전용 포함, 모든 항목의 1단계 주소 경계와 국내 범위도 함께 검증했다. Loader의 주소 경계 누락 거절 테스트를 보강했고 루트 `test.ps1`에서 Testcontainers MySQL 8.4를 포함한 전체 91개 테스트가 통과했다. 같은 허용 목록을 사용하는 AI 연결과 완료 일정의 `regionId`·표시 이름 snapshot은 각각 A1·T1 단계에서 검증한다.
 
 ## 8. 완료 해석
 

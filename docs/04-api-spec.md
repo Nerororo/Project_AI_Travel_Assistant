@@ -167,11 +167,11 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 {
   "regions": [
     {
-      "regionId": "GANGWON_GANGNEUNG",
+      "regionId": "KR-51150",
       "name": "강릉시",
       "shortName": "강릉",
       "provinceName": "강원특별자치도",
-      "parentRegionId": "GANGWON",
+      "parentRegionId": "KR-51",
       "type": "CITY",
       "selectable": true,
       "placeSearchFilterable": false
@@ -186,12 +186,12 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 {
   "regions": [
     {
-      "regionId": "BUSAN_HAEUNDAE",
+      "regionId": "KR-26350",
       "name": "해운대구",
       "shortName": "해운대",
       "provinceName": "부산광역시",
-      "parentRegionId": "BUSAN",
-      "type": "DISTRICT",
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
       "selectable": false,
       "placeSearchFilterable": true
     }
@@ -200,6 +200,8 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 ~~~
 
 `parentRegionId`, `selectable`, `placeSearchFilterable`로 최종 여행 지역과 장소 검색 필터를 구분한다. 최상위 지역의 parentRegionId는 null이다. `placeSearchFilterable=true`인 항목은 특별시·광역시 아래 구·군이며 최종 지역으로 선택할 수 없다. 대표 좌표와 데이터 출처는 내부 검색 범위 계산에 사용하며 공개 Response의 필수 필드로 노출하지 않는다.
+
+`regionId`는 Routy가 소유하는 불투명하고 안정적인 식별자다. 클라이언트는 `KR-` 접두사, 숫자 길이 또는 문자열 구조에서 지역의 계층·유형·외부 행정코드를 추론하지 않고 응답의 `parentRegionId`, `type`, `selectable`, `placeSearchFilterable`을 사용한다.
 
 ### POST /api/ai/regions/recommend
 
@@ -217,7 +219,7 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 {
   "regions": [
     {
-      "regionId": "GANGWON_GANGNEUNG",
+      "regionId": "KR-51150",
       "name": "강릉시",
       "provinceName": "강원특별자치도",
       "reason": "바다와 도심 관광을 함께 선택할 수 있습니다."
@@ -236,7 +238,7 @@ AI 응답에 허용 목록 밖의 ID·중복이 있거나 AI 응답 JSON을 해�
 
 ~~~json
 {
-  "regionId": "BUSAN",
+  "regionId": "KR-26",
   "request": "해운대에서 부산다운 음식과 매운 음식을 먹고 싶어",
   "attractions": [
     {"clientPlaceId": "browser-uuid", "displayName": "해운대 해수욕장"}
@@ -267,8 +269,8 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 
 ~~~json
 {
-  "regionId": "BUSAN",
-  "districtFilterId": "BUSAN_HAEUNDAE",
+  "regionId": "KR-26",
+  "districtFilterId": "KR-26350",
   "placeRole": "ATTRACTION",
   "query": "해변",
   "center": null,
@@ -341,7 +343,7 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
 
 ~~~json
 {
-  "regionId": "BUSAN",
+  "regionId": "KR-26",
   "travelMode": "CAR",
   "startDate": "2026-10-01",
   "endDate": "2026-10-03",
@@ -432,7 +434,7 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 ~~~json
 {
   "title": "부산 2박 3일",
-  "regionId": "BUSAN",
+  "regionId": "KR-26",
   "travelMode": "CAR",
   "startDate": "2026-10-01",
   "endDate": "2026-10-03",
@@ -508,7 +510,7 @@ Request는 estimate 입력에 다음 필드를 추가한다.
   "travelPlanId": 1,
   "title": "부산 2박 3일",
   "region": {
-    "regionId": "BUSAN",
+    "regionId": "KR-26",
     "displayName": "부산광역시"
   },
   "travelMode": "CAR",
