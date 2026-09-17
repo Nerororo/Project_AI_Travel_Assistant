@@ -90,7 +90,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 테스트 DB 방식과 JPA·MySQL·Flyway dependency | 결정 완료 | MySQL 8.4 Testcontainers, Spring Boot 관리 버전, `docs/08` 3절과 `docs/09` 11절 |
 | JWT 만료·재발급·로그아웃, User 삭제 | 결정 완료 | ADR-037, `docs/03` User 삭제, `docs/04` 1~2절, `docs/09` 3·10절 |
 | 지역 공공데이터 출처·기준일·생성 절차 | 결정 완료 | ADR-038, `docs/09` 9절 지역 기준 데이터 갱신 |
-| CAR·PUBLIC_TRANSIT 초기 추정 계수 | R1-01 | ADR·테스트 |
+| CAR·PUBLIC_TRANSIT 초기 추정 계수 | 결정 완료 | ADR-040, 구현·단위 테스트는 R1-02~06 |
 | OpenAI 모델·전체 예산 | 결정 완료 | ADR-039의 `gpt-5.6-luna`, 월 USD 5 계획과 OpenAI project USD 4 hard spend limit |
 | selectionToken 서명·만료·키 교체 | P1-02 | 보안 ADR·API·운영 |
 | 자동차 요청 단위·공식 쿼터 | R2-01 | API·운영 |
@@ -115,7 +115,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 
 ## 7. 현재 작업 상태
 
-F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A~C가 구현·검증됐다. 다음 백엔드 주 작업은 `R1-01`이며, 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`은 발견 사항을 기록한 미실행 후속 작업이다.
+F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A~C가 구현·검증됐다. R1-01에서 좌표·Haversine·기하 중앙값·메도이드와 이동수단별 초기 시간 추정 계약을 ADR-040으로 확정했다. R1-02에서 WGS84 좌표 값 객체와 평균 지구 반지름 기반 Haversine 거리를 순수 Java로 구현하고 0 거리·대칭성·알려진 거리 오차·좌표 범위와 비유한 값 거절을 단위 테스트로 검증했다. R1-03에서 Nearest Neighbor의 입력·출력·시작점·열린 경로·안정 키 동률·실패 조건과 `O(n²)` 시간·`O(n)` 추가 공간 계약을 ADR-040에 확정했다. R1-04에서 안정 키·좌표 입력과 명시적 시작점을 사용하는 Nearest Neighbor 열린 경로를 순수 Java로 구현하고 빈 목록·단일 장소·전체 장소 1회 방문·시작점 보존·입력 순서와 무관한 동률 결정성·입출력 불변·잘못된 입력 거절을 단위 테스트로 검증했다. 다음 백엔드 주 작업은 `R1-05`이며, 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`은 발견 사항을 기록한 미실행 후속 작업이다.
 
 U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
 
