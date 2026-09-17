@@ -57,6 +57,21 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
+	void retryAfterSecondsRoundsRemainingFractionUp() {
+		Instant now = Instant.parse("2026-09-16T14:59:00.100Z");
+		ApiUsagePolicy policy = new ApiUsagePolicy(Clock.fixed(now, ZoneOffset.UTC));
+		ApiUsagePolicy.UsageWindow window = new ApiUsagePolicy.UsageWindow(
+				UsageScopeType.USER,
+				"1",
+				UsageWindowType.MINUTE,
+				Instant.parse("2026-09-16T14:59:00Z"),
+				Instant.parse("2026-09-16T15:00:00Z"),
+				1L);
+
+		assertThat(policy.retryAfterSeconds(window)).isEqualTo(60L);
+	}
+
+	@Test
 	void returnsDenialAndMapsItToCommonRateLimitException() {
 		ApiUsageReservationTransaction transaction = mock(ApiUsageReservationTransaction.class);
 		doThrow(new ApiUsageReservationTransaction.UsageLimitExceeded(37L))

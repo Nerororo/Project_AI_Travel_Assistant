@@ -25,11 +25,11 @@
 | 부분 구현 | 일부 코드·설정만 있고 완료 기준을 충족하지 않음 |
 | 구현·검증 완료 | 코드와 적용 가능한 완료 기준을 검증함 |
 
-## 2. 코드 기준선 (2026-09-16, U1-06 회귀 점검 완료)
+## 2. 코드 기준선 (2026-09-17, F0-06 보완 완료)
 
 | 영역 | 상태 | 확인 근거 |
 |---|---|---|
-| Spring Boot | 기본 골격 실행 가능 | `TravelApplication` 기동과 `GET /hello` HTTP 200 확인 |
+| Spring Boot | 기본 골격 실행 가능 | `TravelApplication` 기동과 명세 밖 개발 endpoint의 공통 404 처리 확인 |
 | Java·Gradle | 현재 골격 실행 가능 | JDK 21.0.12.1, Gradle 9.7.1, Spring Boot 4.1.1로 빌드 확인 |
 | Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
@@ -42,7 +42,7 @@
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`를 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | 인증·지역·AI API 통합 검증 | 전체 127개 통과, JWT·호출 한도와 정확한 AI 분·일 경계·10분 requestId 상태·지역 기준 데이터·AI DTO와 실제 Client 요청·응답·재시도 및 지역·메뉴 API 계약을 검증 |
+| 자동 테스트 | 인증·지역·AI API 통합 검증 | 전체 135개 통과, JWT·호출 한도와 정확한 AI 분·일 경계·10분 requestId 상태·지역 기준 데이터·AI DTO와 실제 Client 요청·응답·재시도 및 지역·메뉴 API 계약을 검증 |
 | 화면 | W1-00·W1-01A 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격과 회원가입·로그인 API adapter, 메모리 인증·만료·보호 화면을 검증, 지역·장소·일정 API 연결은 후속 범위 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
@@ -115,9 +115,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 
 ## 7. 현재 작업 상태
 
-현재 실제 기능은 구현 전이다. 활성 구현 작업과 다음 실행 순서는 `docs/11-command-roadmap.md`를 따른다.
-
-F0-01에 필요한 코드 기준선은 문서 작업 중 읽기 전용으로 확인했지만 정식 작업 완료로 표시하지 않는다. 사용자가 개발 시작을 별도로 요청할 때만 F0 이후 작업을 진행한다.
+F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A가 구현·검증됐다. 다음 백엔드 주 작업은 `R1-01`이며, 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`과 `W1-01C`는 발견 사항을 기록한 미실행 후속 작업이다.
 
 U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
 
@@ -156,6 +154,14 @@ A1-04에서 인증된 `POST /api/ai/regions/recommend`와 필수 UUID `Idempoten
 A1-05에서 인증된 `POST /api/ai/menus/analyze`와 필수 UUID `Idempotency-Key` 계약을 구현했다. 최초 AI 호출 전에 `AI_MENU_ANALYSIS`의 사용자별 3회/분·15회/일 카운터와 10분 requestId 실행 상태를 확보한다. `AI_RESPONSE_INVALID`만 최대 한 번 재시도하고 두 번째 실제 AI 호출 직전에 사용량 1회를 추가 확보하므로, 잔여 한도가 없으면 두 번째 AI 호출 없이 429와 재시도 정보를 반환한다. 두 번째 구조 오류는 안전한 503 `AI_RESPONSE_INVALID`로 끝나며 요청·응답 원문이나 기존 작성 상태를 서버에 저장하지 않아 클라이언트가 기존 입력을 유지하고 직접 메뉴 입력으로 전환할 수 있다. 성공·중복·초기 및 재시도 한도·재시도 성공·두 번째 구조 오류와 Controller validation·오류 계약을 실제 OpenAI 없이 검증했고 전체 125개 테스트가 통과했다. AI 단계 전체 DoD 점검은 A1-06 범위다.
 
 A1-06 회귀 점검에서 AI 기능·보안·외부 호출 격리와 전체 테스트는 통과했지만 메뉴 AI의 정확한 분·일 한도 경계가 자동 테스트로 고정되지 않은 점을 발견했다. 별도 A1-06A에서 지역 AI 2회/분·10회/일과 메뉴 AI 3회/분·15회/일의 마지막 허용 호출과 다음 호출 차단을 고정 시계와 MySQL 공유 저장소로 검증했다. 기존 Asia/Seoul 자정 전환 검증과 함께 실제 OpenAI 호출 없이 전체 127개 테스트, `git diff --check`를 통과해 A1 단계를 완료했다.
+
+A1-07에서 메뉴 분석 입력 경계를 보완했다. 응답의 `name`, `searchQuery`, `reason`, `targetClientPlaceId` 형식과 request의 기존 공백 거절 계약은 유지하고, regionId는 trim하지 않은 원문으로 최종 선택 가능한 국내 지역과 정확히 일치하는지 검증한다. 관광지 맥락은 0~35개이며 clientPlaceId는 보정하지 않는 공백 없는 1~100자이자 요청 안에서 중복될 수 없고, displayName은 trim 후 1~50자다. 이 입력 검증은 requestId 선점·호출량 차감·AI 호출보다 먼저 수행되어 위반 시 400 `VALIDATION_FAILED`로 끝난다. 식별자 비보정 회귀 기대값을 포함해 루트 `test.ps1`의 Testcontainers MySQL 기반 전체 132개 테스트가 실패·오류·skip 없이 통과했다.
+
+U1-07에서 회원가입 저장 중 발생한 DB 무결성 오류의 의미를 구분했다. MySQL 중복 키 오류 1062만 409 `EMAIL_ALREADY_EXISTS`로 변환하고, 다른 무결성 오류는 이메일 중복으로 오인하지 않고 원래 예외를 유지해 공통 500 처리 대상으로 남긴다. DB 오류 문구나 사용자 이메일을 검사·노출하지 않으며, 중복 키 경쟁과 다른 제약 오류 단위 테스트를 포함해 루트 `test.ps1`의 전체 133개 테스트가 실패·오류·skip 없이 통과했다.
+
+U1-08에서 호출 한도 초과의 `retryAfterSeconds`를 남은 시간의 올림값으로 계산하도록 보완했다. 정수 초 경계는 기존 값을 유지하고 소수 초가 남으면 1초를 더하며, 만료 경계에서도 최소 1초를 반환한다. 59.9초 잔여 시간이 60초로 반환되는 회귀 테스트를 포함해 루트 `test.ps1`의 전체 134개 테스트가 실패·오류·skip 없이 통과했다.
+
+F0-06에서 API 명세에 없는 개발 확인용 `GET /hello`와 `HelloController`를 제거했다. 해당 경로는 운영 애플리케이션에서 공통 404 `RESOURCE_NOT_FOUND`의 여섯 필드 오류 계약으로 처리되며, 실제 Spring Security·MVC·MySQL 구성을 사용하는 통합 회귀 테스트로 고정했다. 루트 `test.ps1`의 전체 135개 테스트가 실패·오류·skip 없이 통과했다. JWT TTL과 브라우저 판정 정렬, AI 출력 문자열 정규화는 각각 미실행 후속 작업 `W1-01C`, `A1-08`로 로드맵에만 등록했다.
 
 ## 8. 완료 해석
 

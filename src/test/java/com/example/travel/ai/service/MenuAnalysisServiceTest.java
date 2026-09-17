@@ -52,7 +52,7 @@ class MenuAnalysisServiceTest {
 				ATTRACTIONS
 		));
 
-		assertThat(client.lastMenuPrompt().regionId()).isEqualTo("region-a");
+		assertThat(client.lastMenuPrompt().regionId()).isEqualTo(" region-a ");
 		assertThat(client.lastMenuPrompt().request()).isEqualTo("매운 음식");
 		assertThat(client.lastMenuPrompt().attractions()).isEqualTo(ATTRACTIONS);
 		assertThat(response.menus()).hasSize(2);

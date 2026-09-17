@@ -107,8 +107,8 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [x] 정확·접두·부분 일치 및 결정적 정렬을 적용한 인증 지역 검색 API 구현
 * [x] 지역 후보 3개·메뉴 1~5개를 검증하는 AI DTO·Client 계약·Fake·Service 구현
 * [x] OpenAI Responses API strict schema 매핑, timeout과 선택적 1회 재시도를 적용한 실제 Client 구현
-* [ ] **R1-02~R1-07 — 순수 Java 이동·방문 순서 알고리즘**: `route/algorithm`에 좌표·Haversine 거리, Nearest Neighbor 초기 순서, 2-opt 개선, 이동수단별 시간 계수와 10분 단위 올림을 구현하고 경계값·동률·빈 입력을 테스트한다.
-* [ ] **A1-04~A1-07 — AI API 실행 흐름 연결**: 지역 추천과 메뉴 분석 Controller에 JWT 인증, 사용자별 기능 한도, `requestId` 선점/성공/실패 처리를 연결하고, Region 허용 목록·메뉴 수·관광지 수·중복·필수 필드를 Service에서 검증한다.
+* [ ] **R1-01~R1-07 — 순수 Java 이동·방문 순서 알고리즘**: 좌표·Haversine·기하 중앙값·메도이드와 이동수단별 추정 계수 계약을 확정한 뒤, `route/algorithm`에 Nearest Neighbor·2-opt·10분 단위 시간 추정을 구현하고 경계값·동률·빈 입력을 테스트한다.
+* [x] **A1-04~A1-07 — AI API 실행 흐름 연결**: 지역 추천과 메뉴 분석 Controller에 JWT 인증, 사용자별 기능 한도, `requestId` 선점/성공/실패 처리를 연결하고, Region 허용 목록·메뉴 수·관광지 수·중복·필수 필드를 Service에서 검증했다.
 * [ ] **C1-01~C1-05 — 외부 장소·경로 Client 계약**: `place/client`, `route/client`에 요청·응답 DTO, 오류 분류, timeout 계약과 Fake를 추가하고 실제 Kakao Local·자동차·대중교통 응답을 내부 모델로 매핑한다.
 * [ ] **P1-01~P1-07 — 장소 검색과 선택 흐름**: 장소 유형별 체류 시간, 지역·주소 검증, 검색 결과 수명과 좌표 일시 사용 정책을 구현하고, 실제 선택에 필요한 일회성 `selectionToken`의 발급·검증·만료·폐기를 연결한다.
 * [ ] **R2-01~R2-07B — 실제 경로 검증과 fallback**: 최종 후보 인접 구간만 자동차·대중교통 경로 API로 검증하고, 예상 종료 시각 초과·정상 경로 없음·기술 장애·쿼터 부족을 구분한다. 필요한 쿼터를 확보하지 못하면 외부 호출 없이 전체 Haversine 추정과 warning을 반환한다.
@@ -118,7 +118,7 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [ ] **W1-00~W1-06 — 화면과 백엔드 연결**: 인증 이후 지역 선택·AI 추천·메뉴 분석·이동수단/장소 선택·추정 일정·음식점 선택·완료 일정·공유 화면을 순서대로 연결하고, 로딩·실패·재시도·취소·만료 상태를 화면에 반영한다.
 * [ ] **Q1-01~Q1-07 — 전체 검증과 운영 준비**: 외부 원문·좌표·개인정보 비노출 로그, profile별 Fake/실제 Client 분리, health/metric, migration·Docker·배포 smoke, 전체 자동 테스트와 브라우저 흐름을 검증하고 DoD를 갱신한다.
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도, G1 지역 기준·검색, A1의 AI 계약·OpenAI Client와 W1-01A 인증 화면 연결까지 구현·검증됐습니다. 다음 작업은 지역 추천 API에 인증·호출 한도·`requestId`와 Region 허용 목록을 연결하는 A1-04이며, 이후 C1/P1/R2/S1/T1 순서로 핵심 여행 일정 흐름을 완성합니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 F0 기반, U1 인증·호출 한도, G1 지역 기준·검색, A1 지역·메뉴 AI와 W1-01A 인증 화면 연결까지 구현·검증됐습니다. 다음 백엔드 작업은 순수 거리·방문 순서 계약을 확정하는 R1-01이며, 이후 R1 구현과 C1/P1/R2/S1/T1 순서로 핵심 여행 일정 흐름을 완성합니다.
 
 ---
 
@@ -129,8 +129,6 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 ```text
 com.example.travel
 ├── TravelApplication
-├── controller
-│   └── HelloController
 ├── user
 │   ├── controller     # AuthController, UserController
 │   ├── service        # 회원가입·로그인·호출 한도·requestId 실행 상태

@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.Locale;
 
 @Service
@@ -32,7 +33,21 @@ public class UserRegistrationService {
 		try {
 			userRepository.saveAndFlush(new User(normalizedEmail, passwordEncoder.encode(password)));
 		} catch (DataIntegrityViolationException exception) {
-			throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
+			if (isDuplicateKey(exception)) {
+				throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
+			}
+			throw exception;
 		}
+	}
+
+	private boolean isDuplicateKey(DataIntegrityViolationException exception) {
+		Throwable cause = exception;
+		while (cause != null) {
+			if (cause instanceof SQLException sqlException && sqlException.getErrorCode() == 1062) {
+				return true;
+			}
+			cause = cause.getCause();
+		}
+		return false;
 	}
 }

@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.sql.SQLIntegrityConstraintViolationException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,11 +53,25 @@ class UserRegistrationServiceTest {
 	void mapsDatabaseDuplicateRaceToSameBusinessError() {
 		when(passwordEncoder.encode(any())).thenReturn("encoded-password-value");
 		when(userRepository.saveAndFlush(any(User.class)))
-				.thenThrow(new DataIntegrityViolationException("database detail must not escape"));
+				.thenThrow(new DataIntegrityViolationException(
+						"database detail must not escape",
+						new SQLIntegrityConstraintViolationException("duplicate", "23000", 1062)));
 
 		assertThatThrownBy(() -> service.register("member@example.test", validPassword()))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
+	}
+
+	@Test
+	void doesNotReportOtherDatabaseIntegrityFailuresAsDuplicateEmail() {
+		when(passwordEncoder.encode(any())).thenReturn("encoded-password-value");
+		DataIntegrityViolationException failure = new DataIntegrityViolationException(
+				"database detail must not escape",
+				new SQLIntegrityConstraintViolationException("other constraint", "23000", 3819));
+		when(userRepository.saveAndFlush(any(User.class))).thenThrow(failure);
+
+		assertThatThrownBy(() -> service.register("member@example.test", validPassword()))
+				.isSameAs(failure);
 	}
 
 	private static String validPassword() {

@@ -132,6 +132,18 @@ class SecurityIntegrationTest {
 				.andExpect(status().isUnauthorized());
 	}
 
+	@Test
+	void developmentHelloEndpointIsNotExposed() throws Exception {
+		mockMvc.perform(get("/hello"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("요청한 리소스를 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.fieldErrors").isEmpty())
+				.andExpect(jsonPath("$.details").value(nullValue()))
+				.andExpect(jsonPath("$.adjustments").isEmpty())
+				.andExpect(jsonPath("$.retryAfterSeconds").value(nullValue()));
+	}
+
 	private static String randomSecret() {
 		byte[] bytes = new byte[32];
 		new SecureRandom().nextBytes(bytes);

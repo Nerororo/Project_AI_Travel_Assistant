@@ -6,6 +6,7 @@ import com.example.travel.user.dto.UsageFeature;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -49,7 +50,11 @@ public class ApiUsagePolicy {
 	}
 
 	public long retryAfterSeconds(UsageWindow window) {
-		long seconds = ChronoUnit.SECONDS.between(clock.instant(), window.expiresAt());
+		Duration remaining = Duration.between(clock.instant(), window.expiresAt());
+		long seconds = remaining.getSeconds();
+		if (remaining.getNano() > 0) {
+			seconds++;
+		}
 		return Math.max(1, seconds);
 	}
 
