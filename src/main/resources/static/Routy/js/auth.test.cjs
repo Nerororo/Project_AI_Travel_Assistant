@@ -5,7 +5,7 @@ const {randomBytes} = require('node:crypto');
 const auth = require('./auth.js');
 const credentials = () => ({email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')});
 const reply = (status, body) => ({status, json: async () => body});
-const loginBody = () => ({accessToken: Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.'), tokenType: 'Bearer', expiresInSeconds: 3600});
+const loginBody = (expiresInSeconds = 3600) => ({accessToken: Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.'), tokenType: 'Bearer', expiresInSeconds});
 function harness(fetch) {
   let clock = 1000;
   let id = 0;
@@ -47,11 +47,39 @@ test('registration sends exact credentials and accepts only 201 without requirin
 });
 test('unexpected success status and malformed login never authenticate', async () => {
   const data = credentials();
-  for (const response of [reply(200, null), reply(201, loginBody()), reply(200, {...loginBody(), tokenType: 'Other'}), reply(200, {...loginBody(), expiresInSeconds: 0})]) {
+  for (const response of [reply(200, null), reply(201, loginBody()), reply(200, {...loginBody(), tokenType: 'Other'}), reply(200, loginBody(0)), reply(200, loginBody(-1)), reply(200, loginBody(1.5)), reply(200, loginBody('3600')), reply(200, loginBody(Number.MAX_SAFE_INTEGER))]) {
     const {client} = harness(async () => response);
     assert.equal((await client.submit('login', data.email, data.password)).ok, false);
     assert.equal(client.isAuthenticated(), false);
   }
+});
+test('server TTL must be a positive safe integer with a representable absolute expiry', () => {
+  assert.equal(auth.expirationTime(1000, 1), 2000);
+  for (const ttl of [0, -1, 1.5, '1', NaN, Infinity, Number.MAX_SAFE_INTEGER]) {
+    assert.equal(auth.expirationTime(1000, ttl), null);
+  }
+  assert.equal(auth.expirationTime(-1, 60), null);
+});
+test('login accepts server-configured TTL and expires from request start consistently', async () => {
+  const data = credentials();
+  const h = harness(async () => reply(200, loginBody(90)));
+  assert.equal((await h.client.submit('login', data.email, data.password)).ok, true);
+  h.advance(89999);
+  assert.equal(h.client.isAuthenticated(), true);
+  h.advance(1);
+  assert.equal(h.client.isAuthenticated(), false);
+  assert.deepEqual(h.ended, ['expired']);
+});
+test('TTL longer than the browser timer limit does not expire early', async () => {
+  const data = credentials();
+  const thirtyDays = 30 * 24 * 60 * 60;
+  const h = harness(async () => reply(200, loginBody(thirtyDays)));
+  assert.equal((await h.client.submit('login', data.email, data.password)).ok, true);
+  h.advance(2147483647);
+  assert.equal(h.client.isAuthenticated(), true);
+  h.advance(thirtyDays * 1000 - 2147483647);
+  assert.equal(h.client.isAuthenticated(), false);
+  assert.deepEqual(h.ended, ['expired']);
 });
 test('successful login holds token privately, adds Bearer only to protected same-origin API', async () => {
   const data = credentials();

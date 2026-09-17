@@ -36,14 +36,14 @@
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
-| AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 브라우저 연결은 W1-01B·W1-02A 후속 작업 |
+| AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`를 MySQL 8.4에 적용하고 Hibernate validate 통과 |
 | 자동 테스트 | 인증·지역·AI API 통합 검증 | 전체 135개 통과, JWT·호출 한도와 정확한 AI 분·일 경계·10분 requestId 상태·지역 기준 데이터·AI DTO와 실제 Client 요청·응답·재시도 및 지역·메뉴 API 계약을 검증 |
-| 화면 | W1-00·W1-01A 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격과 회원가입·로그인 API adapter, 메모리 인증·만료·보호 화면을 검증, 지역·장소·일정 API 연결은 후속 범위 |
+| 화면 | W1-00·W1-01A~C 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격, 회원가입·로그인 API adapter와 지역 직접 검색·정확히 3개인 AI 추천 후보 선택을 연결하고 서버 TTL 기반 메모리 인증·만료·보호 화면을 검증, 장소·일정 API 연결은 후속 범위 |
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -66,7 +66,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 주제 | 설계 상태 | 구현 상태 | 근거 또는 다음 조치 |
 |---|---|---|---|
 | 국내 범위 | 확정 | 기준 데이터 구현·검증 | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 광역자치단체의 구·군은 검색 필터, 읍·면·동·해외 제외 |
-| 지역 직접 검색·AI 추천 | 구현·검증 | 같은 `regions.json`의 최종 선택 가능 지역만 AI에 제공하고 인증·한도·requestId가 적용된 HTTP API 구현 | 브라우저 연결은 W1-01B 후속 작업 |
+| 지역 직접 검색·AI 추천 | 구현·검증 | 같은 `regions.json`의 최종 선택 가능 지역만 AI에 제공하고 인증·한도·requestId가 적용된 HTTP API와 직접 검색·정확히 3개인 AI 후보 선택 브라우저 연결 구현 | 실제 Spring 서버와 브라우저의 end-to-end smoke는 별도 운영 검증 |
 | 이동수단 | 확정 | 구현 전 | 일정당 CAR 또는 PUBLIC_TRANSIT 하나 |
 | 순수 경로 | 확정 | 구현 전 | Haversine, Nearest Neighbor, 2-opt |
 | 실제 경로 호출 시점 | 확정 | 구현 전 | 최종 후보의 인접 구간만 조회 |
@@ -115,7 +115,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 
 ## 7. 현재 작업 상태
 
-F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A가 구현·검증됐다. 다음 백엔드 주 작업은 `R1-01`이며, 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`과 `W1-01C`는 발견 사항을 기록한 미실행 후속 작업이다.
+F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A~C가 구현·검증됐다. 다음 백엔드 주 작업은 `R1-01`이며, 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`은 발견 사항을 기록한 미실행 후속 작업이다.
 
 U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
 
@@ -134,6 +134,10 @@ U1-06에서 인증·보안 회귀를 점검했다. `POST /api/users`, `POST /api
 W1-00에서 `Routy/INTEGRATION.md`의 신규 화면 원칙을 공통 app shell과 page-level view 골격으로 구현했다. 랜딩·인증·Journey Workspace·내 여행·완료 일정·공유 일정의 정보 구조, 팝업이 아닌 8단계 제작 흐름, 초기·로딩·빈 결과·오류 상태를 만들었으며 실제 API·브라우저 저장소·가짜 성공 처리는 연결하지 않았다. Node 정적 검사와 7개 화면 골격 테스트, 390px 모바일 overflow 측정, 실제 Tab 포커스 순서, 데스크톱·모바일 렌더링, 전체 68개 Gradle 테스트와 `git diff --check`를 통과했다. 실제 인증·지역·장소·일정 API 연결은 W1-01A 이후 작업 범위다.
 
 W1-01A에서 회원가입·로그인 화면을 `POST /api/users`, `POST /api/auth/login` 계약에 연결했다. 서버 성공 뒤에만 회원가입 완료·보호 화면 진입을 처리하고 validation·중복 이메일·401·네트워크 실패를 안전한 문구로 표시한다. JWT는 현재 탭 메모리에만 보관하며 로그아웃·만료·pagehide 때 인증 및 작성 골격 상태를 폐기하고, 중복 제출·취소 뒤 늦은 응답·다른 세션의 오래된 401을 차단한다. Node 순수 테스트 20개와 Chromium 브라우저 테스트 9개 시나리오(상위 테스트 포함 총 Node 30개), 전체 Gradle 테스트 68개가 실패·오류·skip 없이 통과했다. 데스크톱·390px 모바일 캡처, Tab·Shift+Tab·Enter, reduced motion, DOM·console 비밀값 비노출과 브라우저 저장소 부재를 확인했고 `git diff --check`도 통과했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 수행하지 않았다. 후속 보호 API와 장소 메모리 모듈은 이 인증 수명 계약에 연결해야 한다.
+
+W1-01B에서 지역 직접 검색과 AI 지역 추천을 Journey Workspace의 첫 단계에 연결했다. 직접 검색은 서버의 `selectable`·`placeSearchFilterable`을 그대로 사용해 최종 여행 지역과 장소 검색 필터용 구·군을 구분하고, AI 추천은 Bearer 인증과 요청별 UUID `Idempotency-Key`를 전달해 중복 없는 정확히 3개 후보일 때만 선택할 수 있게 했다. 선택 지역은 현재 탭 메모리에만 유지하며 요청 중복, 단계 이동·로그아웃·인증 만료 뒤 늦은 응답, 서버 원문 노출을 차단한다. Node 순수 테스트 23개와 Chromium 브라우저 테스트 11개 시나리오가 통과했고 데스크톱·390px 모바일 렌더링, 브라우저 저장소 부재, 루트 `test.ps1`의 전체 135개 Gradle 테스트와 `git diff --check`를 확인했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 별도 운영 검증으로 남는다.
+
+W1-01C에서 브라우저 로그인 성공 판정을 고정 3600초 비교에서 서버 `expiresInSeconds` 계약 기반으로 정렬했다. 유한한 양의 정수이며 안전한 절대 만료 시각으로 계산 가능한 TTL만 수용하고 요청 시작 시각을 기준으로 만료를 계산한다. 브라우저 단일 타이머 한계보다 긴 TTL은 남은 시간을 분할 예약하며 이전 세션 callback이 새 세션을 만료시키지 않는다. Node 순수 테스트 26개와 Chromium 브라우저 테스트 12개 시나리오, 루트 `test.ps1`의 전체 135개 Gradle 테스트와 `git diff --check`가 통과했다.
 
 G1-02에서 법정동 코드와 브이월드 행정구역 경계를 대조해 정적 `regions.json` 246개를 구축했다. 최종 선택 지역 161개와 장소 검색 필터 76개를 분리하고, 광주는 사용자 표시 지역과 `전남광주통합특별시` 주소 경계를 분리했으며 수원 등 도 산하 분구시는 시만 선택 가능하게 유지했다. 원천 코드 집합·역할·부모·주소 경계·좌표 범위·대표점의 경계 내부 포함을 독립 검증했고 전체 Gradle 테스트와 `git diff --check`가 통과했다. Java Loader와 애플리케이션 시작 시 검증, 검색 Service·API는 각각 G1-03·G1-04 범위다.
 

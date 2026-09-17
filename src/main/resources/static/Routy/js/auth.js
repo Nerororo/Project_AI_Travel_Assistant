@@ -6,6 +6,7 @@
   else root.RoutyAuth = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const protectedRoutes = new Set(['/workspace', '/trips', '/trip']);
+  const MAX_TIMER_DELAY_MS = 2147483647;
   const messages = Object.freeze({
     VALIDATION_FAILED: '입력 내용을 확인해 주세요.',
     EMAIL_ALREADY_EXISTS: '이미 사용 중인 이메일입니다.',
@@ -36,6 +37,13 @@
     }
     return {ok: false, code, message: messages[code], fieldErrors};
   }
+  function expirationTime(startedAt, expiresInSeconds) {
+    if (!Number.isSafeInteger(startedAt) || startedAt < 0
+        || !Number.isSafeInteger(expiresInSeconds) || expiresInSeconds <= 0) return null;
+    const lifetime = expiresInSeconds * 1000;
+    if (!Number.isSafeInteger(lifetime) || lifetime > Number.MAX_SAFE_INTEGER - startedAt) return null;
+    return startedAt + lifetime;
+  }
   // Credentials and access token remain in this closure; no browser persistence.
   function createClient({fetch: request, now = Date.now, setTimer = setTimeout, clearTimer = clearTimeout, onSessionEnd = () => {}}) {
     let token = null;
@@ -43,6 +51,14 @@
     let timer;
     let generation = 0;
     let pending = null;
+    function scheduleExpiration(expectedExpiresAt) {
+      clearTimer(timer);
+      const remaining = expectedExpiresAt - now();
+      if (remaining <= 0) { clear('expired'); return; }
+      timer = setTimer(() => {
+        if (token !== null && expiresAt === expectedExpiresAt) scheduleExpiration(expectedExpiresAt);
+      }, Math.min(remaining, MAX_TIMER_DELAY_MS));
+    }
     function clear(reason = 'logout') {
       generation++;
       pending?.abort();
@@ -80,13 +96,14 @@
         if (mode === 'signup' && response.status === 201) return {ok: true};
         const body = await response.json().catch(() => null);
         if (version !== generation) return {ok: false, code: 'CANCELLED'};
+        const expiresAtCandidate = expirationTime(started, body?.expiresInSeconds);
         if (mode === 'login' && response.status === 200 && body?.tokenType === 'Bearer'
             && typeof body.accessToken === 'string' && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(body.accessToken)
-            && body.expiresInSeconds === 3600) {
+            && expiresAtCandidate !== null) {
           clearTimer(timer);
           token = body.accessToken;
-          expiresAt = started + body.expiresInSeconds * 1000;
-          timer = setTimer(() => clear('expired'), Math.max(0, expiresAt - now()));
+          expiresAt = expiresAtCandidate;
+          scheduleExpiration(expiresAt);
           return {ok: true};
         }
         return apiError(response.status, body);
@@ -110,5 +127,5 @@
     }
     return Object.freeze({submit, cancel, clear, isAuthenticated, protectedRequest});
   }
-  return Object.freeze({validate, apiError, createClient, isProtected: route => protectedRoutes.has(route)});
+  return Object.freeze({validate, apiError, expirationTime, createClient, isProtected: route => protectedRoutes.has(route)});
 });

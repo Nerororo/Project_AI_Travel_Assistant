@@ -11,15 +11,19 @@ const {spawn} = require('node:child_process');
 const {randomBytes} = require('node:crypto');
 const {setTimeout: delay} = require('node:timers/promises');
 
-test('authentication browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
+test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
   const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
   const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
   const account = {email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')};
   const token = Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.');
   let responseMode = 'success';
+  let loginTtl = 3600;
   let loginCalls = 0;
   let registrationCalls = 0;
+  let regionSearchCalls = 0;
+  let regionRecommendationCalls = 0;
+  let recommendationHeaders;
   const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && ['/api/users', '/api/auth/login'].includes(req.url)) {
       for await (const _ of req) { /* Discard request data immediately. */ }
@@ -32,8 +36,29 @@ test('authentication browser flows, keyboard, lifecycle and mobile layout', {tim
       const status = mode === 'duplicate' ? 409 : mode === 'validation' ? 400 : mode === 'unauthorized' ? 401 : signup ? 201 : 200;
       res.writeHead(status);
       if (status === 201) res.end();
-      else if (status === 200) res.end(JSON.stringify({accessToken: token, tokenType: 'Bearer', expiresInSeconds: 3600}));
+      else if (status === 200) res.end(JSON.stringify({accessToken: token, tokenType: 'Bearer', expiresInSeconds: loginTtl}));
       else res.end(JSON.stringify({code: status === 409 ? 'EMAIL_ALREADY_EXISTS' : status === 400 ? 'VALIDATION_FAILED' : 'AUTHENTICATION_REQUIRED', message: 'untrusted-response', fieldErrors: status === 400 ? [{field: 'email', reason: 'INVALID_FORMAT'}] : [], details: null, adjustments: [], retryAfterSeconds: null}));
+      return;
+    }
+    if (req.method === 'GET' && req.url.startsWith('/api/regions?')) {
+      regionSearchCalls++;
+      res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
+      res.end(JSON.stringify({regions: [
+        {regionId: 'opaque-city', name: '강릉시', shortName: '강릉', provinceName: '강원특별자치도', parentRegionId: 'opaque-province', type: 'CITY', selectable: true, placeSearchFilterable: false},
+        {regionId: 'opaque-filter', name: '해운대구', shortName: '해운대', provinceName: '부산광역시', parentRegionId: 'opaque-metro', type: 'DISTRICT_FILTER', selectable: false, placeSearchFilterable: true}
+      ]}));
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/api/ai/regions/recommend') {
+      recommendationHeaders = req.headers;
+      for await (const _ of req) { /* Discard natural-language request immediately. */ }
+      regionRecommendationCalls++;
+      res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
+      res.end(JSON.stringify({regions: [
+        {regionId: 'opaque-a', name: '강릉시', provinceName: '강원특별자치도', reason: '바다와 산을 함께 만날 수 있어요.'},
+        {regionId: 'opaque-b', name: '속초시', provinceName: '강원특별자치도', reason: '조용한 바닷가를 둘러볼 수 있어요.'},
+        {regionId: 'opaque-c', name: '여수시', provinceName: '전라남도', reason: '섬과 해안 풍경이 이어져요.'}
+      ]}));
       return;
     }
     const file = files.get(req.url.split('?')[0]);
@@ -174,6 +199,44 @@ test('authentication browser flows, keyboard, lifecycle and mobile layout', {tim
     assert.equal(await evaluate(`indexedDB.databases().then(items=>items.length)`), 0);
     assert.equal(await evaluate(`document.documentElement.outerHTML.includes(${JSON.stringify(token)})`), false);
   });
+  await t.test('positive server-configured TTL is accepted without a fixed one-hour check', async () => {
+    await click('#logout-button');
+    await navigate('/workspace');
+    loginTtl = 900;
+    responseMode = 'success';
+    await fill();
+    await click('#auth-submit');
+    await until(`document.body.dataset.view === 'workspace'`);
+    assert.equal(await evaluate(`document.querySelector('#logout-button').hidden`), false);
+    loginTtl = 3600;
+  });
+  await t.test('direct search and exactly three AI candidates support an explicit region choice', async () => {
+    await navigate('/workspace');
+    await evaluate(`document.querySelector('#region-query').value='강릉';document.querySelector('#region-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#region-search-results .region-result').length === 2`);
+    assert.equal(regionSearchCalls, 1);
+    assert.equal(await evaluate(`document.querySelectorAll('#region-search-results [data-region-id]').length`), 1);
+    assert.equal(await evaluate(`document.querySelector('#region-search-results').textContent.includes('장소 검색 필터')`), true);
+    await click('#region-search-results [data-region-id]');
+    assert.equal(await evaluate(`document.querySelector('#summary-region').textContent`), '강릉시');
+    await click('[data-region-method="ai"]');
+    await evaluate(`document.querySelector('#region-request').value='바다가 있고 조용한 여행';document.querySelector('#region-request').dispatchEvent(new Event('input'));document.querySelector('#region-ai-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#region-ai-results .region-result').length === 3`);
+    assert.equal(regionRecommendationCalls, 1);
+    assert.equal(typeof recommendationHeaders['idempotency-key'], 'string');
+    assert.match(recommendationHeaders['idempotency-key'], /^[0-9a-f-]{36}$/);
+    assert.equal(recommendationHeaders.authorization, `Bearer ${token}`);
+    await click('#region-ai-results [data-region-id="opaque-b"]');
+    assert.equal(await evaluate(`document.querySelector('#summary-region').textContent`), '속초시');
+    assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
+    await screenshot('w1-01b-region-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    await evaluate(`document.querySelector('#region-ai-submit').scrollIntoView({block:'center'})`);
+    assert.equal(await evaluate(`(()=>{const r=document.querySelector('#region-ai-submit').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth})()`), true);
+    await screenshot('w1-01b-region-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+  });
   await t.test('logout discards current step and prevents back navigation from opening protected content', async () => {
     await navigate('/workspace');
     await click('[data-step="4"]');
@@ -211,13 +274,13 @@ test('authentication browser flows, keyboard, lifecycle and mobile layout', {tim
   await t.test('expiry timer discards workspace and refresh never restores login', async () => {
     await click('[data-auth-tab="login"]');
     responseMode = 'success';
-    await evaluate(`window.__shortExpiry=true`);
+    loginTtl = 1;
     await fill();
     await click('#auth-submit');
     await until(`document.body.dataset.view === 'workspace'`);
     await until(`document.body.dataset.view === 'auth'`);
     assert.equal(await evaluate(`document.querySelector('#auth-status').textContent.includes('만료')`), true);
-    await evaluate(`window.__shortExpiry=false`);
+    loginTtl = 3600;
     await fill();
     await click('#auth-submit');
     await until(`document.body.dataset.view === 'workspace'`);

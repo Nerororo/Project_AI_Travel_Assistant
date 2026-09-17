@@ -51,3 +51,26 @@ test('state preview distinguishes initial loading empty and error', () => {
   assert.equal(new Set(models.map(model => model.title)).size, 4);
   assert.equal(ui.stateModel('unknown'), ui.VIEW_STATES.initial);
 });
+
+test('region search accepts the server shape without inferring identifiers', () => {
+  const regions = [{regionId: 'opaque-a', name: '강릉시', selectable: true, placeSearchFilterable: false}];
+  assert.deepEqual(ui.parseRegionSearch({regions}), regions);
+  assert.equal(ui.parseRegionSearch({regions: [{regionId: 'opaque-a', name: '강릉시'}]}), null);
+});
+
+test('AI recommendation requires exactly three distinct valid regions', () => {
+  const region = (regionId, name) => ({regionId, name, provinceName: '강원특별자치도', reason: `${name} 추천 이유`});
+  const valid = [region('a', '강릉시'), region('b', '속초시'), region('c', '동해시')];
+  assert.deepEqual(ui.parseRegionRecommendations({regions: valid}), valid);
+  assert.equal(ui.parseRegionRecommendations({regions: valid.slice(0, 2)}), null);
+  assert.equal(ui.parseRegionRecommendations({regions: [valid[0], valid[0], valid[2]]}), null);
+  assert.equal(ui.parseRegionRecommendations({regions: [{...valid[0], reason: ''}, valid[1], valid[2]]}), null);
+});
+
+test('region errors expose only stable guidance and optional retry time', () => {
+  assert.deepEqual(ui.regionError(503, {code: 'AI_UNAVAILABLE', message: 'provider details'}), {
+    code: 'AI_UNAVAILABLE', message: ui.REGION_MESSAGES.AI_UNAVAILABLE
+  });
+  assert.equal(ui.regionError(429, {code: 'RATE_LIMIT_EXCEEDED', retryAfterSeconds: 17}).message.includes('17초'), true);
+  assert.equal(ui.regionError(500, {message: 'secret'}).code, 'SERVER_ERROR');
+});
