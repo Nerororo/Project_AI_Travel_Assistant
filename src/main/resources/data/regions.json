@@ -1,0 +1,7126 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-17",
+  "sources": [
+    {
+      "sourceId": "LEGAL_DISTRICT_20260630",
+      "provider": "국토교통부 국가공간정보센터",
+      "title": "국토교통부_전국 법정동_20260630",
+      "url": "https://www.data.go.kr/data/15063424/fileData.do",
+      "dataDate": "2026-06-30",
+      "retrievedAt": "2026-09-17",
+      "sha256": "E5657D4B53A16F72E42E9C0D91E84FF2D647E70DC56B9408DA6FD057D0DA45C3"
+    },
+    {
+      "sourceId": "VWORLD_BOUNDARY_20260917",
+      "provider": "국토교통부 국가공간정보센터 브이월드",
+      "title": "행정구역도 시도·시군구 WFS",
+      "url": "https://www.data.go.kr/data/15059008/openapi.do",
+      "effectiveDate": "2026-07-01",
+      "retrievedAt": "2026-09-17",
+      "layers": [
+        "LT_C_ADSIDO_INFO",
+        "LT_C_ADSIGG_INFO"
+      ],
+      "sha256": {
+        "sido": "DA71B8278DB30FC41D28E63B860C619AD51AF860E33BCE11A1B63E639985992C",
+        "sigungu": "1AB502BE2A7774877AEA836C3914DDA52E168801CE190B628274575587895FCE"
+      }
+    }
+  ],
+  "regions": [
+    {
+      "regionId": "KR-11",
+      "name": "서울특별시",
+      "shortName": "서울",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "SPECIAL_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.551914,
+        "longitude": 126.991807
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "강남구",
+          "강동구",
+          "강북구",
+          "강서구",
+          "관악구",
+          "광진구",
+          "구로구",
+          "금천구",
+          "노원구",
+          "도봉구",
+          "동대문구",
+          "동작구",
+          "마포구",
+          "서대문구",
+          "서초구",
+          "성동구",
+          "성북구",
+          "송파구",
+          "양천구",
+          "영등포구",
+          "용산구",
+          "은평구",
+          "종로구",
+          "중구",
+          "중랑구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12",
+      "name": "전남광주통합특별시",
+      "shortName": "전남",
+      "aliases": [
+        "전라남도"
+      ],
+      "parentRegionId": null,
+      "type": "INTEGRATED_SPECIAL_CITY",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.886438,
+        "longitude": 126.897843
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "강진군",
+          "고흥군",
+          "곡성군",
+          "광산구",
+          "광양시",
+          "구례군",
+          "나주시",
+          "남구",
+          "담양군",
+          "동구",
+          "목포시",
+          "무안군",
+          "보성군",
+          "북구",
+          "서구",
+          "순천시",
+          "신안군",
+          "여수시",
+          "영광군",
+          "영암군",
+          "완도군",
+          "장성군",
+          "장흥군",
+          "진도군",
+          "함평군",
+          "해남군",
+          "화순군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26",
+      "name": "부산광역시",
+      "shortName": "부산",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.201551,
+        "longitude": 129.060561
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "강서구",
+          "금정구",
+          "기장군",
+          "남구",
+          "동구",
+          "동래구",
+          "부산진구",
+          "북구",
+          "사상구",
+          "사하구",
+          "서구",
+          "수영구",
+          "연제구",
+          "영도구",
+          "중구",
+          "해운대구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27",
+      "name": "대구광역시",
+      "shortName": "대",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.969844,
+        "longitude": 128.599376
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "군위군",
+          "남구",
+          "달서구",
+          "달성군",
+          "동구",
+          "북구",
+          "서구",
+          "수성구",
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28",
+      "name": "인천광역시",
+      "shortName": "인천",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.490648,
+        "longitude": 126.6861
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "강화군",
+          "검단구",
+          "계양구",
+          "남동구",
+          "미추홀구",
+          "부평구",
+          "서해구",
+          "연수구",
+          "영종구",
+          "옹진군",
+          "제물포구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30",
+      "name": "대전광역시",
+      "shortName": "대전",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.339764,
+        "longitude": 127.394039
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "대덕구",
+          "동구",
+          "서구",
+          "유성구",
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31",
+      "name": "울산광역시",
+      "shortName": "울산",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.553647,
+        "longitude": 129.238208
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "남구",
+          "동구",
+          "북구",
+          "울주군",
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-36",
+      "name": "세종특별자치시",
+      "shortName": "세종",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "SPECIAL_SELF_GOVERNING_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.560729,
+        "longitude": 127.258722
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "세종특별자치시"
+        ],
+        "region2Names": []
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41",
+      "name": "경기도",
+      "shortName": "경기도",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.532132,
+        "longitude": 127.177453
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "가평군",
+          "고양시 덕양구",
+          "고양시 일산동구",
+          "고양시 일산서구",
+          "과천시",
+          "광명시",
+          "광주시",
+          "구리시",
+          "군포시",
+          "김포시",
+          "남양주시",
+          "동두천시",
+          "부천시 소사구",
+          "부천시 오정구",
+          "부천시 원미구",
+          "성남시 분당구",
+          "성남시 수정구",
+          "성남시 중원구",
+          "수원시 권선구",
+          "수원시 영통구",
+          "수원시 장안구",
+          "수원시 팔달구",
+          "시흥시",
+          "안산시 단원구",
+          "안산시 상록구",
+          "안성시",
+          "안양시 동안구",
+          "안양시 만안구",
+          "양주시",
+          "양평군",
+          "여주시",
+          "연천군",
+          "오산시",
+          "용인시 기흥구",
+          "용인시 수지구",
+          "용인시 처인구",
+          "의왕시",
+          "의정부시",
+          "이천시",
+          "파주시",
+          "평택시",
+          "포천시",
+          "하남시",
+          "화성시 동탄구",
+          "화성시 만세구",
+          "화성시 병점구",
+          "화성시 효행구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43",
+      "name": "충청북도",
+      "shortName": "충청북도",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.738777,
+        "longitude": 127.831346
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "괴산군",
+          "단양군",
+          "보은군",
+          "영동군",
+          "옥천군",
+          "음성군",
+          "제천시",
+          "증평군",
+          "진천군",
+          "청주시 상당구",
+          "청주시 서원구",
+          "청주시 청원구",
+          "청주시 흥덕구",
+          "충주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44",
+      "name": "충청남도",
+      "shortName": "충청남도",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.529834,
+        "longitude": 126.848372
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "계룡시",
+          "공주시",
+          "금산군",
+          "논산시",
+          "당진시",
+          "보령시",
+          "부여군",
+          "서산시",
+          "서천군",
+          "아산시",
+          "예산군",
+          "천안시 동남구",
+          "천안시 서북구",
+          "청양군",
+          "태안군",
+          "홍성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47",
+      "name": "경상북도",
+      "shortName": "경상북도",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.354541,
+        "longitude": 128.752183
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "경산시",
+          "경주시",
+          "고령군",
+          "구미시",
+          "김천시",
+          "문경시",
+          "봉화군",
+          "상주시",
+          "성주군",
+          "안동시",
+          "영덕군",
+          "영양군",
+          "영주시",
+          "영천시",
+          "예천군",
+          "울릉군",
+          "울진군",
+          "의성군",
+          "청도군",
+          "청송군",
+          "칠곡군",
+          "포항시 남구",
+          "포항시 북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48",
+      "name": "경상남도",
+      "shortName": "경상남도",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.324188,
+        "longitude": 128.261341
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "거제시",
+          "거창군",
+          "고성군",
+          "김해시",
+          "남해군",
+          "밀양시",
+          "사천시",
+          "산청군",
+          "양산시",
+          "의령군",
+          "진주시",
+          "창녕군",
+          "창원시 마산합포구",
+          "창원시 마산회원구",
+          "창원시 성산구",
+          "창원시 의창구",
+          "창원시 진해구",
+          "통영시",
+          "하동군",
+          "함안군",
+          "함양군",
+          "합천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-50",
+      "name": "제주특별자치도",
+      "shortName": "제주",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "SPECIAL_SELF_GOVERNING_PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 33.386941,
+        "longitude": 126.553834
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "제주특별자치도"
+        ],
+        "region2Names": [
+          "서귀포시",
+          "제주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51",
+      "name": "강원특별자치도",
+      "shortName": "강원",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "SPECIAL_SELF_GOVERNING_PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.719134,
+        "longitude": 128.300998
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "강릉시",
+          "고성군",
+          "동해시",
+          "삼척시",
+          "속초시",
+          "양구군",
+          "양양군",
+          "영월군",
+          "원주시",
+          "인제군",
+          "정선군",
+          "철원군",
+          "춘천시",
+          "태백시",
+          "평창군",
+          "홍천군",
+          "화천군",
+          "횡성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52",
+      "name": "전북특별자치도",
+      "shortName": "전북",
+      "aliases": [],
+      "parentRegionId": null,
+      "type": "SPECIAL_SELF_GOVERNING_PROVINCE",
+      "selectable": false,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.719987,
+        "longitude": 127.121572
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "고창군",
+          "군산시",
+          "김제시",
+          "남원시",
+          "무주군",
+          "부안군",
+          "순창군",
+          "완주군",
+          "익산시",
+          "임실군",
+          "장수군",
+          "전주시 덕진구",
+          "전주시 완산구",
+          "정읍시",
+          "진안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-GWANGJU-URBAN",
+      "name": "광주",
+      "shortName": "광주",
+      "aliases": [
+        "광주광역시"
+      ],
+      "parentRegionId": null,
+      "type": "METROPOLITAN_CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.155728,
+        "longitude": 126.835435
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "광산구",
+          "남구",
+          "동구",
+          "북구",
+          "서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11110",
+      "name": "종로구",
+      "shortName": "종로",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.59492,
+        "longitude": 126.977317
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "종로구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11140",
+      "name": "중구",
+      "shortName": "중",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.560143,
+        "longitude": 126.995968
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11170",
+      "name": "용산구",
+      "shortName": "용산",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.531386,
+        "longitude": 126.979908
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "용산구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11200",
+      "name": "성동구",
+      "shortName": "성동",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.55103,
+        "longitude": 127.041059
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "성동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11215",
+      "name": "광진구",
+      "shortName": "광진",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.546722,
+        "longitude": 127.085746
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "광진구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11230",
+      "name": "동대문구",
+      "shortName": "동대문",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.581957,
+        "longitude": 127.054848
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "동대문구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11260",
+      "name": "중랑구",
+      "shortName": "중랑",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.597819,
+        "longitude": 127.092884
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "중랑구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11290",
+      "name": "성북구",
+      "shortName": "성북",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.605701,
+        "longitude": 127.017576
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "성북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11305",
+      "name": "강북구",
+      "shortName": "강북",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.643473,
+        "longitude": 127.011188
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "강북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11320",
+      "name": "도봉구",
+      "shortName": "도봉",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.669105,
+        "longitude": 127.032367
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "도봉구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11350",
+      "name": "노원구",
+      "shortName": "노원",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.652516,
+        "longitude": 127.075036
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "노원구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11380",
+      "name": "은평구",
+      "shortName": "은평",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.619215,
+        "longitude": 126.927028
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "은평구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11410",
+      "name": "서대문구",
+      "shortName": "서대문",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.577787,
+        "longitude": 126.939063
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "서대문구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11440",
+      "name": "마포구",
+      "shortName": "마포",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.559313,
+        "longitude": 126.908264
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "마포구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11470",
+      "name": "양천구",
+      "shortName": "양천",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.524745,
+        "longitude": 126.85539
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "양천구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11500",
+      "name": "강서구",
+      "shortName": "강서",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.561236,
+        "longitude": 126.822804
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "강서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11530",
+      "name": "구로구",
+      "shortName": "구로",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.494404,
+        "longitude": 126.856302
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "구로구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11545",
+      "name": "금천구",
+      "shortName": "금천",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.460569,
+        "longitude": 126.900817
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "금천구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11560",
+      "name": "영등포구",
+      "shortName": "영등포",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.52231,
+        "longitude": 126.910169
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "영등포구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11590",
+      "name": "동작구",
+      "shortName": "동작",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.498876,
+        "longitude": 126.95164
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "동작구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11620",
+      "name": "관악구",
+      "shortName": "관악",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.467377,
+        "longitude": 126.945335
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "관악구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11650",
+      "name": "서초구",
+      "shortName": "서초",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.473298,
+        "longitude": 127.031208
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "서초구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11680",
+      "name": "강남구",
+      "shortName": "강남",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.496646,
+        "longitude": 127.062975
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "강남구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11710",
+      "name": "송파구",
+      "shortName": "송파",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.505621,
+        "longitude": 127.115291
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "송파구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-11740",
+      "name": "강동구",
+      "shortName": "강동",
+      "aliases": [],
+      "parentRegionId": "KR-11",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.550451,
+        "longitude": 127.147014
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "서울특별시",
+          "서울"
+        ],
+        "region2Names": [
+          "강동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12110",
+      "name": "목포시",
+      "shortName": "목포",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.803356,
+        "longitude": 126.391518
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "목포시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12130",
+      "name": "여수시",
+      "shortName": "여수",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.762301,
+        "longitude": 127.670864
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "여수시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12150",
+      "name": "순천시",
+      "shortName": "순천",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.994774,
+        "longitude": 127.389138
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "순천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12170",
+      "name": "나주시",
+      "shortName": "나주",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.988594,
+        "longitude": 126.720416
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "나주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12190",
+      "name": "광양시",
+      "shortName": "광양",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.019974,
+        "longitude": 127.655784
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "광양시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12210",
+      "name": "동구",
+      "shortName": "동",
+      "aliases": [],
+      "parentRegionId": "KR-GWANGJU-URBAN",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.117384,
+        "longitude": 126.949462
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12240",
+      "name": "서구",
+      "shortName": "서",
+      "aliases": [],
+      "parentRegionId": "KR-GWANGJU-URBAN",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.135703,
+        "longitude": 126.850722
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12270",
+      "name": "남구",
+      "shortName": "남",
+      "aliases": [],
+      "parentRegionId": "KR-GWANGJU-URBAN",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.09406,
+        "longitude": 126.856739
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "남구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12300",
+      "name": "북구",
+      "shortName": "북",
+      "aliases": [],
+      "parentRegionId": "KR-GWANGJU-URBAN",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.193249,
+        "longitude": 126.925467
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12330",
+      "name": "광산구",
+      "shortName": "광산",
+      "aliases": [],
+      "parentRegionId": "KR-GWANGJU-URBAN",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.165043,
+        "longitude": 126.752903
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "광산구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12710",
+      "name": "담양군",
+      "shortName": "담양",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.291551,
+        "longitude": 126.995261
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "담양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12720",
+      "name": "곡성군",
+      "shortName": "곡성",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.216635,
+        "longitude": 127.263543
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "곡성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12730",
+      "name": "구례군",
+      "shortName": "구례",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.236797,
+        "longitude": 127.503088
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "구례군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12740",
+      "name": "고흥군",
+      "shortName": "고흥",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.598558,
+        "longitude": 127.314656
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "고흥군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12750",
+      "name": "보성군",
+      "shortName": "보성",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.814406,
+        "longitude": 127.162188
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "보성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12760",
+      "name": "화순군",
+      "shortName": "화순",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.008254,
+        "longitude": 127.033539
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "화순군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12770",
+      "name": "장흥군",
+      "shortName": "장흥",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.676604,
+        "longitude": 126.921538
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "장흥군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12780",
+      "name": "강진군",
+      "shortName": "강진",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.620484,
+        "longitude": 126.772147
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "강진군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12790",
+      "name": "해남군",
+      "shortName": "해남",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.558741,
+        "longitude": 126.511592
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "해남군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12800",
+      "name": "영암군",
+      "shortName": "영암",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.795827,
+        "longitude": 126.623584
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "영암군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12810",
+      "name": "무안군",
+      "shortName": "무안",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.953277,
+        "longitude": 126.425785
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "무안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12820",
+      "name": "함평군",
+      "shortName": "함평",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.112695,
+        "longitude": 126.535611
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "함평군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12830",
+      "name": "영광군",
+      "shortName": "영광",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.278494,
+        "longitude": 126.453133
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "영광군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12840",
+      "name": "장성군",
+      "shortName": "장성",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.329601,
+        "longitude": 126.768569
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "장성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12850",
+      "name": "완도군",
+      "shortName": "완도",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.344869,
+        "longitude": 126.691328
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "완도군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12860",
+      "name": "진도군",
+      "shortName": "진도",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.439424,
+        "longitude": 126.215183
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "진도군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-12870",
+      "name": "신안군",
+      "shortName": "신안",
+      "aliases": [],
+      "parentRegionId": "KR-12",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.062134,
+        "longitude": 126.231039
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전남광주통합특별시"
+        ],
+        "region2Names": [
+          "신안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26110",
+      "name": "중구",
+      "shortName": "중",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.105613,
+        "longitude": 129.032382
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26140",
+      "name": "서구",
+      "shortName": "서",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.102964,
+        "longitude": 129.014913
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26170",
+      "name": "동구",
+      "shortName": "동",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.128484,
+        "longitude": 129.044722
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26200",
+      "name": "영도구",
+      "shortName": "영도",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.078651,
+        "longitude": 129.06482
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "영도구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26230",
+      "name": "부산진구",
+      "shortName": "부산진",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.165245,
+        "longitude": 129.04306
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "부산진구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26260",
+      "name": "동래구",
+      "shortName": "동래",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.206212,
+        "longitude": 129.079219
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "동래구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26290",
+      "name": "남구",
+      "shortName": "남",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.125373,
+        "longitude": 129.094342
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "남구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26320",
+      "name": "북구",
+      "shortName": "북",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.229253,
+        "longitude": 129.023465
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26350",
+      "name": "해운대구",
+      "shortName": "해운대",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.193859,
+        "longitude": 129.153586
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "해운대구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26380",
+      "name": "사하구",
+      "shortName": "사하",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.088884,
+        "longitude": 128.973807
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "사하구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26410",
+      "name": "금정구",
+      "shortName": "금정",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.258898,
+        "longitude": 129.091528
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "금정구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26440",
+      "name": "강서구",
+      "shortName": "강서",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.138372,
+        "longitude": 128.892442
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "강서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26470",
+      "name": "연제구",
+      "shortName": "연제",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.182418,
+        "longitude": 129.082934
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "연제구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26500",
+      "name": "수영구",
+      "shortName": "수영",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.161309,
+        "longitude": 129.111201
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "수영구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26530",
+      "name": "사상구",
+      "shortName": "사상",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.158035,
+        "longitude": 128.986594
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "사상구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-26710",
+      "name": "기장군",
+      "shortName": "기장",
+      "aliases": [],
+      "parentRegionId": "KR-26",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.298033,
+        "longitude": 129.200964
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "부산광역시",
+          "부산"
+        ],
+        "region2Names": [
+          "기장군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27110",
+      "name": "중구",
+      "shortName": "중",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.866535,
+        "longitude": 128.593605
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27140",
+      "name": "동구",
+      "shortName": "동",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.934444,
+        "longitude": 128.68565
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27170",
+      "name": "서구",
+      "shortName": "서",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.875002,
+        "longitude": 128.549697
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27200",
+      "name": "남구",
+      "shortName": "남",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.835178,
+        "longitude": 128.585329
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "남구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27230",
+      "name": "북구",
+      "shortName": "북",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.928802,
+        "longitude": 128.577401
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27260",
+      "name": "수성구",
+      "shortName": "수성",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.83385,
+        "longitude": 128.661273
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "수성구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27290",
+      "name": "달서구",
+      "shortName": "달서",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.827486,
+        "longitude": 128.529204
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "달서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27710",
+      "name": "달성군",
+      "shortName": "달성",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.759754,
+        "longitude": 128.498224
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "달성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-27720",
+      "name": "군위군",
+      "shortName": "군위",
+      "aliases": [],
+      "parentRegionId": "KR-27",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.170117,
+        "longitude": 128.648118
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대구광역시",
+          "대구"
+        ],
+        "region2Names": [
+          "군위군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28125",
+      "name": "제물포구",
+      "shortName": "제물포",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.456151,
+        "longitude": 126.618538
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "제물포구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28155",
+      "name": "영종구",
+      "shortName": "영종",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.470421,
+        "longitude": 126.467428
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "영종구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28177",
+      "name": "미추홀구",
+      "shortName": "미추홀",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.452583,
+        "longitude": 126.66464
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "미추홀구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28185",
+      "name": "연수구",
+      "shortName": "연수",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.39462,
+        "longitude": 126.649438
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "연수구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28200",
+      "name": "남동구",
+      "shortName": "남동",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.431139,
+        "longitude": 126.726577
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "남동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28237",
+      "name": "부평구",
+      "shortName": "부평",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.496661,
+        "longitude": 126.721208
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "부평구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28245",
+      "name": "계양구",
+      "shortName": "계양",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.557299,
+        "longitude": 126.734703
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "계양구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28275",
+      "name": "서해구",
+      "shortName": "서해",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.530586,
+        "longitude": 126.652198
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "서해구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28290",
+      "name": "검단구",
+      "shortName": "검단",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.599571,
+        "longitude": 126.661275
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "검단구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28710",
+      "name": "강화군",
+      "shortName": "강화",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.712459,
+        "longitude": 126.402047
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "강화군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-28720",
+      "name": "옹진군",
+      "shortName": "옹진",
+      "aliases": [],
+      "parentRegionId": "KR-28",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 37.949707,
+        "longitude": 124.672465
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "인천광역시",
+          "인천"
+        ],
+        "region2Names": [
+          "옹진군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30110",
+      "name": "동구",
+      "shortName": "동",
+      "aliases": [],
+      "parentRegionId": "KR-30",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.323965,
+        "longitude": 127.475063
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30140",
+      "name": "중구",
+      "shortName": "중",
+      "aliases": [],
+      "parentRegionId": "KR-30",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.280872,
+        "longitude": 127.411057
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30170",
+      "name": "서구",
+      "shortName": "서",
+      "aliases": [],
+      "parentRegionId": "KR-30",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.280263,
+        "longitude": 127.345125
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30200",
+      "name": "유성구",
+      "shortName": "유성",
+      "aliases": [],
+      "parentRegionId": "KR-30",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.376643,
+        "longitude": 127.33317
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "유성구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-30230",
+      "name": "대덕구",
+      "shortName": "대덕",
+      "aliases": [],
+      "parentRegionId": "KR-30",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 36.41219,
+        "longitude": 127.440159
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "대전광역시",
+          "대전"
+        ],
+        "region2Names": [
+          "대덕구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31110",
+      "name": "중구",
+      "shortName": "중",
+      "aliases": [],
+      "parentRegionId": "KR-31",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.571048,
+        "longitude": 129.308242
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "중구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31140",
+      "name": "남구",
+      "shortName": "남",
+      "aliases": [],
+      "parentRegionId": "KR-31",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.514649,
+        "longitude": 129.329284
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "남구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31170",
+      "name": "동구",
+      "shortName": "동",
+      "aliases": [],
+      "parentRegionId": "KR-31",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.52558,
+        "longitude": 129.426069
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "동구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31200",
+      "name": "북구",
+      "shortName": "북",
+      "aliases": [],
+      "parentRegionId": "KR-31",
+      "type": "DISTRICT_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.610062,
+        "longitude": 129.379801
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-31710",
+      "name": "울주군",
+      "shortName": "울주",
+      "aliases": [],
+      "parentRegionId": "KR-31",
+      "type": "COUNTY_FILTER",
+      "selectable": false,
+      "placeSearchFilterable": true,
+      "representativeCoordinate": {
+        "latitude": 35.54616,
+        "longitude": 129.187593
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "울산광역시",
+          "울산"
+        ],
+        "region2Names": [
+          "울주군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41110",
+      "name": "수원시",
+      "shortName": "수원",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.28037,
+        "longitude": 127.00777
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "수원시 권선구",
+          "수원시 영통구",
+          "수원시 장안구",
+          "수원시 팔달구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41130",
+      "name": "성남시",
+      "shortName": "성남",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.407337,
+        "longitude": 127.116249
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "성남시 분당구",
+          "성남시 수정구",
+          "성남시 중원구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41150",
+      "name": "의정부시",
+      "shortName": "의정부",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.736193,
+        "longitude": 127.068427
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "의정부시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41170",
+      "name": "안양시",
+      "shortName": "안양",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.402724,
+        "longitude": 126.927917
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "안양시 동안구",
+          "안양시 만안구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41190",
+      "name": "부천시",
+      "shortName": "부천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.504258,
+        "longitude": 126.788674
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "부천시 소사구",
+          "부천시 오정구",
+          "부천시 원미구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41210",
+      "name": "광명시",
+      "shortName": "광명",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.445174,
+        "longitude": 126.864692
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "광명시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41220",
+      "name": "평택시",
+      "shortName": "평택",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.011832,
+        "longitude": 126.987715
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "평택시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41250",
+      "name": "동두천시",
+      "shortName": "동두천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.916543,
+        "longitude": 127.077903
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "동두천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41270",
+      "name": "안산시",
+      "shortName": "안산",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.322952,
+        "longitude": 126.857357
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "안산시 단원구",
+          "안산시 상록구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41280",
+      "name": "고양시",
+      "shortName": "고양",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.665014,
+        "longitude": 126.836978
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "고양시 덕양구",
+          "고양시 일산동구",
+          "고양시 일산서구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41290",
+      "name": "과천시",
+      "shortName": "과천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.433846,
+        "longitude": 127.00268
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "과천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41310",
+      "name": "구리시",
+      "shortName": "구리",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.599225,
+        "longitude": 127.131231
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "구리시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41360",
+      "name": "남양주시",
+      "shortName": "남양주",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.662557,
+        "longitude": 127.243644
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "남양주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41370",
+      "name": "오산시",
+      "shortName": "오산",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.163293,
+        "longitude": 127.051323
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "오산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41390",
+      "name": "시흥시",
+      "shortName": "시흥",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.386253,
+        "longitude": 126.783994
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "시흥시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41410",
+      "name": "군포시",
+      "shortName": "군포",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.343474,
+        "longitude": 126.921115
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "군포시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41430",
+      "name": "의왕시",
+      "shortName": "의왕",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.362397,
+        "longitude": 126.989642
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "의왕시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41450",
+      "name": "하남시",
+      "shortName": "하남",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.522821,
+        "longitude": 127.205944
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "하남시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41460",
+      "name": "용인시",
+      "shortName": "용인",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.221501,
+        "longitude": 127.221787
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "용인시 기흥구",
+          "용인시 수지구",
+          "용인시 처인구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41480",
+      "name": "파주시",
+      "shortName": "파주",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.855592,
+        "longitude": 126.809411
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "파주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41500",
+      "name": "이천시",
+      "shortName": "이천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.209839,
+        "longitude": 127.480932
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "이천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41550",
+      "name": "안성시",
+      "shortName": "안성",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.035025,
+        "longitude": 127.30276
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "안성시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41570",
+      "name": "김포시",
+      "shortName": "김포",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.68179,
+        "longitude": 126.626387
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "김포시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41590",
+      "name": "화성시",
+      "shortName": "화성",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.162061,
+        "longitude": 126.864282
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "화성시 동탄구",
+          "화성시 만세구",
+          "화성시 병점구",
+          "화성시 효행구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41610",
+      "name": "광주시",
+      "shortName": "광주",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.40312,
+        "longitude": 127.301172
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "광주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41630",
+      "name": "양주시",
+      "shortName": "양주",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.808696,
+        "longitude": 127.001155
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "양주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41650",
+      "name": "포천시",
+      "shortName": "포천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.969892,
+        "longitude": 127.250423
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "포천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41670",
+      "name": "여주시",
+      "shortName": "여주",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.302505,
+        "longitude": 127.615673
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "여주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41800",
+      "name": "연천군",
+      "shortName": "연천",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.092918,
+        "longitude": 127.023507
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "연천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41820",
+      "name": "가평군",
+      "shortName": "가평",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.818567,
+        "longitude": 127.450192
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "가평군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-41830",
+      "name": "양평군",
+      "shortName": "양평",
+      "aliases": [],
+      "parentRegionId": "KR-41",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.518037,
+        "longitude": 127.579194
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경기도",
+          "경기"
+        ],
+        "region2Names": [
+          "양평군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43110",
+      "name": "청주시",
+      "shortName": "청주",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.627247,
+        "longitude": 127.498722
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "청주시 상당구",
+          "청주시 서원구",
+          "청주시 청원구",
+          "청주시 흥덕구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43130",
+      "name": "충주시",
+      "shortName": "충주",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.015238,
+        "longitude": 127.895558
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "충주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43150",
+      "name": "제천시",
+      "shortName": "제천",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.060072,
+        "longitude": 128.140907
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "제천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43720",
+      "name": "보은군",
+      "shortName": "보은",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.489954,
+        "longitude": 127.729329
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "보은군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43730",
+      "name": "옥천군",
+      "shortName": "옥천",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.320459,
+        "longitude": 127.656589
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "옥천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43740",
+      "name": "영동군",
+      "shortName": "영동",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.159674,
+        "longitude": 127.814266
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "영동군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43745",
+      "name": "증평군",
+      "shortName": "증평",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.786491,
+        "longitude": 127.604604
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "증평군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43750",
+      "name": "진천군",
+      "shortName": "진천",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.87102,
+        "longitude": 127.440434
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "진천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43760",
+      "name": "괴산군",
+      "shortName": "괴산",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.769686,
+        "longitude": 127.829582
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "괴산군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43770",
+      "name": "음성군",
+      "shortName": "음성",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.976259,
+        "longitude": 127.614184
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "음성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-43800",
+      "name": "단양군",
+      "shortName": "단양",
+      "aliases": [],
+      "parentRegionId": "KR-43",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.994512,
+        "longitude": 128.387886
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청북도",
+          "충북"
+        ],
+        "region2Names": [
+          "단양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44130",
+      "name": "천안시",
+      "shortName": "천안",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.804168,
+        "longitude": 127.202554
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "천안시 동남구",
+          "천안시 서북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44150",
+      "name": "공주시",
+      "shortName": "공주",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.479907,
+        "longitude": 127.075148
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "공주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44180",
+      "name": "보령시",
+      "shortName": "보령",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.34336,
+        "longitude": 126.592922
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "보령시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44200",
+      "name": "아산시",
+      "shortName": "아산",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.807351,
+        "longitude": 126.980085
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "아산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44210",
+      "name": "서산시",
+      "shortName": "서산",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.784097,
+        "longitude": 126.463562
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "서산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44230",
+      "name": "논산시",
+      "shortName": "논산",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.190905,
+        "longitude": 127.157706
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "논산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44250",
+      "name": "계룡시",
+      "shortName": "계룡",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.291604,
+        "longitude": 127.23442
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "계룡시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44270",
+      "name": "당진시",
+      "shortName": "당진",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.903653,
+        "longitude": 126.653018
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "당진시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44710",
+      "name": "금산군",
+      "shortName": "금산",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.11903,
+        "longitude": 127.478293
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "금산군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44760",
+      "name": "부여군",
+      "shortName": "부여",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.246401,
+        "longitude": 126.856941
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "부여군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44770",
+      "name": "서천군",
+      "shortName": "서천",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.106782,
+        "longitude": 126.704231
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "서천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44790",
+      "name": "청양군",
+      "shortName": "청양",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.430592,
+        "longitude": 126.853086
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "청양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44800",
+      "name": "홍성군",
+      "shortName": "홍성",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.57009,
+        "longitude": 126.625823
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "홍성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44810",
+      "name": "예산군",
+      "shortName": "예산",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.67064,
+        "longitude": 126.784265
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "예산군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-44825",
+      "name": "태안군",
+      "shortName": "태안",
+      "aliases": [],
+      "parentRegionId": "KR-44",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.708765,
+        "longitude": 126.280094
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "충청남도",
+          "충남"
+        ],
+        "region2Names": [
+          "태안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47110",
+      "name": "포항시",
+      "shortName": "포항",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.092984,
+        "longitude": 129.30505
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "포항시 남구",
+          "포항시 북구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47130",
+      "name": "경주시",
+      "shortName": "경주",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.826691,
+        "longitude": 129.235873
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "경주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47150",
+      "name": "김천시",
+      "shortName": "김천",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.060516,
+        "longitude": 128.077845
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "김천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47170",
+      "name": "안동시",
+      "shortName": "안동",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.58031,
+        "longitude": 128.780042
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "안동시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47190",
+      "name": "구미시",
+      "shortName": "구미",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.207341,
+        "longitude": 128.355464
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "구미시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47210",
+      "name": "영주시",
+      "shortName": "영주",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.870559,
+        "longitude": 128.597654
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "영주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47230",
+      "name": "영천시",
+      "shortName": "영천",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.015816,
+        "longitude": 128.942607
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "영천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47250",
+      "name": "상주시",
+      "shortName": "상주",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.42955,
+        "longitude": 128.06699
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "상주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47280",
+      "name": "문경시",
+      "shortName": "문경",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.69081,
+        "longitude": 128.148697
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "문경시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47290",
+      "name": "경산시",
+      "shortName": "경산",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.834103,
+        "longitude": 128.809053
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "경산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47730",
+      "name": "의성군",
+      "shortName": "의성",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.362011,
+        "longitude": 128.614905
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "의성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47750",
+      "name": "청송군",
+      "shortName": "청송",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.357071,
+        "longitude": 129.057432
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "청송군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47760",
+      "name": "영양군",
+      "shortName": "영양",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.696465,
+        "longitude": 129.145057
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "영양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47770",
+      "name": "영덕군",
+      "shortName": "영덕",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.482498,
+        "longitude": 129.317381
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "영덕군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47820",
+      "name": "청도군",
+      "shortName": "청도",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.672923,
+        "longitude": 128.786575
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "청도군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47830",
+      "name": "고령군",
+      "shortName": "고령",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.737012,
+        "longitude": 128.306472
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "고령군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47840",
+      "name": "성주군",
+      "shortName": "성주",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.907245,
+        "longitude": 128.233394
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "성주군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47850",
+      "name": "칠곡군",
+      "shortName": "칠곡",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.015511,
+        "longitude": 128.462586
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "칠곡군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47900",
+      "name": "예천군",
+      "shortName": "예천",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.653909,
+        "longitude": 128.422465
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "예천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47920",
+      "name": "봉화군",
+      "shortName": "봉화",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.934179,
+        "longitude": 128.912996
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "봉화군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47930",
+      "name": "울진군",
+      "shortName": "울진",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.904067,
+        "longitude": 129.312236
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "울진군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-47940",
+      "name": "울릉군",
+      "shortName": "울릉",
+      "aliases": [],
+      "parentRegionId": "KR-47",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.501964,
+        "longitude": 130.864168
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상북도",
+          "경북"
+        ],
+        "region2Names": [
+          "울릉군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48120",
+      "name": "창원시",
+      "shortName": "창원",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.201789,
+        "longitude": 128.599956
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "창원시 마산합포구",
+          "창원시 마산회원구",
+          "창원시 성산구",
+          "창원시 의창구",
+          "창원시 진해구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48170",
+      "name": "진주시",
+      "shortName": "진주",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.205148,
+        "longitude": 128.129764
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "진주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48220",
+      "name": "통영시",
+      "shortName": "통영",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.902772,
+        "longitude": 128.362344
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "통영시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48240",
+      "name": "사천시",
+      "shortName": "사천",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.038214,
+        "longitude": 128.109273
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "사천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48250",
+      "name": "김해시",
+      "shortName": "김해",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.272169,
+        "longitude": 128.845225
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "김해시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48270",
+      "name": "밀양시",
+      "shortName": "밀양",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.4985,
+        "longitude": 128.789642
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "밀양시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48310",
+      "name": "거제시",
+      "shortName": "거제",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.87066,
+        "longitude": 128.623157
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "거제시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48330",
+      "name": "양산시",
+      "shortName": "양산",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.401905,
+        "longitude": 129.041036
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "양산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48720",
+      "name": "의령군",
+      "shortName": "의령",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.392456,
+        "longitude": 128.277101
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "의령군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48730",
+      "name": "함안군",
+      "shortName": "함안",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.291012,
+        "longitude": 128.430905
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "함안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48740",
+      "name": "창녕군",
+      "shortName": "창녕",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.508277,
+        "longitude": 128.493012
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "창녕군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48820",
+      "name": "고성군",
+      "shortName": "고성",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.01631,
+        "longitude": 128.290697
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "고성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48840",
+      "name": "남해군",
+      "shortName": "남해",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 34.824061,
+        "longitude": 127.881296
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "남해군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48850",
+      "name": "하동군",
+      "shortName": "하동",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.138032,
+        "longitude": 127.779003
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "하동군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48860",
+      "name": "산청군",
+      "shortName": "산청",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.368638,
+        "longitude": 127.884364
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "산청군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48870",
+      "name": "함양군",
+      "shortName": "함양",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.551727,
+        "longitude": 127.722074
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "함양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48880",
+      "name": "거창군",
+      "shortName": "거창",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.732613,
+        "longitude": 127.904132
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "거창군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-48890",
+      "name": "합천군",
+      "shortName": "합천",
+      "aliases": [],
+      "parentRegionId": "KR-48",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.576662,
+        "longitude": 128.141553
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "경상남도",
+          "경남"
+        ],
+        "region2Names": [
+          "합천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-50110",
+      "name": "제주시",
+      "shortName": "제주",
+      "aliases": [],
+      "parentRegionId": "KR-50",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 33.442124,
+        "longitude": 126.529452
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "제주특별자치도"
+        ],
+        "region2Names": [
+          "제주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-50130",
+      "name": "서귀포시",
+      "shortName": "서귀포",
+      "aliases": [],
+      "parentRegionId": "KR-50",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 33.324874,
+        "longitude": 126.581257
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "제주특별자치도"
+        ],
+        "region2Names": [
+          "서귀포시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51110",
+      "name": "춘천시",
+      "shortName": "춘천",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.88985,
+        "longitude": 127.739954
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "춘천시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51130",
+      "name": "원주시",
+      "shortName": "원주",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.308259,
+        "longitude": 127.929539
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "원주시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51150",
+      "name": "강릉시",
+      "shortName": "강릉",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.709201,
+        "longitude": 128.832221
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "강릉시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51170",
+      "name": "동해시",
+      "shortName": "동해",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.50673,
+        "longitude": 129.055639
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "동해시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51190",
+      "name": "태백시",
+      "shortName": "태백",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.172365,
+        "longitude": 128.980062
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "태백시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51210",
+      "name": "속초시",
+      "shortName": "속초",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.176027,
+        "longitude": 128.519557
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "속초시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51230",
+      "name": "삼척시",
+      "shortName": "삼척",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.277527,
+        "longitude": 129.121746
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "삼척시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51720",
+      "name": "홍천군",
+      "shortName": "홍천",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.744867,
+        "longitude": 128.074507
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "홍천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51730",
+      "name": "횡성군",
+      "shortName": "횡성",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.509161,
+        "longitude": 128.077064
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "횡성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51750",
+      "name": "영월군",
+      "shortName": "영월",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.204045,
+        "longitude": 128.499934
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "영월군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51760",
+      "name": "평창군",
+      "shortName": "평창",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.556991,
+        "longitude": 128.482767
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "평창군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51770",
+      "name": "정선군",
+      "shortName": "정선",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 37.378786,
+        "longitude": 128.739066
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "정선군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51780",
+      "name": "철원군",
+      "shortName": "철원",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.239027,
+        "longitude": 127.398991
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "철원군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51790",
+      "name": "화천군",
+      "shortName": "화천",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.138433,
+        "longitude": 127.685202
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "화천군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51800",
+      "name": "양구군",
+      "shortName": "양구",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.175677,
+        "longitude": 128.000222
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "양구군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51810",
+      "name": "인제군",
+      "shortName": "인제",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.064778,
+        "longitude": 128.264717
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "인제군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51820",
+      "name": "고성군",
+      "shortName": "고성",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.362849,
+        "longitude": 128.411073
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "고성군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-51830",
+      "name": "양양군",
+      "shortName": "양양",
+      "aliases": [],
+      "parentRegionId": "KR-51",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 38.004556,
+        "longitude": 128.595045
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "강원특별자치도"
+        ],
+        "region2Names": [
+          "양양군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52110",
+      "name": "전주시",
+      "shortName": "전주",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.82823,
+        "longitude": 127.115787
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "전주시 덕진구",
+          "전주시 완산구"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52130",
+      "name": "군산시",
+      "shortName": "군산",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.950433,
+        "longitude": 126.725955
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "군산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52140",
+      "name": "익산시",
+      "shortName": "익산",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 36.023144,
+        "longitude": 126.989503
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "익산시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52180",
+      "name": "정읍시",
+      "shortName": "정읍",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.602636,
+        "longitude": 126.905869
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "정읍시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52190",
+      "name": "남원시",
+      "shortName": "남원",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.422534,
+        "longitude": 127.441936
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "남원시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52210",
+      "name": "김제시",
+      "shortName": "김제",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "CITY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.806715,
+        "longitude": 126.894829
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "김제시"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52710",
+      "name": "완주군",
+      "shortName": "완주",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.918762,
+        "longitude": 127.215221
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "완주군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52720",
+      "name": "진안군",
+      "shortName": "진안",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.828893,
+        "longitude": 127.43008
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "진안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52730",
+      "name": "무주군",
+      "shortName": "무주",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.939377,
+        "longitude": 127.712949
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "무주군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52740",
+      "name": "장수군",
+      "shortName": "장수",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.657536,
+        "longitude": 127.54434
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "장수군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52750",
+      "name": "임실군",
+      "shortName": "임실",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.598273,
+        "longitude": 127.236671
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "임실군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52770",
+      "name": "순창군",
+      "shortName": "순창",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.433627,
+        "longitude": 127.090046
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "순창군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52790",
+      "name": "고창군",
+      "shortName": "고창",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.448192,
+        "longitude": 126.616079
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "고창군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    },
+    {
+      "regionId": "KR-52800",
+      "name": "부안군",
+      "shortName": "부안",
+      "aliases": [],
+      "parentRegionId": "KR-52",
+      "type": "COUNTY",
+      "selectable": true,
+      "placeSearchFilterable": false,
+      "representativeCoordinate": {
+        "latitude": 35.67792,
+        "longitude": 126.644435
+      },
+      "addressBoundary": {
+        "region1Names": [
+          "전북특별자치도"
+        ],
+        "region2Names": [
+          "부안군"
+        ]
+      },
+      "sourceRefs": [
+        "LEGAL_DISTRICT_20260630",
+        "VWORLD_BOUNDARY_20260917"
+      ],
+      "sourceDate": "2026-09-17"
+    }
+  ]
+}

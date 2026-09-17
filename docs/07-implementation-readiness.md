@@ -35,7 +35,7 @@
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
-| 지역 | 하네스만 존재 | `region/AGENTS.md`만 있고 Java 코드·`regions.json` 없음 |
+| 지역 | G1-02 기준 데이터 구축 완료 | 공식 법정동 코드·행정구역 경계로 `regions.json` 246개를 생성·대조했으며 Loader·시작 검증·검색 API는 후속 작업 |
 | AI | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
@@ -65,8 +65,8 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 
 | 주제 | 설계 상태 | 구현 상태 | 근거 또는 다음 조치 |
 |---|---|---|---|
-| 국내 범위 | 확정 | 구현 전 | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 광역자치단체의 구·군은 검색 필터, 읍·면·동·해외 제외 |
-| 지역 직접 검색·AI 추천 | 확정 | 구현 전 | 같은 `regions.json` 허용 목록 사용 |
+| 국내 범위 | 확정 | 기준 데이터 구현·검증 | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 광역자치단체의 구·군은 검색 필터, 읍·면·동·해외 제외 |
+| 지역 직접 검색·AI 추천 | 확정 | 기준 데이터만 구현 | 같은 `regions.json` 허용 목록을 사용하며 Loader·검색 Service·API·AI 연결은 후속 작업 |
 | 이동수단 | 확정 | 구현 전 | 일정당 CAR 또는 PUBLIC_TRANSIT 하나 |
 | 순수 경로 | 확정 | 구현 전 | Haversine, Nearest Neighbor, 2-opt |
 | 실제 경로 호출 시점 | 확정 | 구현 전 | 최종 후보의 인접 구간만 조회 |
@@ -89,7 +89,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 |---|---|---|
 | 테스트 DB 방식과 JPA·MySQL·Flyway dependency | 결정 완료 | MySQL 8.4 Testcontainers, Spring Boot 관리 버전, `docs/08` 3절과 `docs/09` 11절 |
 | JWT 만료·재발급·로그아웃, User 삭제 | 결정 완료 | ADR-037, `docs/03` User 삭제, `docs/04` 1~2절, `docs/09` 3·10절 |
-| 지역 공공데이터 출처·기준일·생성 절차 | G1-01 | 데이터 ADR·운영 |
+| 지역 공공데이터 출처·기준일·생성 절차 | 결정 완료 | ADR-038, `docs/09` 9절 지역 기준 데이터 갱신 |
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | R1-01 | ADR·테스트 |
 | OpenAI 모델·전체 예산 | A1-03 전 | 운영·AI 계약 |
 | selectionToken 서명·만료·키 교체 | P1-02 | 보안 ADR·API·운영 |
@@ -136,6 +136,8 @@ U1-06에서 인증·보안 회귀를 점검했다. `POST /api/users`, `POST /api
 W1-00에서 `Routy/INTEGRATION.md`의 신규 화면 원칙을 공통 app shell과 page-level view 골격으로 구현했다. 랜딩·인증·Journey Workspace·내 여행·완료 일정·공유 일정의 정보 구조, 팝업이 아닌 8단계 제작 흐름, 초기·로딩·빈 결과·오류 상태를 만들었으며 실제 API·브라우저 저장소·가짜 성공 처리는 연결하지 않았다. Node 정적 검사와 7개 화면 골격 테스트, 390px 모바일 overflow 측정, 실제 Tab 포커스 순서, 데스크톱·모바일 렌더링, 전체 68개 Gradle 테스트와 `git diff --check`를 통과했다. 실제 인증·지역·장소·일정 API 연결은 W1-01A 이후 작업 범위다.
 
 W1-01A에서 회원가입·로그인 화면을 `POST /api/users`, `POST /api/auth/login` 계약에 연결했다. 서버 성공 뒤에만 회원가입 완료·보호 화면 진입을 처리하고 validation·중복 이메일·401·네트워크 실패를 안전한 문구로 표시한다. JWT는 현재 탭 메모리에만 보관하며 로그아웃·만료·pagehide 때 인증 및 작성 골격 상태를 폐기하고, 중복 제출·취소 뒤 늦은 응답·다른 세션의 오래된 401을 차단한다. Node 순수 테스트 20개와 Chromium 브라우저 테스트 9개 시나리오(상위 테스트 포함 총 Node 30개), 전체 Gradle 테스트 68개가 실패·오류·skip 없이 통과했다. 데스크톱·390px 모바일 캡처, Tab·Shift+Tab·Enter, reduced motion, DOM·console 비밀값 비노출과 브라우저 저장소 부재를 확인했고 `git diff --check`도 통과했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 수행하지 않았다. 후속 보호 API와 장소 메모리 모듈은 이 인증 수명 계약에 연결해야 한다.
+
+G1-02에서 법정동 코드와 브이월드 행정구역 경계를 대조해 정적 `regions.json` 246개를 구축했다. 최종 선택 지역 161개와 장소 검색 필터 76개를 분리하고, 광주는 사용자 표시 지역과 `전남광주통합특별시` 주소 경계를 분리했으며 수원 등 도 산하 분구시는 시만 선택 가능하게 유지했다. 원천 코드 집합·역할·부모·주소 경계·좌표 범위·대표점의 경계 내부 포함을 독립 검증했고 전체 Gradle 테스트와 `git diff --check`가 통과했다. Java Loader와 애플리케이션 시작 시 검증, 검색 Service·API는 각각 G1-03·G1-04 범위다.
 
 ## 8. 완료 해석
 
