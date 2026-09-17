@@ -93,36 +93,37 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 
 ## 🚀 Development Progress
 
-* [x] Spring Boot 프로젝트 구성
-* [x] Java 21 개발 환경 구성
-* [x] `GET /hello` 개발 확인 endpoint 구성
-* [x] Docker Compose 구성
-* [x] 환경변수 분리
-* [x] Git / GitHub 연동
+* [x] Java 21·Spring Boot·Gradle·Docker Compose·MySQL 8.4 로컬 개발 환경과 환경변수 분리
 * [x] 요구사항·아키텍처·DB·API·테스트·운영·완료 기준 문서화
 * [x] 국내·카카오 기반 정책과 도메인 경계 정리
 * [x] 카카오 좌표의 일시 사용·즉시 폐기 정책 확인과 문서 반영
 * [x] UI 검토용 Travela 원본과 Routy 정적 파일 배치
-* [x] Spring Data JPA·MySQL·Flyway 개발 기반 구성과 MySQL 8.4 migration 검증
-* [x] 회원가입·JWT 로그인·공개 API 경계와 보호 API 인증 구현
-* [x] 사용자·서비스 호출 한도와 10분 `requestId` 중복 요청 상태 구현
-* [ ] 국내 행정구역 기준 데이터와 검색 구현
+* [x] Spring Data JPA·Flyway 기반 `users`·호출 카운터·요청 실행 상태 migration과 MySQL 8.4 검증
+* [x] 이메일 정규화·BCrypt 비밀번호 해시 회원가입과 중복 이메일 처리
+* [x] HS256 JWT 발급·검증, 공개 endpoint 경계와 보호 API 인증
+* [x] 사용자 분·일 및 서비스 일 단위 호출 한도, 원자적 차감과 `Asia/Seoul` 기준 만료 처리
+* [x] 10분 `requestId` 선점·성공·실패 해제·만료 재선점과 동시 중복 실행 차단
+* [x] 국내 행정구역 246개 기준 데이터, 시작 시 무결성 검증과 메모리 Catalog 구현
+* [x] 정확·접두·부분 일치 및 결정적 정렬을 적용한 인증 지역 검색 API 구현
+* [x] 지역 후보 3개·메뉴 1~5개를 검증하는 AI DTO·Client 계약·Fake·Service 구현
+* [x] OpenAI Responses API strict schema 매핑, timeout과 선택적 1회 재시도를 적용한 실제 Client 구현
 * [ ] Haversine·Nearest Neighbor·2-opt 순수 Java 알고리즘 구현
-* [ ] OpenAI·카카오 장소·자동차·대중교통 Client 계약과 Fake 구현
+* [ ] 지역 추천·메뉴 분석 API의 인증·호출 한도·`requestId` 연결
+* [ ] 카카오 장소·자동차·대중교통 Client 계약과 Fake 구현
 * [ ] 실제 카카오 장소 검색과 일회성 `selectionToken` 구현
 * [ ] 자동차·대중교통 경로 검증과 호출 한도 fallback 구현
 * [ ] 추정 일정·숙소 탐색·음식점 추천 구현
 * [ ] 완료 일정 Aggregate와 저장·조회·편집·삭제·공유 API 구현
-* [x] Routy 전용 app shell과 회원가입·로그인 UI API 연동
+* [x] Routy app shell·8단계 제작 화면 골격과 메모리 JWT 기반 회원가입·로그인 UI 연동
 * [ ] 전체 자동 테스트·브라우저 흐름·운영·배포 검증
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도 기반과 W1-01A 인증 화면 연결까지 구현·검증됐으며, 지역·장소·일정 도메인과 실제 외부 API 연결은 후속 작업입니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 U1 인증·호출 한도, G1 지역 기준·검색, A1의 AI 계약·OpenAI Client와 W1-01A 인증 화면 연결까지 구현·검증됐습니다. 다음 작업은 지역 추천 API에 인증·호출 한도·`requestId`와 Region 허용 목록을 연결하는 A1-04입니다.
 
 ---
 
 ## 🧩 현재 구현 클래스 구조
 
-아래 구조와 다이어그램은 목표 설계가 아니라 **현재 저장소에 실제로 구현된 Java 코드**를 기준으로 합니다. 현재는 사용자 회원가입·로그인, JWT 인증, API 호출 한도와 `requestId` 중복 요청 방지, 공통 예외 처리가 구현되어 있습니다. `region`, `ai`, `place`, `route`, `recommendation`, `travelplan` 도메인은 후속 구현 시 이 절에 추가합니다.
+아래 구조와 다이어그램은 목표 설계가 아니라 **현재 저장소에 실제로 구현된 Java 코드**를 기준으로 합니다. 사용자·보안 기반에 더해 국내 지역 기준 데이터와 검색, 지역 추천·메뉴 분석 AI 계약, 환경별 Fake와 실제 OpenAI Client가 구현되어 있습니다. `place`, `route`, `recommendation`, `travelplan` 도메인은 후속 구현 시 이 절에 추가합니다.
 
 ```text
 com.example.travel
@@ -137,6 +138,16 @@ com.example.travel
 │   ├── dto            # API 및 도메인 간 전달 객체
 │   ├── validation     # 비밀번호 커스텀 검증
 │   └── config         # PasswordEncoder 구성
+├── region
+│   ├── controller     # 인증 지역 검색 HTTP 요청 처리
+│   ├── service        # 메모리 Catalog와 결정적 지역 검색
+│   ├── loader         # regions.json 적재와 시작 시 무결성 검증
+│   ├── domain         # Region·주소 경계·대표 좌표 값 객체
+│   └── dto            # 지역 검색 응답 전달 객체
+├── ai
+│   ├── client         # AiClient, 환경별 Fake와 OpenAI HTTP 구현·설정
+│   ├── service        # 지역 추천·메뉴 분석 결과 계약 검증
+│   └── dto            # AI 기능 요청·응답과 허용 후보 전달 객체
 └── global
     ├── security       # JWT 발급·검증과 Spring Security 필터
     └── exception      # 공통 오류 코드·응답·예외 변환
@@ -251,6 +262,46 @@ class ApiUsageCounter {
   -Instant expiresAt
 }
 
+class RegionController {
+  <<RestController>>
+  +search(query) RegionSearchResponse
+}
+class RegionSearchService {
+  <<Service>>
+  +search(query) List~RegionSearchItem~
+}
+class RegionCatalog {
+  <<Service>>
+  +regions() List~Region~
+  +findById(regionId) Optional~Region~
+}
+class RegionDataLoader
+class Region {
+  <<Value Object>>
+}
+
+class RegionRecommendationService {
+  <<Service>>
+  +recommend(request, allowedRegions) RegionRecommendationResponse
+}
+class MenuAnalysisService {
+  <<Service>>
+  +analyze(request) MenuAnalysisResponse
+}
+class AiClient {
+  <<interface>>
+  +recommendRegions(prompt) RegionRecommendationResult
+  +analyzeMenus(prompt) MenuAnalysisResult
+}
+class OpenAiClient
+class ProfileFakeAiClient
+class OpenAiClientConfiguration {
+  <<Configuration>>
+}
+class OpenAiProperties {
+  <<ConfigurationProperties>>
+}
+
 class GlobalExceptionHandler {
   <<RestControllerAdvice>>
 }
@@ -289,6 +340,18 @@ ApiUsageReservationTransaction --> ApiUsagePolicy
 ApiUsageReservationTransaction --> ApiUsageCounterRepository
 ApiUsageCounterRepository --> ApiUsageCounter
 
+RegionController --> RegionSearchService
+RegionSearchService --> RegionCatalog
+RegionCatalog --> RegionDataLoader
+RegionCatalog --> Region
+
+RegionRecommendationService --> AiClient
+MenuAnalysisService --> AiClient
+OpenAiClient ..|> AiClient
+ProfileFakeAiClient ..|> AiClient
+OpenAiClientConfiguration --> OpenAiClient
+OpenAiClientConfiguration --> OpenAiProperties
+
 UserRegistrationService ..> ApiException
 LoginService ..> ApiException
 ApiUsageService ..> ApiException
@@ -305,13 +368,17 @@ ErrorResponse --> ErrorCode
 회원가입: UserController → UserRegistrationService → UserRepository → User
 로그인:   AuthController → LoginService → UserRepository + JwtService
 인증:     JwtAuthenticationFilter → JwtService → LoginService.userExists()
+지역 검색: RegionController → RegionSearchService → RegionCatalog → RegionDataLoader
+AI 구조화: RegionRecommendationService 또는 MenuAnalysisService → AiClient
+           ├── ProfileFakeAiClient  (local·test)
+           └── OpenAiClient         (prod·smoke)
 외부 기능 실행 준비:
           RequestExecutionService
           ├── RequestExecutionTransaction  (동일 requestId 중복 실행 방지)
           └── ApiUsageService              (사용자·서비스 호출량 확보)
 ```
 
-Controller는 HTTP와 DTO 검증만 담당하고, Service가 유스케이스와 트랜잭션 순서를 조합하며, Repository는 같은 `user` 도메인의 DB 접근만 담당합니다. `RequestExecutionService`는 중복 요청 상태를 먼저 확보한 뒤 호출량을 예약하며, 처리 실패 시 실행 상태를 해제할 수 있도록 구성되어 있습니다.
+Controller는 HTTP와 DTO 검증만 담당하고, Service가 유스케이스와 트랜잭션 순서를 조합하며, Repository는 같은 `user` 도메인의 DB 접근만 담당합니다. `RegionCatalog`는 검증된 정적 지역 데이터를 메모리에 제공하고, AI Service는 제공자 응답을 그대로 신뢰하지 않고 허용 ID·개수·중복·필수 필드를 검증합니다. `RequestExecutionService`는 중복 요청 상태를 먼저 확보한 뒤 호출량을 예약하며, 처리 실패 시 실행 상태를 해제할 수 있도록 구성되어 있습니다.
 
 ---
 
@@ -351,7 +418,7 @@ Controller는 HTTP와 DTO 검증만 담당하고, Service가 유스케이스와 
   <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white">
 </p>
 
-Spring Data JPA·MySQL·Flyway·Spring Security·JWT는 구현·검증됐습니다. OpenAI·카카오 장소·경로 Client는 목표 기술이며 아직 구현하지 않았습니다.
+Spring Data JPA·MySQL·Flyway·Spring Security·JWT와 OpenAI Client는 구현·검증됐습니다. 카카오 장소·경로 Client는 목표 기술이며 아직 구현하지 않았습니다. 실제 OpenAI 호출은 `prod`·`smoke` profile에서만 활성화하고 자동 테스트는 Fake와 로컬 HTTP 서버를 사용합니다.
 
 ### Frontend (계획)
 
@@ -432,6 +499,6 @@ docs/
 
 ## 📌 Project Status
 
-> 인증·호출 한도 기반과 인증 화면을 구현·검증한 개인 학습 프로젝트입니다. 지역·장소·일정 기능과 외부 API 연결을 단계적으로 이어가고 있습니다.
+> 인증·호출 한도, 국내 지역 검색, AI 계약과 OpenAI Client, 인증 화면을 구현·검증한 개인 학습 프로젝트입니다. AI API 연결과 장소·경로·일정 기능을 단계적으로 이어가고 있습니다.
 
 구현이 완료된 기능은 위 체크리스트와 구현 준비도 문서에 지속적으로 반영합니다.
