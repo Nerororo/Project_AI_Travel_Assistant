@@ -78,7 +78,7 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 
 * [ ] 🌏 국내 최종 여행 지역 직접 선택과 AI 지역 후보 3개 추천
 * [ ] 📍 카카오 기반 관광지 검색·검증과 사용자 표시 이름 입력
-* [ ] ⏱️ 장소별 기본 체류시간 계산과 10분 단위 조정
+* [x] ⏱️ 장소별 기본 체류시간 계산과 10분 단위 조정 정책
 * [ ] 🔁 Haversine·Nearest Neighbor·2-opt 기반 추정 동선 구성
 * [ ] 🚗 자동차 또는 대중교통 실제 경로 검증
 * [ ] 🏨 기하 중앙값·메도이드·현재 지도 영역 기반 숙소 탐색
@@ -114,7 +114,10 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [x] 숙소 탐색 중심을 위한 기하 중앙값·메도이드 구현
 * [x] 최대 하루 입력과 7일 고정 경계 조합으로 순수 알고리즘 전체 회귀·성능 검증
 * [x] 지역 추천과 메뉴 분석 API에 JWT 인증, 사용자별 기능 한도와 `requestId` 중복 실행 차단을 연결하고 입력·응답 경계를 검증
-* [ ] **외부 장소·경로 Client 계약**: `place/client`, `route/client`에 요청·응답 DTO, 오류 분류, timeout 계약과 Fake를 추가하고 실제 Kakao Local·자동차·대중교통 응답을 내부 모델로 매핑한다.
+* [x] `place/client`, `route/client` 요청·응답 DTO, 오류 분류, timeout 계약과 Fake 구현
+* [x] 장소 역할별 관광지 20km·숙소 5→10km·음식점 1→3→5km 검색 반경 정책 구현
+* [x] 카카오 카테고리를 일반·자연 90분, 박물관·전시 120분, 체험 180분, 등산 240분, 테마파크 360분으로 변환하고 음식점 60분·숙소 제외·관광지 30~480분의 10분 단위 조정 검증
+* [ ] **실제 외부 장소·경로 Client**: Kakao Local·자동차·대중교통 HTTP 응답을 내부 모델로 매핑하고 키·timeout·제공자 오류 변환을 연결한다.
 * [ ] **장소 검색과 선택 흐름**: 장소 유형별 체류 시간, 지역·주소 검증, 검색 결과 수명과 좌표 일시 사용 정책을 구현하고, 실제 선택에 필요한 일회성 `selectionToken`의 발급·검증·만료·폐기를 연결한다.
 * [ ] **실제 경로 검증과 fallback**: 최종 후보 인접 구간만 자동차·대중교통 경로 API로 검증하고, 예상 종료 시각 초과·정상 경로 없음·기술 장애·쿼터 부족을 구분한다. 필요한 쿼터를 확보하지 못하면 외부 호출 없이 전체 Haversine 추정과 warning을 반환한다.
 * [ ] **추정 일정·숙소·음식점 추천**: 1~7일과 하루 최대 5개, 점심·저녁 60분 시간대, 한쪽 이동 여유 15분을 반영해 일정을 계산한다. 숙소는 지도 중심 탐색 결과를 제공하고 사용자가 선택하게 하며, 음식점은 시간·동선·거리 기반 후보 점수를 계산한다.
@@ -123,13 +126,13 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [ ] **나머지 화면과 백엔드 연결**: 메뉴 분석·이동수단/장소 선택·추정 일정·음식점 선택·완료 일정·공유 화면을 순서대로 연결하고, 로딩·실패·재시도·취소·만료 상태를 화면에 반영한다.
 * [ ] **전체 검증과 운영 준비**: 외부 원문·좌표·개인정보 비노출 로그, profile별 Fake/실제 Client 분리, health/metric, migration·Docker·배포 smoke, 전체 자동 테스트와 브라우저 흐름을 검증하고 DoD를 갱신한다.
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 개발 기반, 인증·호출 한도, 국내 지역 기준·검색, 지역·메뉴 AI API, 인증·지역 선택 화면 연결이 구현·검증됐습니다. 순수 경로 알고리즘은 Haversine 거리, Nearest Neighbor, 고정 출발·도착 경계를 보존하는 2-opt, 이동수단별 10분 단위 시간 추정과 기하 중앙값·메도이드를 최대 하루 입력과 7일 고정 경계 조합으로 회귀·성능 검증해 R1을 완료했습니다. 전체 186개 자동 테스트가 통과했으며, 다음 백엔드 작업은 외부 장소 Client의 요청·응답 DTO와 오류 계약을 설계하는 `C1-01`입니다. 이후 Route Client, 장소 선택, 실제 경로 검증, 일정·추천, 완료 일정 순서로 핵심 흐름을 완성합니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 개발 기반, 인증·호출 한도, 국내 지역 기준·검색, 지역·메뉴 AI API, 인증·지역 선택 화면 연결이 구현·검증됐습니다. 순수 경로 알고리즘은 Haversine 거리, Nearest Neighbor, 고정 출발·도착 경계를 보존하는 2-opt, 이동수단별 10분 단위 시간 추정과 기하 중앙값·메도이드를 최대 하루 입력과 7일 고정 경계 조합으로 회귀·성능 검증해 R1을 완료했습니다. 장소·경로 Client 계약과 Fake, Kakao Local의 radius·rect 요청 계약, 장소 역할별 검색 반경과 카테고리 기반 기본 체류시간 정책까지 구현해 P1-01을 완료했습니다. 전체 232개 자동 테스트가 통과했으며, 다음 작업은 `selectionToken`의 서명·만료·키 교체·최소 payload를 확정하는 `P1-02`입니다. 이후 token 구현, 실제 Kakao Local Client, 장소 검색 API, 실제 경로 검증, 일정·추천, 완료 일정 순서로 핵심 흐름을 완성합니다.
 
 ---
 
 ## 🧩 현재 구현 클래스 구조
 
-아래 구조는 목표 설계가 아니라 **현재 저장소에 실제로 존재하는 Java 클래스**를 기준으로 합니다. 아직 클래스가 없는 `place`, `recommendation`, `travelplan` 도메인은 표시하지 않습니다.
+아래 구조는 목표 설계가 아니라 **현재 저장소에 실제로 존재하는 Java 클래스**를 기준으로 합니다. 아직 클래스가 없는 `recommendation`, `travelplan` 도메인은 표시하지 않습니다.
 
 ```text
 com.example.travel
@@ -154,7 +157,12 @@ com.example.travel
 │   ├── client         # AiClient, OpenAiClient, ProfileFakeAiClient와 설정
 │   ├── service        # RegionRecommendationService, MenuAnalysisService
 │   └── dto            # AI 기능 요청·응답과 허용 후보 전달 객체
+├── place
+│   ├── client         # KakaoPlaceClient 계약, 요청·후보·결과 DTO와 오류 분류
+│   ├── service        # PlaceService Client 경계
+│   └── domain         # PlaceRole, 역할별 반경과 기본 체류시간 정책
 ├── route
+│   ├── client         # 자동차·대중교통 Client 계약, 결과 DTO와 오류 분류
 │   └── algorithm      # Coordinate·Haversine, Nearest Neighbor, 2-opt,
 │                      # 이동수단별 시간 추정, 기하 중앙값·메도이드
 └── global
@@ -311,6 +319,41 @@ class OpenAiProperties {
   <<ConfigurationProperties>>
 }
 
+class KakaoPlaceClient {
+  <<interface>>
+  +search(request) PlaceSearchResult
+}
+class PlaceService {
+  +search(request) PlaceSearchResult
+}
+class PlaceRole {
+  <<enumeration>>
+  ATTRACTION
+  HOTEL
+  RESTAURANT
+}
+class PlaceSearchRadiusPolicy {
+  +radiiMeters(role) List~Integer~
+}
+class StayDurationPolicy {
+  +suggestedMinutes(role, category) OptionalInt
+  +validateAttractionAdjustment(minutes) int
+}
+
+class RouteClient {
+  <<interface>>
+  +findRoute(segment) RouteResult
+}
+class CarRouteClient {
+  <<interface>>
+}
+class PublicTransitRouteClient {
+  <<interface>>
+}
+class RouteResult {
+  <<record>>
+}
+
 class Coordinate {
   <<record>>
   +double latitude
@@ -399,6 +442,13 @@ ProfileFakeAiClient ..|> AiClient
 OpenAiClientConfiguration --> OpenAiClient
 OpenAiClientConfiguration --> OpenAiProperties
 
+PlaceService --> KakaoPlaceClient
+PlaceSearchRadiusPolicy --> PlaceRole
+StayDurationPolicy --> PlaceRole
+CarRouteClient --|> RouteClient
+PublicTransitRouteClient --|> RouteClient
+RouteClient ..> RouteResult
+
 RoutePoint --> Coordinate
 NearestNeighborRoute --> HaversineDistance
 TwoOptRoute --> HaversineDistance
@@ -429,6 +479,9 @@ ErrorResponse --> ErrorCode
 AI 구조화: RegionRecommendationService 또는 MenuAnalysisService → AiClient
            ├── ProfileFakeAiClient  (local·test)
            └── OpenAiClient         (prod·smoke)
+장소 Client 경계: PlaceService → KakaoPlaceClient
+장소 정책: PlaceRole → PlaceSearchRadiusPolicy + StayDurationPolicy
+경로 Client 계약: CarRouteClient 또는 PublicTransitRouteClient → RouteClient
 외부 기능 실행 준비:
           RequestExecutionService
           ├── RequestExecutionTransaction  (동일 requestId 중복 실행 방지)
@@ -475,7 +528,7 @@ Controller는 HTTP와 DTO 검증만 담당하고, Service가 유스케이스와 
   <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white">
 </p>
 
-Spring Data JPA·MySQL·Flyway·Spring Security·JWT와 OpenAI Client는 구현·검증됐습니다. 카카오 장소·경로 Client는 목표 기술이며 아직 구현하지 않았습니다. 실제 OpenAI 호출은 `prod`·`smoke` profile에서만 활성화하고 자동 테스트는 Fake와 로컬 HTTP 서버를 사용합니다.
+Spring Data JPA·MySQL·Flyway·Spring Security·JWT와 OpenAI Client는 구현·검증됐습니다. 카카오 장소·자동차·대중교통 Client는 계약·DTO·오류 분류와 Fake까지 구현했으며 실제 HTTP Client는 아직 구현하지 않았습니다. 실제 OpenAI 호출은 `prod`·`smoke` profile에서만 활성화하고 자동 테스트는 Fake와 로컬 HTTP 서버를 사용합니다.
 
 ### Frontend (계획)
 
@@ -556,6 +609,6 @@ docs/
 
 ## 📌 Project Status
 
-> 인증·호출 한도, 국내 지역 검색, AI 계약과 OpenAI Client, 인증 화면을 구현·검증한 개인 학습 프로젝트입니다. AI API 연결과 장소·경로·일정 기능을 단계적으로 이어가고 있습니다.
+> 인증·호출 한도, 국내 지역 검색, AI 계약과 OpenAI Client, 인증 화면, 순수 경로 알고리즘, 장소·경로 Client 계약과 장소 체류시간 정책을 구현·검증한 개인 학습 프로젝트입니다. 다음 작업은 `selectionToken` 보안 계약을 확정하는 P1-02이며, 이후 실제 카카오 연동과 장소·경로·일정 기능을 단계적으로 이어갑니다.
 
 구현이 완료된 기능은 위 체크리스트와 구현 준비도 문서에 지속적으로 반영합니다.
