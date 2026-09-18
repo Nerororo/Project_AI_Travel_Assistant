@@ -178,14 +178,29 @@ com.example.travel
 classDiagram
 direction TB
 
-class UserController
-class AuthController
-class UserRegistrationService
-class LoginService
-class UserRepository
+class UserController {
+  +register(request) void
+}
+class AuthController {
+  +login(request) LoginResponse
+}
+class UserRegistrationService {
+  +register(email, password) void
+}
+class LoginService {
+  +login(email, password) LoginResponse
+  +userExists(userId) boolean
+}
+class UserRepository {
+  +findByEmail(email) Optional~User~
+  +existsByEmail(email) boolean
+}
 class User
 class JwtAuthenticationFilter
-class JwtService
+class JwtService {
+  +issue(userId) String
+  +verify(token) AuthenticatedUser
+}
 
 UserController --> UserRegistrationService : 회원가입
 UserRegistrationService --> UserRepository : 저장
@@ -203,13 +218,23 @@ JwtAuthenticationFilter --> LoginService : 사용자 확인
 classDiagram
 direction TB
 
-class RequestExecutionService
+class RequestExecutionService {
+  +tryStart(userId, feature, requestId, amount) RequestStartResult
+  +markSucceeded(lease) boolean
+  +releaseAfterFailure(lease) boolean
+}
 class RequestExecutionTransaction
 class RequestExecutionRepository
 class RequestExecution
-class ApiUsageService
+class ApiUsageService {
+  +tryAcquire(userId, feature, amount) UsageReservationResult
+  +acquireOrThrow(userId, feature, amount) void
+}
 class ApiUsageReservationTransaction
-class ApiUsagePolicy
+class ApiUsagePolicy {
+  +windows(userId, feature) List~UsageWindow~
+  +retryAfterSeconds(window) long
+}
 class ApiUsageCounterRepository
 class ApiUsageCounter
 
@@ -229,20 +254,45 @@ ApiUsageCounterRepository --> ApiUsageCounter
 classDiagram
 direction TB
 
-class RegionController
-class RegionSearchService
-class RegionCatalog
-class RegionDataLoader
-class RegionRecommendationService
-class MenuAnalysisService
-class AiClient
+class RegionController {
+  +search(query) RegionSearchResponse
+}
+class RegionSearchService {
+  +search(query) List~RegionSearchItem~
+}
+class RegionCatalog {
+  +regions() List~Region~
+  +findById(regionId) Optional~Region~
+}
+class RegionDataLoader {
+  +load(resource) List~Region~
+}
+class RegionRecommendationService {
+  +recommend(userId, requestId, request) RegionRecommendationResponse
+}
+class MenuAnalysisService {
+  +analyze(userId, requestId, request) MenuAnalysisResponse
+}
+class AiClient {
+  +recommendRegions(prompt) RegionRecommendationResult
+  +analyzeMenus(prompt) MenuAnalysisResult
+}
 class OpenAiClient
 class ProfileFakeAiClient
-class PlaceService
-class KakaoPlaceClient
+class PlaceService {
+  +search(request) PlaceSearchResult
+}
+class KakaoPlaceClient {
+  +search(request) PlaceSearchResult
+}
 class PlaceRole
-class PlaceSearchRadiusPolicy
-class StayDurationPolicy
+class PlaceSearchRadiusPolicy {
+  +radiiMeters(role) List~Integer~
+}
+class StayDurationPolicy {
+  +suggestedMinutes(role, category) OptionalInt
+  +validateAttractionAdjustment(minutes) int
+}
 
 RegionController --> RegionSearchService
 RegionSearchService --> RegionCatalog
@@ -262,16 +312,33 @@ StayDurationPolicy --> PlaceRole
 classDiagram
 direction TB
 
-class RouteClient
+class RouteClient {
+  +findRoute(segment) RouteResult
+}
 class CarRouteClient
 class PublicTransitRouteClient
-class HaversineDistance
-class NearestNeighborRoute
-class TwoOptRoute
-class HaversineTravelTimeEstimator
-class TravelTimePolicy
-class GeometricMedian
-class MedoidSelector
+class HaversineDistance {
+  +kilometers(from, to) double
+}
+class NearestNeighborRoute {
+  +order(places, startKey) List~RoutePoint~
+}
+class TwoOptRoute {
+  +improve(route) List~RoutePoint~
+}
+class HaversineTravelTimeEstimator {
+  +travelMode() TravelMode
+  +estimateMinutes(from, to) int
+}
+class TravelTimePolicy {
+  +defaultFor(mode) TravelTimePolicy
+}
+class GeometricMedian {
+  +calculate(coordinates) Coordinate
+}
+class MedoidSelector {
+  +select(points) RoutePoint
+}
 
 CarRouteClient --|> RouteClient
 PublicTransitRouteClient --|> RouteClient
