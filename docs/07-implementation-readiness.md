@@ -35,7 +35,7 @@
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
-| 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
+| 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
 | Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
 | Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
@@ -121,6 +121,30 @@ C1-02에서 테스트 전용 `FakeKakaoPlaceClient`와 생성자 주입 기반�
 
 C1-03에서 공통 `RouteClient`와 자동차·대중교통 전용 하위 인터페이스를 추가하고 요청 범위의 단일 인접 좌표 구간 계약을 정의했다. 성공은 제공자 예상 초만 가진 `Found`, 정상 경로 없음은 예외가 아닌 `NotFound`, 요청·인증·한도·timeout·연결·5xx·잘못된 응답은 외부 원문 없는 정규화 실패로 분리했다. 재시도 가능한 일시적 기술 장애도 요청·계약 실패와 구분했으며, 루트 `test.ps1` 전체 210개 테스트와 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 `C1-04`다.
 
+C1-04에서 테스트 전용 자동차·대중교통 Fake Route Client와 생성자 주입 기반의 얇은 `RouteService` 골격을 추가했다. 일정의 `TravelMode`에 따라 해당 Client 하나만 호출하고 성공·정상 경로 없음·timeout·연결 실패·5xx 정규화 결과를 재시도와 fallback 없이 그대로 전달하는 계약을 검증했다. 실제 Route Client Bean이 아직 없는 단계이므로 `RouteService`의 Spring Bean 등록은 실제 Client 구성과 함께 수행하도록 유보했다. 루트 `test.ps1` 전체 217개 테스트와 `git diff --check`가 통과했으며 다음 백엔드 주 작업은 `C1-05`다.
+
+C1-05에서 2026-09-18 카카오 공식 문서를 기준으로 Local·자동차·대중교통 endpoint, 인증, 요청·응답, 쿼터와 요금을 감사했다. 대중교통 경로 조회는 2026-07-21 카카오맵 REST API에 정식 추가되어 제품 방향과 일치하고, 1,000건/일 무료 쿼터의 90%인 900건 차단선도 일치한다. 다만 Local의 20km 밖 도시 전체 공간 검색, 자동차 `result_code`별 정규화, 대중교통 복수 후보 선택·출발시각 없는 시간 의미·상태 매핑이 확정되지 않아 실제 Client 구현 게이트는 차단 상태다. 기존 API·ADR과 코드는 수정하지 않았으며 별도 `C1-05A`에서 계약을 정렬해야 한다.
+
+C1-05A 결정 1에서 모든 최종 선택 가능 지역에 공식 WGS84 행정경계 기반 `searchBounds`를 생성하기로 확정했다. 관광지는 대표 좌표 20km로 먼저 검색하고 결과 부족 또는 사용자 요청 시 bounds를 카카오 `rect`의 `minLongitude,minLatitude,maxLongitude,maxLatitude` 순서로 전달해 공식 지역명 결합 검색을 수행하며, 주소 행정구역 검증·장소 ID 중복 제거·외부 호출별 사용량 집계를 적용한다. 기준 데이터와 Loader는 후속 `G1-06`에서 구현·검증을 완료했고, radius/rect Client DTO는 `C1-05B`, 실제 Local 호출은 `P1-04`로 분리했다.
+
+C1-05A 자동차 결정 1에서 카카오모빌리티 `result_code=1`을 `RouteResult.NotFound`로 확정했다. 재시도·Haversine fallback·자동 장소 삭제·자동 이동수단 변경 없이 422로 전체 저장을 차단하고, 브라우저 작성 상태를 유지한 채 사용자가 조정 후 전체 경로를 다시 검증한다. 실패 구간 `details`는 모든 위치 유형과 반복 방문에 공통으로 적용할 수 있도록 `date + moveOrder + travelMode`로 확정했으며 좌표·장소명·카카오 ID·제공자 원문은 포함하지 않는다. 구현은 `T1-06A`, 화면 처리는 `W1-03B`로 분리했다.
+
+C1-05A 자동차 결정 2에서 Routy 자동차 요청은 `waypoints` 없이 인접 구간의 `origin`과 `destination`만 사용한다고 고정했다. 따라서 경유지 관련 `result_code=101·107`은 정상 흐름에서 발생할 수 없는 `RouteClientFailure.INVALID_RESPONSE`로 확정했다. 재시도·fallback 없이 503으로 저장을 차단하고 사용자 장소 문제로 안내하지 않는다.
+
+C1-05A 자동차 결정 3에서 시작·도착 지점 주변 도로를 탐색할 수 없는 `result_code=102·103`을 `RouteResult.NotFound`로 확정했다. 유효한 인접 구간 요청의 정상적인 경로 없음으로 보고 재시도·fallback 없이 422로 저장을 차단하며, 실패 원인을 물리적 도로 부재나 도보·선박 필요로 단정하지 않는다.
+
+C1-05A 자동차 결정 4에서 출발지와 도착지가 5m 이내인 `result_code=104`를 `RouteResult.Found(0)`으로 확정했다. 일정 생성을 계속하고 해당 `MOVE`를 0분으로 유지하며, 10분 올림과 고정 buffer를 적용하지 않는다. 호출 전에 Haversine으로 5m를 판정해 외부 호출을 생략하지 않고 실제 104 응답에만 적용한다.
+
+C1-05A 자동차 결정 5에서 시작·도착 지점 주변 교통 장애인 `result_code=105·106`을 `RouteResult.NotFound`로 확정했다. 제공자 장애가 아닌 현재 자동차 구간의 정상적인 경로 없음으로 보고 재시도·fallback 없이 422로 저장을 차단하며 구체적인 사고·통제 원인은 사용자에게 노출하지 않는다. 이로써 자동차 `result_code=1, 101~107` 매핑은 확정됐고 대중교통 후보·시간 의미·상태 매핑만 남았다.
+
+C1-05A 대중교통 결정 1에서 `status=OK`의 첫 후보 `routes[0].properties.totalTime`만 사용하고 초 단위 시간을 10분 단위로 올리기로 확정했다. 공식 문서가 첫 후보의 추천·최단 의미를 보장하지 않는 한계를 수용하고 최소시간·환승·요금·거리 재정렬은 하지 않는다. 첫 후보가 없거나 시간이 누락·음수이면 뒤 후보를 사용하지 않고 `INVALID_RESPONSE`로 처리한다.
+
+C1-05A 대중교통 결정 2에서 `totalTime`을 API 조회 시 반환된 일정 계획용 예상 이동시간으로 확정했다. 여행 날짜·출발 시각을 요청하지 못하므로 미래 여행일의 운행 여부·배차·막차·지연·실제 소요시간을 보장하지 않고, 제작·완료·공유 화면은 모두 `예상 이동시간`으로 표시하며 완료 조회나 여행 당일 자동 재계산도 하지 않는다.
+
+C1-05A 대중교통 결정 3에서 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`는 `RouteResult.NotFound`, `EQUAL_POINTS`는 `RouteResult.Found(0)`, `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`로 확정했다. 알 수 없는·누락된 status와 손상된 `OK` 응답은 `INVALID_RESPONSE`로 처리한다. 정상 경로 없음은 422, request·response 계약 오류는 재시도·fallback 없는 503으로 저장을 차단한다. 이로써 C1-05A의 계약 설계는 완료됐으며 실제 Client·DTO 구현과 자동 검증은 후속 Task에서 수행한다.
+
+C1-05B에서 `PlaceSearchRequest`가 WGS84 중심점·반경 또는 사각형 bounds 중 정확히 하나만 받도록 확장했다. 중심점·반경의 부분 입력과 두 공간 입력의 동시 사용을 거절하고, 공식 Local 계약의 radius 0~20,000m·page 1~45·size 1~15 및 유한 좌표·최소/최대 bounds를 생성 시 검증한다. `around`·`withinBounds` 팩토리와 Fake·Service 테스트로 radius/rect 요청 객체, page와 외부 호출 1회 단위가 변형되지 않음을 고정했다. 실제 Kakao `rect` 직렬화와 HTTP 호출은 P1-04 책임이며, 루트 `test.ps1` 전체 222개 테스트가 실패·오류·건너뜀 없이 통과했다.
+
 U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
 
 U1-02에서 User Entity·Repository와 V1 `users` migration을 구현했다. MySQL 8.4에서 production migration 적용, Hibernate `ddl-auto: validate`, Repository 저장·조회, 이메일 대소문자 UNIQUE와 `password_hash`만 존재하는 schema를 통합 테스트로 검증했다. 회원가입 시 이메일 정규화·해시 생성·중복 오류 변환은 U1-03, 인증과 JWT는 U1-04 범위다.
@@ -150,6 +174,8 @@ G1-03에서 Region 불변 값 객체와 정적 데이터 Loader·메모리 Catal
 G1-04에서 공식 이름·짧은 이름·별칭을 정확 일치, 접두 일치, 부분 일치 순으로 검색하고 동률은 표준 이름·상위 지역 이름·regionId 순으로 고정했다. 응답은 상위 표시 이름과 `parentRegionId`, 타입, 최종 선택 가능 여부, 장소 검색 필터 가능 여부를 분리하며 결과가 없으면 빈 배열을 반환한다. 인증된 `GET /api/regions`의 성공·빈 결과·필수 query·공백 query와 무인증 401을 Service·Controller·통합 테스트로 검증했다. AI 지역 추천 연결과 지역 단계 전체 DoD 점검은 각각 A1-04와 G1-05 범위다.
 
 G1-05에서 지역 단계 DoD를 점검하고 실제 데이터의 161개 최종 선택 지역, 76개 장소 검색 필터, 9개 상위 탐색 항목을 회귀 테스트로 고정했다. 광주 5개 구의 검색 필터 역할, 세종의 1단계 전용 주소 경계, 수원 일반구의 주소 경계 전용 포함, 모든 항목의 1단계 주소 경계와 국내 범위도 함께 검증했다. Loader의 주소 경계 누락 거절 테스트를 보강했고 루트 `test.ps1`에서 Testcontainers MySQL 8.4를 포함한 전체 91개 테스트가 통과했다. 같은 허용 목록을 사용하는 AI 연결과 완료 일정의 `regionId`·표시 이름 snapshot은 각각 A1·T1 단계에서 검증한다.
+
+G1-06에서 G1-02와 동일한 해시의 브이월드 WGS84 경계 원본으로 최종 선택 지역 161개의 `searchBounds`를 생성했다. 광주는 5개 구, 수원 등 일반구가 있는 시는 모든 구성 구 경계의 합집합에서 최소·최대 좌표를 계산했고, 바깥 방향 6자리 정밀도로 1,279,873개 원천 경계점이 모두 포함됨을 독립 검증했다. Loader는 최종 지역의 bounds 누락·비유한 값·대한민국 운영 범위 이탈·최소/최대 역전·대표점 미포함과 비선택 지역의 불필요한 bounds를 시작 시 거절한다. 지역 회귀 테스트와 루트 `test.ps1` 전체 219개 테스트가 실패·오류·건너뜀 없이 통과했다.
 
 A1-01에서 지역 추천·메뉴 분석 요청·응답 DTO와 `AiClient` 계약, local·test 전용 Fake와 두 Spring Service를 구현했다. 지역 추천은 서버 허용 목록 안의 중복 없는 정확히 3개 ID와 1~200자 이유만 허용하고, 메뉴 분석은 중복 없는 1~5개 메뉴·검색어·이유와 요청에 포함된 선택적 대상 관광지만 허용한다. 계약 위반은 원문과 상세를 노출하지 않는 `AI_RESPONSE_INVALID`로 변환하며 DTO trim·validation과 Fake·Service 경계값을 자동 테스트했다. 실제 OpenAI 공식 계약 감사와 HTTP Client, 지역 Catalog·인증·한도·requestId·Controller 연결 및 메뉴 재시도는 A1-02~05 범위다.
 

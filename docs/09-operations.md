@@ -191,7 +191,9 @@ OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예�
 
 지역 기준 데이터의 원천과 생성 규칙은 ADR-038을 따른다. 백엔드 저장소 관리자는 매월 첫 개발 주와 행정구역 개편 공지 시점에 행정표준코드 변경 공지, 법정동 코드 전체자료와 국토교통부 행정구역도 WFS의 기준일을 확인한다.
 
-갱신이 필요하면 런타임에서 원천을 조회하지 않고 별도 변경으로 `regions.json`을 재생성한다. 변경에는 원천 URL·기준일·파일 해시, 생성 명령, 추가·폐지·명칭·상위 관계·대표 좌표 diff, 제외·분류 건수와 검증 결과를 남긴다. 코드와 경계의 기준시점 또는 식별자가 맞지 않으면 배포하지 않고 마지막 검증본을 유지한다. 원천 다운로드 파일과 경계 원문은 애플리케이션 저장소에 커밋하지 않는다.
+갱신이 필요하면 런타임에서 원천을 조회하지 않고 별도 변경으로 `regions.json`을 재생성한다. 변경에는 원천 URL·기준일·파일 해시, 생성 명령, 추가·폐지·명칭·상위 관계·대표 좌표·`searchBounds` diff, 제외·분류 건수와 검증 결과를 남긴다. 코드와 경계의 기준시점 또는 식별자가 맞지 않으면 배포하지 않고 마지막 검증본을 유지한다. 원천 다운로드 파일과 경계 원문은 애플리케이션 저장소에 커밋하지 않는다.
+
+모든 최종 선택 가능 지역의 `searchBounds`는 대표 좌표와 같은 WFS 경계를 WGS84로 변환한 뒤 전체 경계 좌표의 최소·최대 경도와 위도로 생성한다. 값은 유한하고 대한민국 운영 범위 안이어야 하며 최소값이 최대값보다 작고 모든 원천 경계점이 사각형 안에 포함되는지 검증한다. 논리 지역과 일반구가 있는 시는 구성 경계의 합집합을 입력으로 사용한다. bounds는 지역 검색 API에 노출하지 않고 Place Service가 공식 지역 전체 보완 검색을 만들 때만 사용한다.
 
 최초 생성 기록(2026-09-17): 법정동 원천은 `국토교통부_전국 법정동_20260630` 20,561행이며 SHA-256은 `E5657D4B53A16F72E42E9C0D91E84FF2D647E70DC56B9408DA6FD057D0DA45C3`이다. 경계는 같은 날 브이월드 데이터 API의 `LT_C_ADSIDO_INFO` 16건과 `LT_C_ADSIGG_INFO` 256건을 WGS84 GeoJSON으로 조회했다. 지역 246개 중 최종 선택 161개, 장소 검색 필터 76개를 생성했으며, 도 산하 분구시는 일반구 경계를 합쳐 시 대표점을 계산했다. 원천 코드 집합, 역할, 부모, 주소 경계, 좌표 범위와 대표점의 원천 경계 내부 포함 여부를 독립 검사했다.
 
@@ -209,6 +211,82 @@ OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예�
 | JWT | ADR-037의 비밀번호 규칙, 1시간 access token, key 교체 설정과 User 존재 검증 구현 확인 |
 
 기술 선택이나 계약이 바뀌면 `docs/04-api-spec.md`와 `docs/06-decisions.md`를 같은 변경 단위에서 갱신한다. 자동 테스트는 결정 후에도 Fake Client를 유지한다.
+
+### C1-05 카카오 공식 계약 감사 (2026-09-18)
+
+이 절은 실제 Client 구현 전에 공식 제공 흐름과 당시 Routy 계약을 대조한 C1-05 감사 기록이다. 감사에서 발견한 Local 공간 검색, 자동차 결과 코드와 대중교통 후보·시간·상태의 계약 공백은 후속 `C1-05A`에서 책임 문서에 확정했다. 실제 Local Client는 `C1-05B`의 radius·rect 요청 계약 뒤 P1에서, 실제 Route Client는 이 절의 확정 매핑을 기준으로 R2에서 구현한다.
+
+공식 기준:
+
+- [카카오맵 REST API](https://developers.kakao.com/docs/ko/kakaomap/rest-api)
+- [카카오맵 이해하기·이용 정책](https://developers.kakao.com/docs/ko/kakaomap/common)
+- [카카오디벨로퍼스 쿼터·추가 사용 요금](https://developers.kakao.com/docs/ko/getting-started/quota)
+- [2026-07-21 카카오맵 신규 API·무료 쿼터 변경 공지](https://devtalk.kakao.com/t/api-notice-on-new-kakao-map-api-features-and-free-quota-policy/150222)
+- [카카오모빌리티 자동차 길찾기](https://developers.kakaomobility.com/guide/navi-api/directions)
+- [카카오모빌리티 길찾기 결과 코드](https://developers.kakaomobility.com/guide/navi-api/reference.html)
+- [카카오모빌리티 오류 처리](https://developers.kakaomobility.com/guide/navi-api/solution.html)
+- [카카오모빌리티 쿼터·가격](https://developers.kakaomobility.com/price/)
+
+#### Local 장소 검색
+
+| 항목 | 2026-09-18 공식 계약 | Routy 대조 |
+|---|---|---|
+| endpoint·인증 | `GET https://dapi.kakao.com/v2/local/search/keyword.json`, `Authorization: KakaoAK {REST_API_KEY}` | `place/client`에서 서버 호출하는 방향과 일치 |
+| 공간 입력 | WGS84 `x`·`y`와 `radius` 조합 또는 `rect`; radius 0~20,000m; rect는 `left X,left Y,right X,right Y` | 최초 대표 좌표 20km와 일치하며 `searchBounds`는 `minLongitude,minLatitude,maxLongitude,maxLatitude` 순서로 직렬화 |
+| 페이지 | page 1~45, size 1~15, `is_end` 제공 | 현재 page·size·hasNext 계약과 일치 |
+| 결과 | 장소 ID·상세 URL·장소명·지번/도로명 주소·경도 `x`·위도 `y`·카테고리 제공 | 요청 범위 임시 후보로만 사용하고 저장 모델과 분리하는 계약과 일치 |
+| 쿼터·가격 | 첫 번째 카카오맵 활성화 앱 기준 키워드 검색 100,000건/일 무료, 추가 사용 2원/건 | 90% 차단선은 90,000건/일; 유료 초과 자동 승인은 금지 |
+
+결정 상태: C1-05A에서 모든 최종 선택 가능 지역에 공식 경계 기반 `searchBounds`를 생성하고, 대표 좌표 20km 초기 검색 뒤 결과 부족 또는 사용자 요청 시 `rect`·공식 지역명 결합 검색으로 전환하기로 확정했다. 반환 주소 검증, 장소 ID 중복 제거와 외부 호출별 사용량 집계를 적용한다. 데이터 생성·Loader 검증은 `G1-06`, 중심점·반경과 bounds 중 정확히 하나만 허용하는 Client 요청 DTO·Fake 계약은 `C1-05B`에서 완료했으며, Kakao `radius`·`rect` 직렬화와 실제 Local 호출은 `P1-04`에서 구현한다.
+
+#### 자동차 길찾기
+
+| 항목 | 2026-09-18 공식 계약 | Routy 대조 |
+|---|---|---|
+| endpoint·인증 | `GET https://apis-navi.kakaomobility.com/v1/directions`, `Authorization: KakaoAK {REST_API_KEY}` | 자동차 전용 Client 분리와 일치 |
+| 요청 | 경도·위도 순서의 origin/destination, 선택적 경유지 최대 5개, `priority`, `alternatives`, `summary` | 인접 구간을 한 쌍씩 조회하는 계약은 허용 범위 안이며 대중교통과 동일한 호출 단위를 유지할 수 있음 |
+| 최소 응답 | `alternatives=false`, `summary=true`로 상세 도로·안내를 줄이고 첫 route의 `result_code`와 `summary.duration` 초만 사용 가능 | 원본·좌표·polyline을 전달하거나 저장하지 않는 계약과 일치 |
+| HTTP 200 결과 분기 | `result_code` 1, 101~107은 각각 경로 없음·지점/경유지 도로 탐색·근접 지점·교통 장애를 뜻함 | HTTP 상태만으로 성공을 판정하지 않고 코드별 내부 결과로 정규화해야 함 |
+| 기술 장애 | 500·502·503과 네트워크 timeout은 기술 장애, 400·401·403·429는 요청·인증·권한·한도 계열 | 현재 정규화 실패 종류와 대체로 일치 |
+| 쿼터·가격 | 자동차 길찾기 10,000건/일, 무료 초과분은 월 1,000,000건 이하 구간 8원/건 | 90% 차단선은 9,000건/일; 유료 초과 자동 승인은 금지 |
+
+결정 상태: C1-05A에서 `result_code=1`은 선택한 자동차 이동수단으로 제공자가 유효한 경로를 반환하지 못한 정상 결과 `RouteResult.NotFound`로 확정했다. 재시도·fallback 없이 422 `ROUTE_NOT_FOUND`로 일정 전체 저장을 차단하며 실제 원인을 도보·선박 필요 또는 물리적 통행 불가로 단정하지 않는다. 실패 구간은 `date + moveOrder + travelMode`로 식별한다. `moveOrder`는 최종 생성 후보의 해당 날짜 `items`에서 실패한 `MOVE`가 차지하는 1부터 시작하는 순서이며, 로그와 오류 응답에는 좌표·장소명·카카오 ID·제공자 `result_msg`를 남기지 않는다. 오류 DTO 구현은 `T1-06A`, 브라우저의 작성 상태 유지·구간 강조는 `W1-03B`에서 수행한다.
+
+Routy 자동차 요청은 인접 지점의 `origin`·`destination`만 사용하고 `waypoints`를 보내지 않는다. 따라서 공식상 경유지 도로 탐색 실패인 `result_code=101`과 경유지 주변 교통 장애인 `107`은 `RouteClientFailure.INVALID_RESPONSE`로 매핑한다. 두 코드는 retry 가능한 기술 장애가 아니므로 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`로 저장을 차단한다. 보안·관측에는 provider와 숫자 result code만 허용하고 `result_message`, 경유지 번호, 좌표와 payload는 남기지 않는다. 향후 경유지를 사용하게 되면 이 매핑을 그대로 재사용하지 않고 별도 Task에서 계약을 다시 감사한다.
+
+시작 지점 주변 도로 탐색 실패인 `result_code=102`와 도착 지점 주변 도로 탐색 실패인 `103`은 `RouteResult.NotFound`로 매핑한다. 유효한 요청에서 제공자가 자동차 경로를 만들지 못한 정상 결과이므로 재시도·fallback 없이 422 `ROUTE_NOT_FOUND`로 저장을 차단한다. 운영 메시지와 로그는 도로 부재·도보·선박 필요·좌표 오류처럼 제공자가 보장하지 않은 원인을 덧붙이지 않는다.
+
+출발지와 도착지가 5m 이내인 `result_code=104`는 `RouteResult.Found(0)`으로 매핑한다. 실패 metric이나 422·503으로 집계하지 않고 정상 응답으로 처리하며 해당 이동시간을 0분으로 유지한다. 카카오의 내부 판정과 단순 Haversine 거리가 같다고 가정하지 않으므로 호출 전 거리 판정으로 쿼터 확보나 실제 호출을 생략하지 않는다.
+
+시작 지점 주변 교통 장애인 `result_code=105`와 도착 지점 주변 교통 장애인 `106`은 `RouteResult.NotFound`로 매핑한다. 제공자 가용성 장애 metric으로 집계하지 않고 현재 자동차 구간의 정상적인 경로 없음으로 처리하며, 재시도·fallback 없이 422로 저장을 차단한다. 사용자 오류와 로그에는 변할 수 있는 사고·통제 상세, 제공자 `result_message`와 좌표를 남기지 않는다. 이로써 자동차 `result_code=1, 101~107`의 내부 매핑은 모두 확정됐다.
+
+#### 대중교통 길찾기와 카카오맵 흐름
+
+2026-07-21부터 대중교통 경로 조회가 카카오맵 REST API의 정식 기능으로 추가됐다. 따라서 카카오맵 사용자 화면을 비공식 호출하거나 브라우저를 자동화하는 방식이 아니라, 서버가 공식 REST API를 호출한다는 Routy 방향은 맞다.
+
+| 항목 | 2026-09-18 공식 계약 | Routy 대조 |
+|---|---|---|
+| endpoint·인증 | `GET https://dapi.kakao.com/v2/routing/publictraffic`, `Authorization: KakaoAK {REST_API_KEY}` | 대중교통 전용 Client 분리와 일치 |
+| 요청 | WGS84 기본, `start_x`·`start_y`·`end_x`·`end_y`; 경유지와 출발시각 파라미터 없음 | 인접 구간 한 쌍 조회에는 맞지만 특정 여행일·시각 기준 경로라는 보장은 만들 수 없음 |
+| 정상 결과 | `status=OK`, 여러 `routes`; 각 후보에 `totalTime` 초·거리·환승·요금과 steps/path 포함 | 첫 후보 `totalTime`만 사용하고 10분 단위로 올리며 상세 path와 나머지 후보는 즉시 폐기 |
+| HTTP 200 상태 분기 | `STARTNODES_NULL`, `ENDNODES_NULL`, `NO_RESULTS`, `EQUAL_POINTS`, `INVALID_REQUEST` | 앞의 세 상태는 `NotFound`, 동일 지점은 0분 성공, 잘못된 요청은 `INVALID_REQUEST`로 정규화 |
+| 쿼터·가격 | 첫 번째 카카오맵 활성화 앱 기준 1,000건/일 무료, 추가 사용 10원/건 | 기존 900건 서비스 차단은 공식 무료 쿼터의 90%와 일치 |
+
+차단 사항:
+
+1. 공식 문서는 `routes`의 정렬 순서나 첫 후보가 대표·최단·추천 경로라는 보장을 명시하지 않는다. C1-05A에서는 이 한계를 수용하고 첫 후보 `routes[0].properties.totalTime`만 사용한 뒤 10분 단위로 올리기로 확정했다. 최소시간·환승·요금·거리 재정렬은 하지 않으며 첫 후보가 없거나 시간이 누락·음수이면 뒤 후보로 대체하지 않고 `INVALID_RESPONSE`로 처리한다.
+2. 출발일시 입력이 없으므로 미래 여행 일정의 해당 시각에 대한 운행 가능성이나 시간표를 검증하는 API로 해석하지 않는다. C1-05A에서는 반환 `totalTime`을 API 조회 시 제공자가 반환한 일정 계획용 `예상 이동시간`으로만 사용하고, 미래 운행·배차·막차·지연·실제 소요시간을 보장하지 않으며 완료·공유 조회와 여행 당일 자동 재계산을 하지 않기로 확정했다.
+3. C1-05A에서 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 `NotFound`, `EQUAL_POINTS`를 0분 성공, `INVALID_REQUEST`를 request failure로 확정했다. 문서에 없는·누락된 status와 손상된 `OK` 응답은 `INVALID_RESPONSE`으로 처리하며, request·response failure는 재시도·fallback 없이 503으로 저장을 차단한다.
+
+#### 앱 설정·비용·데이터 수명 결론
+
+- 카카오맵 REST API는 앱 관리에서 카카오맵 사용 설정을 ON으로 해야 한다. 개발자 계정에서 첫 번째로 활성화한 앱만 무료 쿼터를 받으며, 두 번째 앱부터 또는 무료량 초과 사용에는 비즈월렛과 유료 API 설정이 필요하다. 운영 전 앱의 `카카오맵 무료 쿼터` 배지와 활성화 순서를 확인한다.
+- Local과 대중교통은 같은 카카오맵 제품군이지만 기능별 일일 쿼터를 별도로 관찰한다. 자동차는 카카오내비/카카오모빌리티 길찾기 쿼터로 별도 관찰한다.
+- Routy는 유료 초과 사용을 자동 승인하지 않는다. 비즈월렛 연결 여부와 무관하게 90% 내부 차단선을 우선 적용한다.
+- 자동차는 `summary=true`, `alternatives=false`로 최소 응답을 요청한다. 대중교통은 공식 응답이 steps와 path를 포함하므로 필요한 `status`와 선택된 `totalTime`만 요청 지역 변수에서 추출하고 응답 객체·좌표·안내·정류장·차량·landingURL을 캐시·세션·DB·로그에 남기지 않는다.
+- 공식 문서에는 제공자 timeout 값이 없다. 연결·전체 timeout은 실제 Client 구현 Task에서 사용자 경험과 재시도 1회를 포함한 서버 시간 예산으로 별도 확정하며 제공자 보장값으로 기록하지 않는다.
+
+감사 결론은 **계약 적합, 실제 Client 구현·검증 대기**다. 공식 endpoint·REST API 키 인증·WGS84 좌표·초 단위 시간·일일 쿼터는 Routy 방향과 맞으며, C1-05A에서 Local 도시 전체 공간 범위, 자동차 `result_code=1, 101~107`, 대중교통 후보·예상 이동시간·상태 매핑을 확정했다. `G1-06`의 기준 데이터·Loader와 `C1-05B`의 Local 요청 DTO·Fake 계약은 구현·검증을 완료했다. 실제 Kakao Local·Route HTTP Client, 제공자 응답 매핑과 공개 좌표 endpoint는 아직 구현하지 않았으며 각각 P1·R2의 해당 Task 전까지 운영 게이트를 통과하지 않는다.
 
 ## 11. DB와 배포 절차
 

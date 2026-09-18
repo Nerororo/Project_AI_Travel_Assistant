@@ -49,6 +49,6 @@ class AiAllowedRegionServiceTest {
 
 	private static Region region(String id, String name, String parentId, RegionType type, boolean selectable) {
 		return new Region(id, name, name, List.of(), parentId, type, selectable, false,
-				null, null, List.of("public-source"), "2026-01-01");
+				null, null, null, List.of("public-source"), "2026-01-01");
 	}
 }

@@ -3,6 +3,7 @@ package com.example.travel.region.loader;
 import com.example.travel.region.domain.AddressBoundary;
 import com.example.travel.region.domain.Region;
 import com.example.travel.region.domain.RepresentativeCoordinate;
+import com.example.travel.region.domain.SearchBounds;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -95,6 +96,7 @@ public class RegionDataLoader {
 		}
 		validateTextList(region.aliases(), "aliases", true);
 		validateCoordinate(region.representativeCoordinate());
+		validateSearchBounds(region);
 		validateAddressBoundary(region.addressBoundary());
 		validateTextList(region.sourceRefs(), "sourceRefs", false);
 		for (String sourceRef : region.sourceRefs()) {
@@ -103,6 +105,41 @@ public class RegionDataLoader {
 			}
 		}
 		requireText(region.sourceDate(), "sourceDate");
+	}
+
+	private void validateSearchBounds(Region region) {
+		SearchBounds bounds = region.searchBounds();
+		if (!region.selectable()) {
+			if (bounds != null) {
+				throw invalid("searchBounds is only allowed for selectable regions: " + region.regionId());
+			}
+			return;
+		}
+		if (bounds == null) {
+			throw invalid("searchBounds must not be null for selectable region: " + region.regionId());
+		}
+		if (!Double.isFinite(bounds.minLatitude())
+				|| !Double.isFinite(bounds.minLongitude())
+				|| !Double.isFinite(bounds.maxLatitude())
+				|| !Double.isFinite(bounds.maxLongitude())) {
+			throw invalid("searchBounds must contain only finite values: " + region.regionId());
+		}
+		if (bounds.minLatitude() < 33 || bounds.maxLatitude() > 39
+				|| bounds.minLongitude() < 124 || bounds.maxLongitude() > 132) {
+			throw invalid("searchBounds is outside the supported Korea range: " + region.regionId());
+		}
+		if (bounds.minLatitude() >= bounds.maxLatitude()
+				|| bounds.minLongitude() >= bounds.maxLongitude()) {
+			throw invalid("searchBounds minimum must be less than maximum: " + region.regionId());
+		}
+
+		RepresentativeCoordinate coordinate = region.representativeCoordinate();
+		if (coordinate.latitude() < bounds.minLatitude()
+				|| coordinate.latitude() > bounds.maxLatitude()
+				|| coordinate.longitude() < bounds.minLongitude()
+				|| coordinate.longitude() > bounds.maxLongitude()) {
+			throw invalid("representativeCoordinate must be inside searchBounds: " + region.regionId());
+		}
 	}
 
 	private void validateCoordinate(RepresentativeCoordinate coordinate) {

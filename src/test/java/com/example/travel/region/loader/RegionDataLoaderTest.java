@@ -19,10 +19,49 @@ class RegionDataLoaderTest {
 		var regions = loader.load(new ClassPathResource("data/regions.json"));
 
 		assertThat(regions).hasSize(246);
+		assertThat(regions).filteredOn(region -> region.selectable())
+				.hasSize(161)
+				.allSatisfy(region -> assertThat(region.searchBounds()).isNotNull());
+		assertThat(regions).filteredOn(region -> !region.selectable())
+				.allSatisfy(region -> assertThat(region.searchBounds()).isNull());
 		assertThat(regions).anySatisfy(region -> {
 			assertThat(region.regionId()).isEqualTo("KR-GWANGJU-URBAN");
 			assertThat(region.name()).isEqualTo("광주");
 		});
+	}
+
+	@Test
+	void loadsUnionBoundsForLogicalAndAdministrativelyDividedCities() {
+		var regions = loader.load(new ClassPathResource("data/regions.json"));
+
+		var gwangju = regions.stream().filter(region -> region.regionId().equals("KR-GWANGJU-URBAN")).findFirst().orElseThrow();
+		var suwon = regions.stream().filter(region -> region.regionId().equals("KR-41110")).findFirst().orElseThrow();
+
+		assertThat(gwangju.searchBounds().minLongitude()).isLessThan(126.7);
+		assertThat(gwangju.searchBounds().maxLongitude()).isGreaterThan(127.0);
+		assertThat(suwon.searchBounds().minLatitude()).isLessThan(37.25);
+		assertThat(suwon.searchBounds().maxLatitude()).isGreaterThan(37.33);
+	}
+
+	@Test
+	void rejectsMissingInvalidAndMisplacedSearchBounds() {
+		String missing = dataFile(region("A", null).replace(searchBounds(), "\"searchBounds\":null"));
+		String reversed = dataFile(region("A", null).replace("\"maxLatitude\":38.0", "\"maxLatitude\":37.0"));
+		String coordinateOutside = dataFile(region("A", null).replace("\"maxLongitude\":128.0", "\"maxLongitude\":126.5"));
+		String boundsOnParent = dataFile(province("P").replace("\"searchBounds\":null", searchBounds()));
+
+		assertThatThrownBy(() -> loader.load(resource(missing)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("searchBounds must not be null");
+		assertThatThrownBy(() -> loader.load(resource(reversed)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("minimum must be less than maximum");
+		assertThatThrownBy(() -> loader.load(resource(coordinateOutside)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("representativeCoordinate must be inside");
+		assertThatThrownBy(() -> loader.load(resource(boundsOnParent)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("only allowed for selectable regions");
 	}
 
 	@Test
@@ -133,7 +172,12 @@ class RegionDataLoaderTest {
 	private String province(String regionId) {
 		return region(regionId, null)
 				.replace("\"type\":\"METROPOLITAN_CITY\"", "\"type\":\"PROVINCE\"")
-				.replace("\"selectable\":true", "\"selectable\":false");
+				.replace("\"selectable\":true", "\"selectable\":false")
+				.replace(searchBounds(), "\"searchBounds\":null");
+	}
+
+	private String searchBounds() {
+		return "\"searchBounds\":{\"minLatitude\":37.0,\"minLongitude\":126.0,\"maxLatitude\":38.0,\"maxLongitude\":128.0}";
 	}
 
 	private String region(String regionId, String parentRegionId) {
@@ -150,10 +194,11 @@ class RegionDataLoaderTest {
 				  "selectable":true,
 				  "placeSearchFilterable":false,
 				  "representativeCoordinate":{"latitude":37.5,"longitude":127.0},
+				  %s,
 				  "addressBoundary":{"region1Names":["Region"],"region2Names":[]},
 				  "sourceRefs":["SOURCE"],
 				  "sourceDate":"2026-09-17"
 				}
-				""".formatted(regionId, parent, type);
+				""".formatted(regionId, parent, type, searchBounds());
 	}
 }

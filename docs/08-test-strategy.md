@@ -65,7 +65,21 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 각 Client 계약은 성공, 빈 결과, timeout, 4xx, 5xx, 잘못된 응답을 재현할 수 있어야 한다. 실제 HTTP 구현 테스트는 요청 URL·헤더·timeout·응답 매핑까지만 검증하며 운영 API 호출을 기본 테스트에 포함하지 않는다.
 
-기술적 경로 장애는 최초 실패 뒤 한 번만 재시도하는지 검증한다. 두 번째 기술적 실패는 Haversine 추정값과 warning으로 대체할 수 있다. 정상적인 “경로 없음”은 재시도나 fallback 없이 `ROUTE_NOT_FOUND`로 끝나야 한다.
+기술적 경로 장애는 최초 실패 뒤 한 번만 재시도하는지 검증한다. 두 번째 기술적 실패는 Haversine 추정값과 warning으로 대체할 수 있다. 정상적인 “경로 없음”은 재시도나 fallback 없이 `ROUTE_NOT_FOUND`로 끝나야 한다. 자동차 `result_code=1`은 `RouteResult.NotFound`로 변환하고 외부 호출 1회, Aggregate 저장 0회, 자동 장소 삭제·자동 이동수단 변경 0회인지 검증한다. `ROUTE_NOT_FOUND.details`는 실패한 날짜, 그 날짜 최종 후보의 1부터 시작하는 유일한 `MOVE` 순서와 요청 이동수단만 반환하고 좌표·장소명·카카오 ID·제공자 원문을 포함하지 않는지 검증한다. 출발·도착 경계, 관광지, 숙소, 식사 및 같은 숙소 반복 방문 사이의 실패를 모두 같은 구조로 식별해야 한다. 브라우저 테스트는 422 뒤 작성 상태를 유지하고 정확히 대응하는 `MOVE`가 있으면 앞뒤 항목을 강조하며, 대응하지 않으면 날짜 단위 오류만 표시하고 사용자가 조정한 뒤에만 전체 경로 검증을 다시 요청하는지 확인한다.
+
+자동차 Client 요청 테스트는 각 호출이 `origin`과 `destination`만 포함하고 `waypoints`를 보내지 않는지 검증한다. 그 상태에서 `result_code=101` 또는 `107` 응답 fixture를 받으면 `RouteClientFailure.INVALID_RESPONSE`로 변환하고, 외부 호출 1회·재시도 0회·Haversine fallback 0회·Aggregate 저장 0회와 503 `ROUTE_PROVIDER_UNAVAILABLE`을 검증한다. `ROUTE_NOT_FOUND`로 변환하거나 제공자 `result_message`, 경유지 번호, 좌표와 payload를 오류 응답·로그에 노출해서는 안 된다.
+
+자동차 `result_code=102·103` fixture는 모두 `RouteResult.NotFound`로 변환하고 `result_code=1`과 같은 422 흐름을 적용하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장·자동 장소 삭제·자동 이동수단 변경은 모두 0회여야 하며, 실패 구간은 `date + moveOrder + travelMode`만으로 식별해야 한다.
+
+자동차 `result_code=104` fixture는 `RouteResult.Found(0)`으로 변환하고 일정 생성을 차단하지 않는지 검증한다. 외부 호출은 1회이며 재시도·fallback은 0회, `MOVE.estimatedMinutes`는 0이고 10분 올림·고정 buffer가 추가되지 않아야 한다. Haversine 거리가 5m 이하라는 이유만으로 실제 Client 호출을 생략하는 테스트나 구현을 두지 않는다.
+
+자동차 `result_code=105·106` fixture는 모두 `RouteResult.NotFound`로 변환하고 422 `ROUTE_NOT_FOUND`로 저장을 차단하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장은 0회여야 한다. 503 제공자 장애로 변환하거나 제공자 원문의 사고·통제 정보와 좌표를 오류 응답·로그에 노출해서는 안 된다.
+
+대중교통 `status=OK` fixture에 서로 다른 여러 후보를 제공해 배열 순서의 첫 `totalTime`만 선택하고 최소시간·환승·요금·거리에 따라 재정렬하지 않는지 검증한다. 첫 후보 34분은 40분, 정확히 40분은 40분으로 계산해야 한다. 빈 `routes`, 첫 후보의 누락되거나 음수인 `totalTime`은 뒤의 유효 후보로 대체하지 않고 `RouteClientFailure.INVALID_RESPONSE`가 되어야 한다. 선택하지 않은 후보와 `steps`, 정류장·노선·좌표·요금·`landingURL`이 DTO 밖으로 전달되거나 저장·로그·오류 응답에 남지 않는지 검증한다.
+
+대중교통 제작·완료·공유 UI 테스트는 모든 이동시간을 `예상 이동시간`으로 표시하고 `실제 이동시간`, `확정 시간`, 미래 시간표·운행 검증 완료처럼 표현하지 않는지 확인한다. 완료·공유 조회와 여행 당일에 외부 경로 API를 다시 호출하거나 자동 재계산하지 않는지도 검증한다. `routeVerified`는 외부 제공자 조회 수행 여부만 뜻하고 미래 여행일의 시간표·실제 소요시간 보장으로 해석하지 않는다.
+
+대중교통 status fixture는 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 각각 `RouteResult.NotFound`와 422 `ROUTE_NOT_FOUND`로 변환하고, 재시도·fallback·Aggregate 저장이 모두 0회인지 검증한다. `EQUAL_POINTS`는 `RouteResult.Found(0)`과 0분 `MOVE` 성공으로 변환하며 10분 올림·고정 buffer가 없어야 한다. `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`, 알 수 없는·누락된 status와 빈 routes·손상된 첫 후보를 포함한 `OK` 응답은 `RouteClientFailure.INVALID_RESPONSE`으로 변환하고, 모두 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`과 저장 0회인지 검증한다. 제공자 원문·좌표·payload는 오류 응답·로그·fixture에 포함하지 않는다.
 
 ## 5. Fixture 규칙
 
@@ -128,6 +142,8 @@ RouteService → RouteClient      → FakeCarRouteClient
 ### 6.4 장소 검색과 선택
 
 - 역할별 요청과 검색 반경이 Kakao Client 계약으로 올바르게 전달되는지
+- Local Client 요청 DTO가 WGS84 중심점·반경 또는 사각형 bounds 중 정확히 하나만 허용하고, radius 0~20,000m·page 1~45·size 1~15 경계와 `minLatitude < maxLatitude`, `minLongitude < maxLongitude`를 검증하는지
+- radius·rect 요청과 page가 Fake·Service 경계를 지나며 변형되거나 여러 외부 호출 단위로 합쳐지지 않는지
 - 관광지가 대표 좌표 20km 안이거나 주소 행정구역이 선택 지역과 일치할 때만 후보로 남는지
 - 특별시·광역시·세종특별자치시에서 20km 반경을 전체 경계로 간주하지 않고 지역명 결합 검색과 주소 검증으로 도시 전역 후보를 처리하는지
 - 특별시·광역시의 선택적 구·군 필터를 적용하면 다른 구·군 결과가 제외되는지

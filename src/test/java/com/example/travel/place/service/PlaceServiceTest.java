@@ -54,6 +54,22 @@ class PlaceServiceTest {
 	}
 
 	@Test
+	void delegatesBoundsAndPageToTheFakeWithoutChangingTheRequestUnit() {
+		PlaceSearchRequest.SearchBounds bounds = new PlaceSearchRequest.SearchBounds(
+				35.0, 126.0, 36.0, 128.0);
+		PlaceSearchRequest request = PlaceSearchRequest.withinBounds("museum", bounds, 7, 15);
+		client.willReturn(PlaceSearchResult.empty(7));
+
+		PlaceSearchResult result = service.search(request);
+
+		assertThat(client.lastRequest()).isSameAs(request);
+		assertThat(client.lastRequest().bounds()).isSameAs(bounds);
+		assertThat(client.lastRequest().page()).isEqualTo(7);
+		assertThat(result.page()).isEqualTo(7);
+		assertThat(client.callCount()).isEqualTo(1);
+	}
+
+	@Test
 	void propagatesTimeoutWithoutRetrying() {
 		client.willFailWith(PlaceClientFailure.TIMEOUT);
 
@@ -96,7 +112,7 @@ class PlaceServiceTest {
 	}
 
 	private PlaceSearchRequest request() {
-		return new PlaceSearchRequest(
+		return PlaceSearchRequest.around(
 				"museum",
 				new PlaceSearchRequest.SearchCenter(0.0, 0.0),
 				20_000,

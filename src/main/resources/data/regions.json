@@ -79,7 +79,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.428297,
+        "minLongitude": 126.764483,
+        "maxLatitude": 37.701456,
+        "maxLongitude": 127.183795
+      }
     },
     {
       "regionId": "KR-12",
@@ -177,7 +183,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.884427,
+        "minLongitude": 128.761717,
+        "maxLatitude": 35.389038,
+        "maxLongitude": 129.305606
+      }
     },
     {
       "regionId": "KR-27",
@@ -213,7 +225,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.606539,
+        "minLongitude": 128.351475,
+        "maxLatitude": 36.327237,
+        "maxLongitude": 128.900197
+      }
     },
     {
       "regionId": "KR-28",
@@ -251,7 +269,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.919948,
+        "minLongitude": 124.609708,
+        "maxLatitude": 37.984211,
+        "maxLongitude": 126.793696
+      }
     },
     {
       "regionId": "KR-30",
@@ -283,7 +307,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.1831,
+        "minLongitude": 127.246652,
+        "maxLatitude": 36.500231,
+        "maxLongitude": 127.559679
+      }
     },
     {
       "regionId": "KR-31",
@@ -315,7 +345,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.329326,
+        "minLongitude": 128.97119,
+        "maxLatitude": 35.72492,
+        "maxLongitude": 129.463858
+      }
     },
     {
       "regionId": "KR-36",
@@ -340,7 +376,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.406758,
+        "minLongitude": 127.127729,
+        "maxLatitude": 36.733822,
+        "maxLongitude": 127.410804
+      }
     },
     {
       "regionId": "KR-41",
@@ -743,7 +785,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.050895,
+        "minLongitude": 126.644702,
+        "maxLatitude": 35.258705,
+        "maxLongitude": 127.022276
+      }
     },
     {
       "regionId": "KR-11110",
@@ -1470,7 +1518,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.745262,
+        "minLongitude": 126.289708,
+        "maxLatitude": 34.844405,
+        "maxLongitude": 126.45944
+      }
     },
     {
       "regionId": "KR-12130",
@@ -1497,7 +1551,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.004803,
+        "minLongitude": 127.219304,
+        "maxLatitude": 34.899097,
+        "maxLongitude": 127.905627
+      }
     },
     {
       "regionId": "KR-12150",
@@ -1524,7 +1584,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.826089,
+        "minLongitude": 127.174843,
+        "maxLatitude": 35.189119,
+        "maxLongitude": 127.593697
+      }
     },
     {
       "regionId": "KR-12170",
@@ -1551,7 +1617,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.867938,
+        "minLongitude": 126.513309,
+        "maxLatitude": 35.114856,
+        "maxLongitude": 126.899201
+      }
     },
     {
       "regionId": "KR-12190",
@@ -1578,7 +1650,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.883803,
+        "minLongitude": 127.525504,
+        "maxLatitude": 35.182695,
+        "maxLongitude": 127.786824
+      }
     },
     {
       "regionId": "KR-12210",
@@ -1740,7 +1818,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.115954,
+        "minLongitude": 126.854199,
+        "maxLatitude": 35.466572,
+        "maxLongitude": 127.117998
+      }
     },
     {
       "regionId": "KR-12720",
@@ -1767,7 +1851,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.069362,
+        "minLongitude": 127.081232,
+        "maxLatitude": 35.33695,
+        "maxLongitude": 127.412281
+      }
     },
     {
       "regionId": "KR-12730",
@@ -1794,7 +1884,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.094693,
+        "minLongitude": 127.366886,
+        "maxLatitude": 35.365336,
+        "maxLongitude": 127.624625
+      }
     },
     {
       "regionId": "KR-12740",
@@ -1821,7 +1917,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.317431,
+        "minLongitude": 127.082193,
+        "maxLatitude": 34.827745,
+        "maxLongitude": 127.546629
+      }
     },
     {
       "regionId": "KR-12750",
@@ -1848,7 +1950,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.634965,
+        "minLongitude": 126.971844,
+        "maxLatitude": 34.98753,
+        "maxLongitude": 127.480806
+      }
     },
     {
       "regionId": "KR-12760",
@@ -1875,7 +1983,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.823697,
+        "minLongitude": 126.823877,
+        "maxLatitude": 35.214295,
+        "maxLongitude": 127.201634
+      }
     },
     {
       "regionId": "KR-12770",
@@ -1902,7 +2016,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.421982,
+        "minLongitude": 126.792934,
+        "maxLatitude": 34.877827,
+        "maxLongitude": 127.046211
+      }
     },
     {
       "regionId": "KR-12780",
@@ -1929,7 +2049,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.446575,
+        "minLongitude": 126.65648,
+        "maxLatitude": 34.786443,
+        "maxLongitude": 126.885849
+      }
     },
     {
       "regionId": "KR-12790",
@@ -1956,7 +2082,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.29232,
+        "minLongitude": 126.239903,
+        "maxLatitude": 34.762126,
+        "maxLongitude": 126.734864
+      }
     },
     {
       "regionId": "KR-12800",
@@ -1983,7 +2115,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.657836,
+        "minLongitude": 126.360574,
+        "maxLatitude": 34.946345,
+        "maxLongitude": 126.85929
+      }
     },
     {
       "regionId": "KR-12810",
@@ -2010,7 +2148,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.768472,
+        "minLongitude": 126.24206,
+        "maxLatitude": 35.166809,
+        "maxLongitude": 126.556999
+      }
     },
     {
       "regionId": "KR-12820",
@@ -2037,7 +2181,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.973509,
+        "minLongitude": 126.370369,
+        "maxLatitude": 35.235583,
+        "maxLongitude": 126.672119
+      }
     },
     {
       "regionId": "KR-12830",
@@ -2064,7 +2214,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.163841,
+        "minLongitude": 125.986121,
+        "maxLatitude": 35.429983,
+        "maxLongitude": 126.644799
+      }
     },
     {
       "regionId": "KR-12840",
@@ -2091,7 +2247,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.190718,
+        "minLongitude": 126.583316,
+        "maxLatitude": 35.486914,
+        "maxLongitude": 126.926528
+      }
     },
     {
       "regionId": "KR-12850",
@@ -2118,7 +2280,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 33.968572,
+        "minLongitude": 126.380411,
+        "maxLatitude": 34.460739,
+        "maxLongitude": 127.201241
+      }
     },
     {
       "regionId": "KR-12860",
@@ -2145,7 +2313,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.140719,
+        "minLongitude": 125.800636,
+        "maxLatitude": 34.592915,
+        "maxLongitude": 126.3853
+      }
     },
     {
       "regionId": "KR-12870",
@@ -2172,7 +2346,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.04771,
+        "minLongitude": 125.077726,
+        "maxLatitude": 35.212701,
+        "maxLongitude": 126.378895
+      }
     },
     {
       "regionId": "KR-26110",
@@ -3491,7 +3671,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.224544,
+        "minLongitude": 126.92698,
+        "maxLatitude": 37.351045,
+        "maxLongitude": 127.089632
+      }
     },
     {
       "regionId": "KR-41130",
@@ -3521,7 +3707,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.333374,
+        "minLongitude": 127.027704,
+        "maxLatitude": 37.47481,
+        "maxLongitude": 127.195819
+      }
     },
     {
       "regionId": "KR-41150",
@@ -3549,7 +3741,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.685813,
+        "minLongitude": 127.001693,
+        "maxLatitude": 37.780304,
+        "maxLongitude": 127.147257
+      }
     },
     {
       "regionId": "KR-41170",
@@ -3578,7 +3776,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.358772,
+        "minLongitude": 126.870241,
+        "maxLatitude": 37.450213,
+        "maxLongitude": 126.982855
+      }
     },
     {
       "regionId": "KR-41190",
@@ -3608,7 +3812,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.458375,
+        "minLongitude": 126.74147,
+        "maxLatitude": 37.554243,
+        "maxLongitude": 126.833601
+      }
     },
     {
       "regionId": "KR-41210",
@@ -3636,7 +3846,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.401524,
+        "minLongitude": 126.8261,
+        "maxLatitude": 37.495129,
+        "maxLongitude": 126.899926
+      }
     },
     {
       "regionId": "KR-41220",
@@ -3664,7 +3880,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.901595,
+        "minLongitude": 126.77901,
+        "maxLatitude": 37.144674,
+        "maxLongitude": 127.154527
+      }
     },
     {
       "regionId": "KR-41250",
@@ -3692,7 +3914,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.860341,
+        "minLongitude": 127.00622,
+        "maxLatitude": 37.98105,
+        "maxLongitude": 127.155371
+      }
     },
     {
       "regionId": "KR-41270",
@@ -3721,7 +3949,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.080469,
+        "minLongitude": 126.380101,
+        "maxLatitude": 37.377467,
+        "maxLongitude": 126.939611
+      }
     },
     {
       "regionId": "KR-41280",
@@ -3751,7 +3985,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.57179,
+        "minLongitude": 126.670355,
+        "maxLatitude": 37.748486,
+        "maxLongitude": 126.994358
+      }
     },
     {
       "regionId": "KR-41290",
@@ -3779,7 +4019,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.400591,
+        "minLongitude": 126.960908,
+        "maxLatitude": 37.467721,
+        "maxLongitude": 127.047369
+      }
     },
     {
       "regionId": "KR-41310",
@@ -3807,7 +4053,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.556335,
+        "minLongitude": 127.100887,
+        "maxLatitude": 37.646082,
+        "maxLongitude": 127.170599
+      }
     },
     {
       "regionId": "KR-41360",
@@ -3835,7 +4087,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.505499,
+        "minLongitude": 127.080232,
+        "maxLatitude": 37.780528,
+        "maxLongitude": 127.380987
+      }
     },
     {
       "regionId": "KR-41370",
@@ -3863,7 +4121,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.125323,
+        "minLongitude": 126.994913,
+        "maxLatitude": 37.200873,
+        "maxLongitude": 127.103093
+      }
     },
     {
       "regionId": "KR-41390",
@@ -3891,7 +4155,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.308022,
+        "minLongitude": 126.6287,
+        "maxLatitude": 37.472394,
+        "maxLongitude": 126.881645
+      }
     },
     {
       "regionId": "KR-41410",
@@ -3919,7 +4189,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.305054,
+        "minLongitude": 126.872764,
+        "maxLatitude": 37.378673,
+        "maxLongitude": 126.962437
+      }
     },
     {
       "regionId": "KR-41430",
@@ -3947,7 +4223,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.300321,
+        "minLongitude": 126.929311,
+        "maxLatitude": 37.415613,
+        "maxLongitude": 127.047114
+      }
     },
     {
       "regionId": "KR-41450",
@@ -3975,7 +4257,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.468771,
+        "minLongitude": 127.139934,
+        "maxLatitude": 37.591769,
+        "maxLongitude": 127.285702
+      }
     },
     {
       "regionId": "KR-41460",
@@ -4005,7 +4293,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.083635,
+        "minLongitude": 127.016485,
+        "maxLatitude": 37.372321,
+        "maxLongitude": 127.427755
+      }
     },
     {
       "regionId": "KR-41480",
@@ -4033,7 +4327,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.688605,
+        "minLongitude": 126.659317,
+        "maxLatitude": 38.010591,
+        "maxLongitude": 127.017107
+      }
     },
     {
       "regionId": "KR-41500",
@@ -4061,7 +4361,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.041246,
+        "minLongitude": 127.33003,
+        "maxLatitude": 37.361698,
+        "maxLongitude": 127.637777
+      }
     },
     {
       "regionId": "KR-41550",
@@ -4089,7 +4395,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.893775,
+        "minLongitude": 127.102015,
+        "maxLatitude": 37.15589,
+        "maxLongitude": 127.516592
+      }
     },
     {
       "regionId": "KR-41570",
@@ -4117,7 +4429,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.57957,
+        "minLongitude": 126.517049,
+        "maxLatitude": 37.790099,
+        "maxLongitude": 126.802582
+      }
     },
     {
       "regionId": "KR-41590",
@@ -4148,7 +4466,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.013375,
+        "minLongitude": 126.528268,
+        "maxLatitude": 37.303269,
+        "maxLongitude": 127.161368
+      }
     },
     {
       "regionId": "KR-41610",
@@ -4176,7 +4500,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.265017,
+        "minLongitude": 127.132596,
+        "maxLatitude": 37.535865,
+        "maxLongitude": 127.446638
+      }
     },
     {
       "regionId": "KR-41630",
@@ -4204,7 +4534,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.668685,
+        "minLongitude": 126.901954,
+        "maxLatitude": 37.94212,
+        "maxLongitude": 127.122193
+      }
     },
     {
       "regionId": "KR-41650",
@@ -4232,7 +4568,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.746929,
+        "minLongitude": 127.089795,
+        "maxLatitude": 38.188322,
+        "maxLongitude": 127.447076
+      }
     },
     {
       "regionId": "KR-41670",
@@ -4260,7 +4602,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.135055,
+        "minLongitude": 127.398219,
+        "maxLatitude": 37.440427,
+        "maxLongitude": 127.768412
+      }
     },
     {
       "regionId": "KR-41800",
@@ -4288,7 +4636,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.928216,
+        "minLongitude": 126.78577,
+        "maxLatitude": 38.282261,
+        "maxLongitude": 127.192156
+      }
     },
     {
       "regionId": "KR-41820",
@@ -4316,7 +4670,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.571146,
+        "minLongitude": 127.266913,
+        "maxLatitude": 38.051231,
+        "maxLongitude": 127.617141
+      }
     },
     {
       "regionId": "KR-41830",
@@ -4344,7 +4704,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.367012,
+        "minLongitude": 127.305922,
+        "maxLatitude": 37.670793,
+        "maxLongitude": 127.848113
+      }
     },
     {
       "regionId": "KR-43110",
@@ -4375,7 +4741,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.408206,
+        "minLongitude": 127.27565,
+        "maxLatitude": 36.780264,
+        "maxLongitude": 127.769783
+      }
     },
     {
       "regionId": "KR-43130",
@@ -4403,7 +4775,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.796637,
+        "minLongitude": 127.65085,
+        "maxLatitude": 37.214861,
+        "maxLongitude": 128.134044
+      }
     },
     {
       "regionId": "KR-43150",
@@ -4431,7 +4809,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.811695,
+        "minLongitude": 127.921583,
+        "maxLatitude": 37.258335,
+        "maxLongitude": 128.333397
+      }
     },
     {
       "regionId": "KR-43720",
@@ -4459,7 +4843,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.368974,
+        "minLongitude": 127.514512,
+        "maxLatitude": 36.613774,
+        "maxLongitude": 127.906337
+      }
     },
     {
       "regionId": "KR-43730",
@@ -4487,7 +4877,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.170709,
+        "minLongitude": 127.486048,
+        "maxLatitude": 36.445289,
+        "maxLongitude": 127.891271
+      }
     },
     {
       "regionId": "KR-43740",
@@ -4515,7 +4911,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.012206,
+        "minLongitude": 127.589436,
+        "maxLatitude": 36.31664,
+        "maxLongitude": 128.058146
+      }
     },
     {
       "regionId": "KR-43745",
@@ -4543,7 +4945,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.70128,
+        "minLongitude": 127.537326,
+        "maxLatitude": 36.860076,
+        "maxLongitude": 127.6646
+      }
     },
     {
       "regionId": "KR-43750",
@@ -4571,7 +4979,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.748725,
+        "minLongitude": 127.287828,
+        "maxLatitude": 37.012114,
+        "maxLongitude": 127.58516
+      }
     },
     {
       "regionId": "KR-43760",
@@ -4599,7 +5013,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.601118,
+        "minLongitude": 127.620458,
+        "maxLatitude": 36.947554,
+        "maxLongitude": 128.072724
+      }
     },
     {
       "regionId": "KR-43770",
@@ -4627,7 +5047,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.83383,
+        "minLongitude": 127.445347,
+        "maxLatitude": 37.155287,
+        "maxLongitude": 127.798481
+      }
     },
     {
       "regionId": "KR-43800",
@@ -4655,7 +5081,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.802076,
+        "minLongitude": 128.217124,
+        "maxLatitude": 37.158207,
+        "maxLongitude": 128.652097
+      }
     },
     {
       "regionId": "KR-44130",
@@ -4684,7 +5116,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.619749,
+        "minLongitude": 127.008363,
+        "maxLatitude": 36.973075,
+        "maxLongitude": 127.420418
+      }
     },
     {
       "regionId": "KR-44150",
@@ -4712,7 +5150,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.27712,
+        "minLongitude": 126.883572,
+        "maxLatitude": 36.679248,
+        "maxLongitude": 127.282297
+      }
     },
     {
       "regionId": "KR-44180",
@@ -4740,7 +5184,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.171861,
+        "minLongitude": 125.955486,
+        "maxLatitude": 36.52805,
+        "maxLongitude": 126.738715
+      }
     },
     {
       "regionId": "KR-44200",
@@ -4768,7 +5218,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.648611,
+        "minLongitude": 126.829093,
+        "maxLatitude": 36.942242,
+        "maxLongitude": 127.119714
+      }
     },
     {
       "regionId": "KR-44210",
@@ -4796,7 +5252,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.600401,
+        "minLongitude": 126.315875,
+        "maxLatitude": 37.026531,
+        "maxLongitude": 126.653621
+      }
     },
     {
       "regionId": "KR-44230",
@@ -4824,7 +5286,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.063033,
+        "minLongitude": 126.98365,
+        "maxLatitude": 36.340286,
+        "maxLongitude": 127.333569
+      }
     },
     {
       "regionId": "KR-44250",
@@ -4852,7 +5320,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.23176,
+        "minLongitude": 127.196346,
+        "maxLatitude": 36.350249,
+        "maxLongitude": 127.291916
+      }
     },
     {
       "regionId": "KR-44270",
@@ -4880,7 +5354,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.749262,
+        "minLongitude": 126.402598,
+        "maxLatitude": 37.064754,
+        "maxLongitude": 126.859062
+      }
     },
     {
       "regionId": "KR-44710",
@@ -4908,7 +5388,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.978264,
+        "minLongitude": 127.318014,
+        "maxLatitude": 36.272189,
+        "maxLongitude": 127.639748
+      }
     },
     {
       "regionId": "KR-44760",
@@ -4936,7 +5422,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.071032,
+        "minLongitude": 126.678451,
+        "maxLatitude": 36.387043,
+        "maxLongitude": 127.070308
+      }
     },
     {
       "regionId": "KR-44770",
@@ -4964,7 +5456,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.990974,
+        "minLongitude": 126.468606,
+        "maxLatitude": 36.192149,
+        "maxLongitude": 126.871086
+      }
     },
     {
       "regionId": "KR-44790",
@@ -4992,7 +5490,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.314498,
+        "minLongitude": 126.671929,
+        "maxLatitude": 36.571812,
+        "maxLongitude": 127.028246
+      }
     },
     {
       "regionId": "KR-44800",
@@ -5020,7 +5524,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.459733,
+        "minLongitude": 126.42619,
+        "maxLatitude": 36.673021,
+        "maxLongitude": 126.773192
+      }
     },
     {
       "regionId": "KR-44810",
@@ -5048,7 +5558,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.526663,
+        "minLongitude": 126.585324,
+        "maxLatitude": 36.803722,
+        "maxLongitude": 126.972344
+      }
     },
     {
       "regionId": "KR-44825",
@@ -5076,7 +5592,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.395814,
+        "minLongitude": 125.540787,
+        "maxLatitude": 36.977969,
+        "maxLongitude": 126.43489
+      }
     },
     {
       "regionId": "KR-47110",
@@ -5105,7 +5627,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.838338,
+        "minLongitude": 128.98949,
+        "maxLatitude": 36.333366,
+        "maxLongitude": 129.584684
+      }
     },
     {
       "regionId": "KR-47130",
@@ -5133,7 +5661,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.640355,
+        "minLongitude": 128.970726,
+        "maxLatitude": 36.079698,
+        "maxLongitude": 129.520209
+      }
     },
     {
       "regionId": "KR-47150",
@@ -5161,7 +5695,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.828934,
+        "minLongitude": 127.87527,
+        "maxLatitude": 36.258342,
+        "maxLongitude": 128.301235
+      }
     },
     {
       "regionId": "KR-47170",
@@ -5189,7 +5729,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.295723,
+        "minLongitude": 128.428488,
+        "maxLatitude": 36.823163,
+        "maxLongitude": 129.001599
+      }
     },
     {
       "regionId": "KR-47190",
@@ -5217,7 +5763,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.060581,
+        "minLongitude": 128.132779,
+        "maxLatitude": 36.362467,
+        "maxLongitude": 128.564003
+      }
     },
     {
       "regionId": "KR-47210",
@@ -5245,7 +5797,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.69537,
+        "minLongitude": 128.423969,
+        "maxLatitude": 37.065715,
+        "maxLongitude": 128.74557
+      }
     },
     {
       "regionId": "KR-47230",
@@ -5273,7 +5831,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.830089,
+        "minLongitude": 128.694159,
+        "maxLatitude": 36.184594,
+        "maxLongitude": 129.151327
+      }
     },
     {
       "regionId": "KR-47250",
@@ -5301,7 +5865,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.237163,
+        "minLongitude": 127.796151,
+        "maxLatitude": 36.656768,
+        "maxLongitude": 128.339037
+      }
     },
     {
       "regionId": "KR-47280",
@@ -5329,7 +5899,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.513023,
+        "minLongitude": 127.874292,
+        "maxLatitude": 36.872329,
+        "maxLongitude": 128.372049
+      }
     },
     {
       "regionId": "KR-47290",
@@ -5357,7 +5933,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.7005,
+        "minLongitude": 128.681396,
+        "maxLatitude": 35.993923,
+        "maxLongitude": 128.970949
+      }
     },
     {
       "regionId": "KR-47730",
@@ -5385,7 +5967,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.190713,
+        "minLongitude": 128.287681,
+        "maxLatitude": 36.532592,
+        "maxLongitude": 128.896621
+      }
     },
     {
       "regionId": "KR-47750",
@@ -5413,7 +6001,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.160626,
+        "minLongitude": 128.846888,
+        "maxLatitude": 36.594964,
+        "maxLongitude": 129.254209
+      }
     },
     {
       "regionId": "KR-47760",
@@ -5441,7 +6035,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.48892,
+        "minLongitude": 128.98378,
+        "maxLatitude": 36.881548,
+        "maxLongitude": 129.314117
+      }
     },
     {
       "regionId": "KR-47770",
@@ -5469,7 +6069,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.266556,
+        "minLongitude": 129.147707,
+        "maxLatitude": 36.673872,
+        "maxLongitude": 129.452905
+      }
     },
     {
       "regionId": "KR-47820",
@@ -5497,7 +6103,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.566888,
+        "minLongitude": 128.526808,
+        "maxLatitude": 35.845949,
+        "maxLongitude": 129.046901
+      }
     },
     {
       "regionId": "KR-47830",
@@ -5525,7 +6137,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.61088,
+        "minLongitude": 128.159328,
+        "maxLatitude": 35.852407,
+        "maxLongitude": 128.483069
+      }
     },
     {
       "regionId": "KR-47840",
@@ -5553,7 +6171,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.777192,
+        "minLongitude": 128.04665,
+        "maxLatitude": 36.055396,
+        "maxLongitude": 128.399135
+      }
     },
     {
       "regionId": "KR-47850",
@@ -5581,7 +6205,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.886448,
+        "minLongitude": 128.284956,
+        "maxLatitude": 36.125899,
+        "maxLongitude": 128.640721
+      }
     },
     {
       "regionId": "KR-47900",
@@ -5609,7 +6239,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.454351,
+        "minLongitude": 128.260644,
+        "maxLatitude": 36.848607,
+        "maxLongitude": 128.610521
+      }
     },
     {
       "regionId": "KR-47920",
@@ -5637,7 +6273,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.746526,
+        "minLongitude": 128.637628,
+        "maxLatitude": 37.100415,
+        "maxLongitude": 129.18541
+      }
     },
     {
       "regionId": "KR-47930",
@@ -5665,7 +6307,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 36.643531,
+        "minLongitude": 129.077196,
+        "maxLatitude": 37.14683,
+        "maxLongitude": 129.478705
+      }
     },
     {
       "regionId": "KR-47940",
@@ -5693,7 +6341,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.237937,
+        "minLongitude": 130.792189,
+        "maxLatitude": 37.550019,
+        "maxLongitude": 131.872767
+      }
     },
     {
       "regionId": "KR-48120",
@@ -5725,7 +6379,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.05218,
+        "minLongitude": 128.348136,
+        "maxLatitude": 35.393378,
+        "maxLongitude": 128.843271
+      }
     },
     {
       "regionId": "KR-48170",
@@ -5753,7 +6413,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.050923,
+        "minLongitude": 127.887817,
+        "maxLatitude": 35.351129,
+        "maxLongitude": 128.368201
+      }
     },
     {
       "regionId": "KR-48220",
@@ -5781,7 +6447,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.53351,
+        "minLongitude": 128.125587,
+        "maxLatitude": 34.976381,
+        "maxLongitude": 128.736064
+      }
     },
     {
       "regionId": "KR-48240",
@@ -5809,7 +6481,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.88694,
+        "minLongitude": 127.878964,
+        "maxLatitude": 35.159351,
+        "maxLongitude": 128.184352
+      }
     },
     {
       "regionId": "KR-48250",
@@ -5837,7 +6515,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.150464,
+        "minLongitude": 128.691578,
+        "maxLatitude": 35.39555,
+        "maxLongitude": 129.014818
+      }
     },
     {
       "regionId": "KR-48270",
@@ -5865,7 +6549,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.345506,
+        "minLongitude": 128.571166,
+        "maxLatitude": 35.640619,
+        "maxLongitude": 129.024623
+      }
     },
     {
       "regionId": "KR-48310",
@@ -5893,7 +6583,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.669652,
+        "minLongitude": 128.455284,
+        "maxLatitude": 35.040799,
+        "maxLongitude": 128.776215
+      }
     },
     {
       "regionId": "KR-48330",
@@ -5921,7 +6617,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.273758,
+        "minLongitude": 128.874072,
+        "maxLatitude": 35.532268,
+        "maxLongitude": 129.219072
+      }
     },
     {
       "regionId": "KR-48720",
@@ -5949,7 +6651,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.253366,
+        "minLongitude": 128.082579,
+        "maxLatitude": 35.517384,
+        "maxLongitude": 128.437448
+      }
     },
     {
       "regionId": "KR-48730",
@@ -5977,7 +6685,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.164012,
+        "minLongitude": 128.274041,
+        "maxLatitude": 35.401514,
+        "maxLongitude": 128.591651
+      }
     },
     {
       "regionId": "KR-48740",
@@ -6005,7 +6719,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.368567,
+        "minLongitude": 128.350443,
+        "maxLatitude": 35.683156,
+        "maxLongitude": 128.65164
+      }
     },
     {
       "regionId": "KR-48820",
@@ -6033,7 +6753,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.878761,
+        "minLongitude": 128.10118,
+        "maxLatitude": 35.132438,
+        "maxLongitude": 128.501494
+      }
     },
     {
       "regionId": "KR-48840",
@@ -6061,7 +6787,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.502007,
+        "minLongitude": 127.80701,
+        "maxLatitude": 34.946975,
+        "maxLongitude": 128.11333
+      }
     },
     {
       "regionId": "KR-48850",
@@ -6089,7 +6821,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 34.924019,
+        "minLongitude": 127.57607,
+        "maxLatitude": 35.332563,
+        "maxLongitude": 127.939254
+      }
     },
     {
       "regionId": "KR-48860",
@@ -6117,7 +6855,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.219031,
+        "minLongitude": 127.687911,
+        "maxLatitude": 35.576211,
+        "maxLongitude": 128.115199
+      }
     },
     {
       "regionId": "KR-48870",
@@ -6145,7 +6889,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.315755,
+        "minLongitude": 127.58486,
+        "maxLatitude": 35.771374,
+        "maxLongitude": 127.877924
+      }
     },
     {
       "regionId": "KR-48880",
@@ -6173,7 +6923,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.514395,
+        "minLongitude": 127.679435,
+        "maxLatitude": 35.909945,
+        "maxLongitude": 128.095184
+      }
     },
     {
       "regionId": "KR-48890",
@@ -6201,7 +6957,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.367903,
+        "minLongitude": 127.953228,
+        "maxLatitude": 35.832275,
+        "maxLongitude": 128.379855
+      }
     },
     {
       "regionId": "KR-50110",
@@ -6228,7 +6990,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 33.272964,
+        "minLongitude": 126.144115,
+        "maxLatitude": 34.015304,
+        "maxLongitude": 126.970428
+      }
     },
     {
       "regionId": "KR-50130",
@@ -6255,7 +7023,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 33.113712,
+        "minLongitude": 126.16875,
+        "maxLatitude": 33.483082,
+        "maxLongitude": 126.94546
+      }
     },
     {
       "regionId": "KR-51110",
@@ -6282,7 +7056,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.675644,
+        "minLongitude": 127.506147,
+        "maxLatitude": 38.085026,
+        "maxLongitude": 128.029608
+      }
     },
     {
       "regionId": "KR-51130",
@@ -6309,7 +7089,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.143408,
+        "minLongitude": 127.7441,
+        "maxLatitude": 37.50691,
+        "maxLongitude": 128.218455
+      }
     },
     {
       "regionId": "KR-51150",
@@ -6336,7 +7122,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.503295,
+        "minLongitude": 128.580359,
+        "maxLatitude": 37.917173,
+        "maxLongitude": 129.074046
+      }
     },
     {
       "regionId": "KR-51170",
@@ -6363,7 +7155,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.426797,
+        "minLongitude": 128.957618,
+        "maxLatitude": 37.604539,
+        "maxLongitude": 129.161391
+      }
     },
     {
       "regionId": "KR-51190",
@@ -6390,7 +7188,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.061685,
+        "minLongitude": 128.867161,
+        "maxLatitude": 37.345593,
+        "maxLongitude": 129.095661
+      }
     },
     {
       "regionId": "KR-51210",
@@ -6417,7 +7221,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 38.118953,
+        "minLongitude": 128.42114,
+        "maxLatitude": 38.230765,
+        "maxLongitude": 128.614455
+      }
     },
     {
       "regionId": "KR-51230",
@@ -6444,7 +7254,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.038665,
+        "minLongitude": 128.845935,
+        "maxLatitude": 37.476384,
+        "maxLongitude": 129.365672
+      }
     },
     {
       "regionId": "KR-51720",
@@ -6471,7 +7287,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.552262,
+        "minLongitude": 127.535244,
+        "maxLatitude": 37.94552,
+        "maxLongitude": 128.588796
+      }
     },
     {
       "regionId": "KR-51730",
@@ -6498,7 +7320,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.298804,
+        "minLongitude": 127.759421,
+        "maxLatitude": 37.68016,
+        "maxLongitude": 128.302267
+      }
     },
     {
       "regionId": "KR-51750",
@@ -6525,7 +7353,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.027832,
+        "minLongitude": 128.107162,
+        "maxLatitude": 37.408962,
+        "maxLongitude": 128.910417
+      }
     },
     {
       "regionId": "KR-51760",
@@ -6552,7 +7386,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.266634,
+        "minLongitude": 128.243528,
+        "maxLatitude": 37.821386,
+        "maxLongitude": 128.765111
+      }
     },
     {
       "regionId": "KR-51770",
@@ -6579,7 +7419,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.147077,
+        "minLongitude": 128.505973,
+        "maxLatitude": 37.592916,
+        "maxLongitude": 128.989663
+      }
     },
     {
       "regionId": "KR-51780",
@@ -6606,7 +7452,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 38.089768,
+        "minLongitude": 127.095037,
+        "maxLatitude": 38.347816,
+        "maxLongitude": 127.846641
+      }
     },
     {
       "regionId": "KR-51790",
@@ -6633,7 +7485,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.994286,
+        "minLongitude": 127.430531,
+        "maxLatitude": 38.288058,
+        "maxLongitude": 127.913639
+      }
     },
     {
       "regionId": "KR-51800",
@@ -6660,7 +7518,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 38.001624,
+        "minLongitude": 127.851745,
+        "maxLatitude": 38.337306,
+        "maxLongitude": 128.172391
+      }
     },
     {
       "regionId": "KR-51810",
@@ -6687,7 +7551,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.811995,
+        "minLongitude": 127.977512,
+        "maxLatitude": 38.378967,
+        "maxLongitude": 128.513574
+      }
     },
     {
       "regionId": "KR-51820",
@@ -6714,7 +7584,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 38.187331,
+        "minLongitude": 128.242891,
+        "maxLatitude": 38.61371,
+        "maxLongitude": 128.584908
+      }
     },
     {
       "regionId": "KR-51830",
@@ -6741,7 +7617,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 37.862018,
+        "minLongitude": 128.404246,
+        "maxLatitude": 38.161891,
+        "maxLongitude": 128.809188
+      }
     },
     {
       "regionId": "KR-52110",
@@ -6769,7 +7651,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.728574,
+        "minLongitude": 126.997843,
+        "maxLatitude": 35.903108,
+        "maxLongitude": 127.23429
+      }
     },
     {
       "regionId": "KR-52130",
@@ -6796,7 +7684,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.67448,
+        "minLongitude": 125.966897,
+        "maxLatitude": 36.128175,
+        "maxLongitude": 126.915402
+      }
     },
     {
       "regionId": "KR-52140",
@@ -6823,7 +7717,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.883493,
+        "minLongitude": 126.851407,
+        "maxLatitude": 36.156571,
+        "maxLongitude": 127.139722
+      }
     },
     {
       "regionId": "KR-52180",
@@ -6850,7 +7750,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.461085,
+        "minLongitude": 126.715523,
+        "maxLatitude": 35.758992,
+        "maxLongitude": 127.116937
+      }
     },
     {
       "regionId": "KR-52190",
@@ -6877,7 +7783,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.302457,
+        "minLongitude": 127.183907,
+        "maxLatitude": 35.560821,
+        "maxLongitude": 127.67407
+      }
     },
     {
       "regionId": "KR-52210",
@@ -6904,7 +7816,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.666143,
+        "minLongitude": 126.479763,
+        "maxLatitude": 35.917712,
+        "maxLongitude": 127.086679
+      }
     },
     {
       "regionId": "KR-52710",
@@ -6931,7 +7849,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.618887,
+        "minLongitude": 126.995153,
+        "maxLatitude": 36.130841,
+        "maxLongitude": 127.378229
+      }
     },
     {
       "regionId": "KR-52720",
@@ -6958,7 +7882,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.618696,
+        "minLongitude": 127.265297,
+        "maxLatitude": 36.029496,
+        "maxLongitude": 127.62484
+      }
     },
     {
       "regionId": "KR-52730",
@@ -6985,7 +7915,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.78823,
+        "minLongitude": 127.524368,
+        "maxLatitude": 36.068668,
+        "maxLongitude": 127.911368
+      }
     },
     {
       "regionId": "KR-52740",
@@ -7012,7 +7948,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.467813,
+        "minLongitude": 127.361811,
+        "maxLatitude": 35.838944,
+        "maxLongitude": 127.69981
+      }
     },
     {
       "regionId": "KR-52750",
@@ -7039,7 +7981,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.459786,
+        "minLongitude": 127.08309,
+        "maxLatitude": 35.777655,
+        "maxLongitude": 127.436286
+      }
     },
     {
       "regionId": "KR-52770",
@@ -7066,7 +8014,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.299232,
+        "minLongitude": 126.859738,
+        "maxLatitude": 35.556127,
+        "maxLongitude": 127.31427
+      }
     },
     {
       "regionId": "KR-52790",
@@ -7093,7 +8047,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.300787,
+        "minLongitude": 126.426711,
+        "maxLatitude": 35.574823,
+        "maxLongitude": 126.774176
+      }
     },
     {
       "regionId": "KR-52800",
@@ -7120,7 +8080,13 @@
         "LEGAL_DISTRICT_20260630",
         "VWORLD_BOUNDARY_20260917"
       ],
-      "sourceDate": "2026-09-17"
+      "sourceDate": "2026-09-17",
+      "searchBounds": {
+        "minLatitude": 35.558328,
+        "minLongitude": 126.101575,
+        "maxLatitude": 35.81287,
+        "maxLongitude": 126.84113
+      }
     }
   ]
 }

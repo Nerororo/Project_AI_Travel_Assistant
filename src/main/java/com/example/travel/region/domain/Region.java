@@ -12,6 +12,7 @@ public record Region(
 		boolean selectable,
 		boolean placeSearchFilterable,
 		RepresentativeCoordinate representativeCoordinate,
+		SearchBounds searchBounds,
 		AddressBoundary addressBoundary,
 		List<String> sourceRefs,
 		String sourceDate

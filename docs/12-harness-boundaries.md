@@ -105,6 +105,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | G1-02~03 | G1-01 결정 기록, `docs/01` FR-01, `docs/08` 5·6.2절 | 공개 필드가 바뀔 때 `docs/04` 3절 |
 | G1-04 | `docs/01` FR-01, `docs/04` 1절과 `GET /api/regions`, `docs/08` 6.2절 | 지역 계약 결정이 바뀔 때 관련 ADR |
 | G1-05 | `docs/08` 5·6.2절, `docs/10` 3·5절 | 발견한 문제의 책임 문서 |
+| G1-06 | `docs/06` ADR-035·ADR-038, `docs/08` 6.2절, `docs/09` 9절, G1-02의 공식 경계 원본·생성 기록 | `region/domain/**`, `region/loader/**`, `resources/data/regions.json`과 직접 대응 테스트; 공개 필드가 바뀔 때만 `docs/04` 3절 |
 | A1-01 | `docs/01` FR-02·FR-15, `docs/04` 3~4절, `docs/08` 4·6.3절 | 오류 변환 변경 시 `docs/04` 1절 |
 | A1-02 | `docs/04` 지역·메뉴 AI endpoint, `docs/07` 5절의 OpenAI 항목, `docs/09` 3·5·7·10절 | 공식 계약을 반영해 목표 계약이 바뀔 때 `docs/04`·`docs/06` |
 | A1-03 | A1-02 결정 기록, `docs/04` 지역·메뉴 AI endpoint, `docs/08` 4·6.3절, `docs/09` 3·7절 | 승인된 계약과 불일치가 발견될 때 A1-02 재검토 |
@@ -118,6 +119,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | C1-01~02 | `docs/01` FR-03, `docs/04` 5절, `docs/08` 4·6.4절, `docs/09` 7·9~10절 | 공통 오류 변경 시 `docs/04` 1절 |
 | C1-03~04 | `docs/01` FR-07~08, `docs/04` 7·11절, `docs/08` 4·6.7절, `docs/09` 5·7·10절 | 추정 계수 사용 시 R1-01 결정 기록 |
 | C1-05 | `docs/09` 5·7·9~10절과 `docs/04`의 카카오 장소·경로 endpoint | 공식 카카오 계약 변경이 확인될 때 `docs/04`·`docs/06` |
+| C1-05A | C1-05 공식 감사 기록, `docs/01` FR-03·FR-07~08, `docs/04` 장소 검색·완료 생성·공통 오류 계약, `docs/06` ADR-029·ADR-035·ADR-038, `docs/08` 4·6.4·6.7절, `docs/09` 5·7·9~10절 | 확정 계약의 책임 문서와 현재 `place/client`·`route/client` 표현 가능성; 실제 HTTP Client·공개 endpoint·일정 구현은 금지 |
+| C1-05B | C1-05A Local 공간 검색 계약, `docs/04` 장소 검색 endpoint, `docs/08` 6.4절, `docs/09` 5·7·9절 | `place/client` 요청 DTO·Fake·직접 대응 테스트; 실제 카카오 HTTP 호출과 공개 좌표 endpoint는 금지 |
 | P1-01 | `docs/01` FR-03~05, `docs/04` 5절, `docs/08` 6.4절 | 정책 결정 변경 시 관련 ADR |
 | P1-02 | `docs/04` 5·12절, `docs/06` ADR-028, `docs/09` 3·9~10절 | 새 보안 결정 기록을 위한 `docs/06` |
 | P1-03 | P1-02 결정 기록, `docs/04` 5·12절, `docs/08` 6.4·7절 | 오류 계약 변경 시 `docs/04` 1절 |
@@ -137,6 +140,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | T1-01 | `docs/01` FR-10~13, `docs/03` 2·5·10·12·15절, `docs/04` 7~10절, `docs/07` 5절 | 새 결정을 기록할 `docs/06` |
 | T1-02~03 | T1-01 결정 기록, `docs/03` 2·4~14절, `docs/08` 6.8절 | 공개 DTO가 바뀔 때 `docs/04` 7~10절 |
 | T1-04~06 | `docs/01` FR-07~10·FR-14, `docs/02` 7·10절, `docs/04` 7·11~12절, `docs/08` 6.7~6.8절 | 공개 Service·DTO 계약 변경 시 소유 도메인 기준 |
+| T1-06A | `T1-06` 구현 결과, `docs/04` 공통 오류·완료 생성 endpoint의 `ROUTE_NOT_FOUND` 계약, `docs/06` ADR-029, `docs/08` 4·6.7절, `docs/09` 5·7·10절 | `travelplan/**`의 오류 DTO·완료 생성 조정, 대응 테스트와 필요할 때만 `global/exception/**`; Route Client 결과 계약 변경이 필요하면 같은 Task에서 수정하지 않고 별도 C1/R2 Task 제안 |
 | T1-07~09 | `docs/01` FR-11~12, `docs/03` 10·12절, `docs/04` 8·10절, `docs/08` 6.9절 | 공유·삭제 결정 변경 시 관련 ADR |
 | T1-10 | `docs/08` 6.7~6.9·7절, `docs/10` 10~11·15절 | 발견한 문제의 책임 문서 |
 | W1-00 | `docs/01`의 목표 사용자 흐름, `docs/08` 8절, `docs/10` 14절, `Routy/AGENTS.md`, `Routy/INTEGRATION.md`의 현재 시안과 목표 흐름 | 정보 구조가 목표 계약과 충돌할 때 해당 책임 문서 변경 제안 |
@@ -145,6 +149,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | W1-02 | W1-00 공통 골격, P1-03A 서버 계약·P1-06 상태 모듈, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03B | T1-06A의 422 응답, W1-03 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 상태·구간 강조와 직접 대응 UI 테스트; API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
 | W1-03A | W1-00 공통 골격, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-04~05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
