@@ -110,9 +110,9 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [x] 좌표 값 객체와 Haversine 거리 계산을 순수 Java로 구현하고 좌표 범위·0 거리·대칭성·알려진 거리 오차를 검증
 * [x] 안정 키와 명시적 시작점을 사용하는 Nearest Neighbor 열린 경로를 구현하고 빈 입력·동률·불변성·전체 장소 1회 방문을 검증
 * [x] 고정 출발·도착 경계 사이의 2-opt 경로 개선
-* [ ] 이동수단별 시간 추정과 10분 단위 올림
-* [ ] 숙소 탐색 중심을 위한 기하 중앙값·메도이드 구현
-* [ ] 순수 알고리즘 전체 회귀·성능 검증
+* [x] 자동차·대중교통별 Haversine 이동시간 추정과 10분 단위 올림
+* [x] 숙소 탐색 중심을 위한 기하 중앙값·메도이드 구현
+* [x] 최대 하루 입력과 7일 고정 경계 조합으로 순수 알고리즘 전체 회귀·성능 검증
 * [x] 지역 추천과 메뉴 분석 API에 JWT 인증, 사용자별 기능 한도와 `requestId` 중복 실행 차단을 연결하고 입력·응답 경계를 검증
 * [ ] **외부 장소·경로 Client 계약**: `place/client`, `route/client`에 요청·응답 DTO, 오류 분류, timeout 계약과 Fake를 추가하고 실제 Kakao Local·자동차·대중교통 응답을 내부 모델로 매핑한다.
 * [ ] **장소 검색과 선택 흐름**: 장소 유형별 체류 시간, 지역·주소 검증, 검색 결과 수명과 좌표 일시 사용 정책을 구현하고, 실제 선택에 필요한 일회성 `selectionToken`의 발급·검증·만료·폐기를 연결한다.
@@ -123,13 +123,13 @@ Routy는 AI와 Spring Backend의 책임을 분리합니다.
 * [ ] **나머지 화면과 백엔드 연결**: 메뉴 분석·이동수단/장소 선택·추정 일정·음식점 선택·완료 일정·공유 화면을 순서대로 연결하고, 로딩·실패·재시도·취소·만료 상태를 화면에 반영한다.
 * [ ] **전체 검증과 운영 준비**: 외부 원문·좌표·개인정보 비노출 로그, profile별 Fake/실제 Client 분리, health/metric, migration·Docker·배포 smoke, 전체 자동 테스트와 브라우저 흐름을 검증하고 DoD를 갱신한다.
 
-세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 개발 기반, 인증·호출 한도, 국내 지역 기준·검색, 지역·메뉴 AI API, 인증·지역 선택 화면 연결이 구현·검증됐습니다. 순수 경로 알고리즘은 Haversine 거리, Nearest Neighbor와 고정 출발·도착 경계를 보존하는 2-opt까지 완료됐으며, 다음 백엔드 작업은 이동수단별 시간 추정과 10분 단위 올림입니다. 이후 기하 중앙값·메도이드 구현과 순수 알고리즘 전체 검증을 마친 뒤 외부 Client, 장소 선택, 실제 경로 검증, 일정·추천, 완료 일정 순서로 핵심 흐름을 완성합니다.
+세부 작업 순서와 완료 판정은 [`docs/11-command-roadmap.md`](./docs/11-command-roadmap.md)를 따릅니다. 현재 개발 기반, 인증·호출 한도, 국내 지역 기준·검색, 지역·메뉴 AI API, 인증·지역 선택 화면 연결이 구현·검증됐습니다. 순수 경로 알고리즘은 Haversine 거리, Nearest Neighbor, 고정 출발·도착 경계를 보존하는 2-opt, 이동수단별 10분 단위 시간 추정과 기하 중앙값·메도이드를 최대 하루 입력과 7일 고정 경계 조합으로 회귀·성능 검증해 R1을 완료했습니다. 전체 186개 자동 테스트가 통과했으며, 다음 백엔드 작업은 외부 장소 Client의 요청·응답 DTO와 오류 계약을 설계하는 `C1-01`입니다. 이후 Route Client, 장소 선택, 실제 경로 검증, 일정·추천, 완료 일정 순서로 핵심 흐름을 완성합니다.
 
 ---
 
 ## 🧩 현재 구현 클래스 구조
 
-아래 구조는 목표 설계가 아니라 **현재 저장소에 실제로 존재하는 Java 클래스**를 기준으로 합니다. 아직 클래스가 없는 `place`, `route`, `recommendation`, `travelplan` 도메인은 표시하지 않습니다.
+아래 구조는 목표 설계가 아니라 **현재 저장소에 실제로 존재하는 Java 클래스**를 기준으로 합니다. 아직 클래스가 없는 `place`, `recommendation`, `travelplan` 도메인은 표시하지 않습니다.
 
 ```text
 com.example.travel
@@ -154,6 +154,9 @@ com.example.travel
 │   ├── client         # AiClient, OpenAiClient, ProfileFakeAiClient와 설정
 │   ├── service        # RegionRecommendationService, MenuAnalysisService
 │   └── dto            # AI 기능 요청·응답과 허용 후보 전달 객체
+├── route
+│   └── algorithm      # Coordinate·Haversine, Nearest Neighbor, 2-opt,
+│                      # 이동수단별 시간 추정, 기하 중앙값·메도이드
 └── global
     ├── security       # JwtService, JwtAuthenticationFilter, SecurityConfig 등
     └── exception      # ApiException, ErrorCode, ErrorResponse, Handler 등
@@ -308,6 +311,44 @@ class OpenAiProperties {
   <<ConfigurationProperties>>
 }
 
+class Coordinate {
+  <<record>>
+  +double latitude
+  +double longitude
+}
+class RoutePoint {
+  <<record>>
+  +String stableKey
+  +Coordinate coordinate
+}
+class HaversineDistance {
+  +kilometers(from, to) double
+}
+class NearestNeighborRoute {
+  +order(places, startKey) List~RoutePoint~
+}
+class TwoOptRoute {
+  +improve(route) List~RoutePoint~
+}
+class TravelMode {
+  <<enumeration>>
+  CAR
+  PUBLIC_TRANSIT
+}
+class TravelTimePolicy {
+  <<record>>
+  +defaultFor(mode) TravelTimePolicy
+}
+class HaversineTravelTimeEstimator {
+  +estimateMinutes(from, to) int
+}
+class GeometricMedian {
+  +calculate(coordinates) Coordinate
+}
+class MedoidSelector {
+  +select(places) RoutePoint
+}
+
 class GlobalExceptionHandler {
   <<RestControllerAdvice>>
 }
@@ -357,6 +398,16 @@ OpenAiClient ..|> AiClient
 ProfileFakeAiClient ..|> AiClient
 OpenAiClientConfiguration --> OpenAiClient
 OpenAiClientConfiguration --> OpenAiProperties
+
+RoutePoint --> Coordinate
+NearestNeighborRoute --> HaversineDistance
+TwoOptRoute --> HaversineDistance
+TravelTimePolicy --> TravelMode
+HaversineTravelTimeEstimator --> TravelTimePolicy
+HaversineTravelTimeEstimator --> HaversineDistance
+GeometricMedian ..> Coordinate
+MedoidSelector --> HaversineDistance
+MedoidSelector ..> RoutePoint
 
 UserRegistrationService ..> ApiException
 LoginService ..> ApiException

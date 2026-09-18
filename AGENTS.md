@@ -76,6 +76,7 @@ AI는 장소 존재, 거리, 방문 순서, 시간표, 추천 점수와 저장 �
 - 작업 전 `git status --short`와 대상 diff로 사용자 변경을 확인한다.
 - 작업 후 실제 변경 경로, 관련 테스트, 전체 `./gradlew test`, `git diff --check`와 DoD를 확인한다.
 - 이 Windows 개발 환경의 전체 Gradle·Testcontainers 검증은 Docker named pipe 권한 오류를 피하도록 루트 `test.ps1`로 실행한다. 로컬 `travel-mysql`을 테스트 DB로 재사용하지 않는다.
+- Gradle 실행에는 기본 `GRADLE_USER_HOME`과 기존 캐시를 재사용한다. 별도의 임시 `GRADLE_USER_HOME`을 만들거나 사용자가 요청하지 않은 Gradle 캐시 삭제를 하지 않는다.
 - 문서 전용 작업은 Gradle 테스트 생략 이유를 기록한다.
 - 사용자가 요청하지 않으면 git add, commit, stash, reset, checkout을 실행하지 않는다.
 
