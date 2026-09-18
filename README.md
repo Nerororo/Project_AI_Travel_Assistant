@@ -170,6 +170,121 @@ com.example.travel
     └── exception      # ApiException, ErrorCode, ErrorResponse, Handler 등
 ```
 
+아래 UML은 한 화면에서 흐름을 따라갈 수 있도록 책임별로 나눴습니다. 세부 필드와 전체 의존 관계는 마지막의 상세 UML에서 확인할 수 있습니다.
+
+### 회원·인증
+
+```mermaid
+classDiagram
+direction TB
+
+class UserController
+class AuthController
+class UserRegistrationService
+class LoginService
+class UserRepository
+class User
+class JwtAuthenticationFilter
+class JwtService
+
+UserController --> UserRegistrationService : 회원가입
+UserRegistrationService --> UserRepository : 저장
+UserRepository --> User
+AuthController --> LoginService : 로그인
+LoginService --> UserRepository : 사용자 확인
+LoginService --> JwtService : JWT 발급
+JwtAuthenticationFilter --> JwtService : JWT 검증
+JwtAuthenticationFilter --> LoginService : 사용자 확인
+```
+
+### 호출 한도·중복 요청
+
+```mermaid
+classDiagram
+direction TB
+
+class RequestExecutionService
+class RequestExecutionTransaction
+class RequestExecutionRepository
+class RequestExecution
+class ApiUsageService
+class ApiUsageReservationTransaction
+class ApiUsagePolicy
+class ApiUsageCounterRepository
+class ApiUsageCounter
+
+RequestExecutionService --> RequestExecutionTransaction : requestId 선점
+RequestExecutionTransaction --> RequestExecutionRepository
+RequestExecutionRepository --> RequestExecution
+RequestExecutionService --> ApiUsageService : 호출량 확보
+ApiUsageService --> ApiUsageReservationTransaction
+ApiUsageReservationTransaction --> ApiUsagePolicy
+ApiUsageReservationTransaction --> ApiUsageCounterRepository
+ApiUsageCounterRepository --> ApiUsageCounter
+```
+
+### 지역·AI·장소
+
+```mermaid
+classDiagram
+direction TB
+
+class RegionController
+class RegionSearchService
+class RegionCatalog
+class RegionDataLoader
+class RegionRecommendationService
+class MenuAnalysisService
+class AiClient
+class OpenAiClient
+class ProfileFakeAiClient
+class PlaceService
+class KakaoPlaceClient
+class PlaceRole
+class PlaceSearchRadiusPolicy
+class StayDurationPolicy
+
+RegionController --> RegionSearchService
+RegionSearchService --> RegionCatalog
+RegionCatalog --> RegionDataLoader
+RegionRecommendationService --> AiClient
+MenuAnalysisService --> AiClient
+OpenAiClient ..|> AiClient
+ProfileFakeAiClient ..|> AiClient
+PlaceService --> KakaoPlaceClient
+PlaceSearchRadiusPolicy --> PlaceRole
+StayDurationPolicy --> PlaceRole
+```
+
+### 경로 Client·순수 알고리즘
+
+```mermaid
+classDiagram
+direction TB
+
+class RouteClient
+class CarRouteClient
+class PublicTransitRouteClient
+class HaversineDistance
+class NearestNeighborRoute
+class TwoOptRoute
+class HaversineTravelTimeEstimator
+class TravelTimePolicy
+class GeometricMedian
+class MedoidSelector
+
+CarRouteClient --|> RouteClient
+PublicTransitRouteClient --|> RouteClient
+NearestNeighborRoute --> HaversineDistance
+TwoOptRoute --> HaversineDistance
+HaversineTravelTimeEstimator --> HaversineDistance
+HaversineTravelTimeEstimator --> TravelTimePolicy
+MedoidSelector --> HaversineDistance
+```
+
+<details>
+<summary><strong>전체 클래스 상세 UML 펼치기</strong></summary>
+
 ```mermaid
 classDiagram
 direction TB
@@ -468,6 +583,8 @@ GlobalExceptionHandler ..> ErrorResponse
 ApiException --> ErrorCode
 ErrorResponse --> ErrorCode
 ```
+
+</details>
 
 주요 요청은 다음과 같이 흐릅니다.
 
