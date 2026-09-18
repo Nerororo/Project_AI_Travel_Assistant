@@ -512,11 +512,38 @@ Haversine 거리, 숙소 검색 중심, 방문 순서와 실제 경로를 호출
 
 ---
 
+# ADR-041 - selectionToken은 30분 만료 HS256 JWS와 회전 가능한 전용 키를 사용
+
+## 상태
+
+Accepted (2026-09-18), 구현 완료를 의미하지 않음
+
+## 문제
+
+카카오 장소 좌표와 선택값은 ADR-028에 따라 서버 저장소 없이 브라우저 제작 흐름과 단일 서버 요청에서만 사용한다. 따라서 클라이언트가 다시 전달하는 선택값의 변조, 다른 사용자의 token 재사용, 장소 역할·지역 바꿔치기를 서버가 상태 저장 없이 차단해야 한다. 서명 방식, 수명, 키 교체와 payload 범위를 구현 전에 하나로 확정해야 한다.
+
+## 결정
+
+- `selectionToken`은 compact JWS 형식과 `HS256`만 사용한다. JWT access token과 별도의 최소 256-bit 무작위 secret으로 서명하며 암호화 토큰으로 간주하지 않는다.
+- protected header는 `alg=HS256`, `typ=place-selection+jwt`, 서버가 발급한 `kid`만 허용한다. 검증기는 header 값을 신뢰해 알고리즘이나 키를 동적으로 선택하지 않고 `HS256`과 설정된 key ID allowlist에 정확히 일치하는지 먼저 확인한다.
+- payload는 `iss`, `aud`, `sub`, `iat`, `exp`, `regionId`, `placeRole`, `kakaoPlaceId`, `placeUrl`, `latitude`, `longitude`만 포함한다. `sub`는 내부 User ID이고 `aud`는 `place-selection`으로 고정한다. 카카오 장소명·주소·전화번호·카테고리·검색어·사용자 작성 이름·메모·원문 응답은 넣지 않는다.
+- 발급 시각부터 만료까지는 30분으로 고정한다. 서버 시간 기준으로 `iat`가 미래이거나 `exp`가 지났거나 30분 수명과 일치하지 않으면 거부하며 별도 clock skew 허용은 두지 않는다.
+- 검증 시 서명, 허용 header, issuer, audience, `iat`·`exp`, 현재 인증 User ID와 `sub`, 요청의 최종 `regionId`와 `placeRole`, 각 필드의 형식·범위를 모두 확인한다. 좌표는 유한한 대한민국 운영 범위여야 하고, `placeUrl`은 `kakaoPlaceId`와 일치하는 허용된 카카오 장소 URL 형식이어야 한다. 검증 실패 원인의 세부 내용이나 token 원문은 응답과 로그에 남기지 않는다.
+- active key 하나로만 새 token을 발급하고 이전 key는 검증 전용으로 유지한다. 교체 시 새 key와 새 `kid`를 배포해 active로 전환한 뒤, 이전 key로 발급된 token의 최대 수명 30분이 지난 후 이전 key를 제거한다. key ID 재사용과 같은 secret의 JWT 공유를 금지한다.
+- 서버는 발급·검증을 위해 token, payload, 좌표를 DB·Redis·Caffeine·서버 세션에 저장하지 않는다. 브라우저와 서버의 폐기 시점은 ADR-028을 그대로 따른다.
+
+## 이유와 영향
+
+HS256은 단일 백엔드가 발급과 검증을 모두 담당하는 현재 구조에서 추가 비대칭 키 운영 없이 무결성을 제공한다. 전용 key와 고정 알고리즘 allowlist는 access JWT와의 token 혼동 및 header 기반 알고리즘 전환을 막는다. 30분 수명은 한 번의 작성 요청 흐름을 지원하면서 유출 token의 재사용 시간을 제한하며, 이전 key의 검증 기간도 같은 상한으로 제한한다.
+
+payload에는 후속 계산과 요청 경계 검증에 필요한 값만 남긴다. JWS payload는 읽을 수 있으므로 민감하거나 화면 표시용인 카카오 원문과 사용자 입력을 넣지 않는다. 구현 작업 P1-03은 만료·서명 변조·사용자·지역·역할·필드 불일치와 key 교체 경계를 자동 테스트해야 한다.
+
+---
+
 ## 4. 후속 결정 필요
 
 다음 사항은 현재 Accepted로 가장하지 않는다.
 
-- selectionToken 만료와 서명 방식
 - 공유 토큰의 해시·만료 정책
 
 각 항목은 구현 작업 전에 관련 요구사항·DB·API 문서와 함께 갱신한다.

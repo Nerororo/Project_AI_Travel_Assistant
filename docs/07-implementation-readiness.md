@@ -92,7 +92,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | 지역 공공데이터 출처·기준일·생성 절차 | 결정 완료 | ADR-038, `docs/09` 9절 지역 기준 데이터 갱신 |
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | 결정 완료 | ADR-040, 구현·단위 테스트는 R1-02~06 |
 | OpenAI 모델·전체 예산 | 결정 완료 | ADR-039의 `gpt-5.6-luna`, 월 USD 5 계획과 OpenAI project USD 4 hard spend limit |
-| selectionToken 서명·만료·키 교체 | P1-02 | 보안 ADR·API·운영 |
+| selectionToken 서명·만료·키 교체 | 결정 완료 | ADR-041의 HS256 JWS, 30분 만료, 전용 active·이전 key 교체와 최소 payload; 구현·자동 테스트는 P1-03 |
 | 자동차 요청 단위·공식 쿼터 | R2-01 | API·운영 |
 | AI 메뉴·식사·음식점 흐름 | 확정 | 메뉴 1~5개 사용자 확정, 식사 60분·한쪽 여유 15분, estimate 후 지도 선택, 저장 후 재검색 없음 |
 | 공유 토큰 해시·만료 | T1-01 | DB·API·보안 ADR |
@@ -198,6 +198,8 @@ U1-08에서 호출 한도 초과의 `retryAfterSeconds`를 남은 시간의 올�
 F0-06에서 API 명세에 없는 개발 확인용 `GET /hello`와 `HelloController`를 제거했다. 해당 경로는 운영 애플리케이션에서 공통 404 `RESOURCE_NOT_FOUND`의 여섯 필드 오류 계약으로 처리되며, 실제 Spring Security·MVC·MySQL 구성을 사용하는 통합 회귀 테스트로 고정했다. 루트 `test.ps1`의 전체 135개 테스트가 실패·오류·skip 없이 통과했다. JWT TTL과 브라우저 판정 정렬, AI 출력 문자열 정규화는 각각 미실행 후속 작업 `W1-01C`, `A1-08`로 로드맵에만 등록했다.
 
 P1-01에서 장소 역할을 관광지·숙소·음식점으로 분리하고 역할별 반경을 관광지 20km, 숙소 5→10km, 음식점 1→3→5km의 불변 확장 순서로 구현했다. 카카오 카테고리는 요청 범위에서만 일반·자연 90분, 박물관·전시 120분, 체험 180분, 등산 240분, 테마파크 360분으로 변환하며, 불명확한 관광지는 90분, 음식점은 60분, 숙소는 관광 체류시간 없음으로 처리한다. 내부 체류 분류는 private으로 숨기고 숫자만 반환하며 관광지 조정값은 30~480분의 10분 배수만 허용한다. 역할별 반경, 분류 우선순위·기본값, 호텔 제외, 조정 경계와 유형 미노출 테스트를 포함해 루트 `test.ps1` 전체 232개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 Kakao HTTP Client와 공개 검색 API, 사용자 표시 이름 입력은 후속 P1 작업 범위다.
+
+P1-03에서 ADR-041의 HS256 compact JWS `selectionToken` 발급·검증을 구현했다. JWT와 분리된 최소 256-bit Base64 key allowlist에서 active key로만 발급하고 이전 key도 token의 30분 수명 동안 검증할 수 있으며, `alg`·`typ`·`kid` header와 정확한 최소 payload만 허용한다. 인증 사용자·최종 지역·장소 역할, 카카오 장소 ID와 canonical URL, 국내 범위 좌표를 함께 검증하고 만료·서명 변조·사용자·지역·역할·payload·key 불일치를 같은 안전한 실패로 거절한다. DB·cache·서버 session 없이 불변 key map과 요청 지역 DTO만 사용하며 신규 단위 테스트와 루트 `test.ps1` 전체 240개 테스트가 실패·오류·건너뜀 없이 통과했다. Spring Bean 등록과 공개 장소 검색 API 연결은 실제 사용 조합 단계인 P1-05 범위다.
 
 ## 8. 완료 해석
 

@@ -45,12 +45,13 @@
 | 카카오 장소 | `KAKAO_LOCAL_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 자동차 | `KAKAO_MOBILITY_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 대중교통 | `KAKAO_REST_API_KEY` | 카카오맵 REST 대중교통 경로 전용, 앱·API 제한 확인 |
-| 토큰 서명 | `PLACE_SELECTION_TOKEN_SECRET` | JWT secret과 분리 |
+| 장소 선택 토큰 | `PLACE_SELECTION_TOKEN_ACTIVE_KEY_ID`, key ID별 selection token secret | ADR-041의 HS256 전용 최소 256-bit 키, JWT secret과 분리, 30분 만료 |
 
 - 키·비밀번호·서명 secret은 소스, Git, 이미지, fixture와 문서 예시에 저장하지 않는다.
 - 클라이언트에 노출되는 키가 필요하면 서버 키와 분리하고 허용 origin·도메인·API 범위를 최소화한다.
 - 키를 교체할 수 있도록 설정과 Client 생성 코드를 분리한다.
 - JWT key 교체 시 새 active key로만 발급하고 이전 key는 1시간 동안 검증한 뒤 제거한다. token header의 알고리즘과 key ID는 서버 allowlist에 있는 값만 허용한다.
+- selectionToken key 교체 시 새 active key로만 발급하고 이전 key는 30분 동안 검증한 뒤 제거한다. `HS256`과 설정된 key ID만 allowlist로 허용하며 key ID를 재사용하지 않는다.
 - 운영 키가 노출되면 즉시 폐기·재발급하고 접근 로그와 호출량을 점검한다.
 
 ## 4. 로그와 관측 정보
@@ -207,7 +208,7 @@ OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예�
 | 카카오 Local | endpoint, 필드, 반경·페이지 제한, 저장·표시 정책, 쿼터 |
 | 카카오 Mobility | 자동차 endpoint, 구간 묶음, timeout, 오류, 과금·쿼터 |
 | 카카오 대중교통 | 카카오맵 REST endpoint·인증 재확인, 사용자 한도, 응답 사용 조건 |
-| selectionToken | 서명 알고리즘, 만료, 키 교체, payload 최소화 |
+| selectionToken | ADR-041의 HS256, 30분 만료, active·이전 key 교체, 최소 payload와 인증 사용자·지역·역할 결합을 구현하고 검증 |
 | JWT | ADR-037의 비밀번호 규칙, 1시간 access token, key 교체 설정과 User 존재 검증 구현 확인 |
 
 기술 선택이나 계약이 바뀌면 `docs/04-api-spec.md`와 `docs/06-decisions.md`를 같은 변경 단위에서 갱신한다. 자동 테스트는 결정 후에도 Fake Client를 유지한다.
