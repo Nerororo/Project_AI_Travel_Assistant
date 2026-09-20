@@ -93,7 +93,7 @@ F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스�
 | CAR·PUBLIC_TRANSIT 초기 추정 계수 | 결정 완료 | ADR-040, 구현·단위 테스트는 R1-02~06 |
 | OpenAI 모델·전체 예산 | 결정 완료 | ADR-039의 `gpt-5.6-luna`, 월 USD 5 계획과 OpenAI project USD 4 hard spend limit |
 | selectionToken 서명·만료·키 교체 | 결정 완료 | ADR-041의 HS256 JWS, 30분 만료, 전용 active·이전 key 교체와 최소 payload; 구현·자동 테스트는 P1-03 |
-| 자동차 요청 단위·공식 쿼터 | R2-01 | API·운영 |
+| 자동차 요청 단위·공식 쿼터 | 결정 완료 | R2-01의 인접 구간별 일반 자동차 길찾기, 10,000건/일·8원/초과 건, `docs/09` C1-05 자동차 재확인 기록 |
 | AI 메뉴·식사·음식점 흐름 | 확정 | 메뉴 1~5개 사용자 확정, 식사 60분·한쪽 여유 15분, estimate 후 지도 선택, 저장 후 재검색 없음 |
 | 공유 토큰 해시·만료 | T1-01 | DB·API·보안 ADR |
 
@@ -212,6 +212,8 @@ P1-06에서 W1-02가 사용할 관광지·숙소 선택 순수 메모리 상태 
 P1-07 회귀 점검에서 현재 구현된 장소 검색·선택 범위의 저장 금지와 카카오 임시 사용 계약 위반은 발견되지 않았다. Entity·Repository·V1~V3 migration에는 카카오 좌표·주소·전화번호·카테고리·제공자 장소명·원문·token 열이 없고, 공유 저장소에는 사용자·기능·requestId·상태·호출량·만료시각만 기록한다. `place`는 Repository·트랜잭션·서버 cache·session·비동기 작업·logger에 의존하지 않으며 provider body와 후보 필드는 요청 지역 변수와 API 응답에서만 사용한다. 실행 JavaScript는 브라우저 저장소·cookie·console에 장소 상태를 기록하지 않고 메모리 상태 테스트가 완료·취소·인증 종료·pagehide·새 store 폐기를 검증한다. P1 집중 회귀, Node 33개, Chromium 12개와 루트 `test.ps1` 전체 277개 테스트가 모두 통과했다. 완료 일정 영속 DTO·Repository의 저장 금지, estimate·create 요청 종료 전 좌표 폐기와 실제 W1-02 화면 연결은 아직 구현되지 않았으므로 DoD 7·15 전체를 운영 가능으로 판정하지 않고 T1·W1의 해당 작업에서 다시 검증한다.
 
 P1-07A에서 감사 중 확인한 계약·흐름 차이를 사용자 결정에 따라 보정했다. 관광지 지역 전체 `searchBounds` 검색은 반경 결과 부족으로 자동 실행하지 않고 사용자의 명시적 요청에서만 수행하며, 일반 `POST /api/places/search`는 관광지만 허용하고 숙소·음식점은 후속 전용 제작 endpoint로 제한한다. 실제 Local Client는 HTTP 200 후보의 숫자 장소 ID, ID와 정확히 대응하는 카카오 장소 URL 및 대한민국 지원 좌표를 검증하고 하나라도 어긋나면 부분 성공 없이 `INVALID_RESPONSE`로 정규화한다. 재시도는 전체 deadline이 남았는지 먼저 확인한 뒤 추가 호출량을 확보한다. 관련 회귀를 추가한 루트 `test.ps1` 전체 283개 테스트와 정적 JavaScript 45개 테스트, `git diff --check`가 통과했다. 숙소 후보 범위 검색 자체는 S1-05에서 기하 중앙값 5km·사용자 선택 10km·메도이드·현재 지도 영역 계약으로 구현한다.
+
+R2-01에서 2026-09-21 카카오모빌리티 공식 자동차 길찾기·가격 문서를 재확인했다. Routy는 일반 `GET https://apis-navi.kakaomobility.com/v1/directions`에 REST API 키로 인증하고, 최종 후보의 인접 구간별 `origin`·`destination`만 보내며 `waypoints`는 사용하지 않는다. 요청 옵션은 `RECOMMEND`, 대안 경로 없음, 요약 응답으로 확정했다. 공식 10,000건/일 무료 쿼터와 무료 초과분 8원/건을 기준으로 Routy 서비스는 9,000건/일에서 자동차 신규 호출을 차단하고 유료 초과를 자동 허용하지 않는다. 기존 사용자 60회/분·120회/일 계약은 유지한다. 이 Task는 공식 계약 확정만 수행했으며 실제 HTTP Client·설정·Fake 기반 자동 테스트는 R2-02 범위다.
 
 ## 8. 완료 해석
 

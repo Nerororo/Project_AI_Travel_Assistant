@@ -251,6 +251,10 @@ OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예�
 | 기술 장애 | 500·502·503과 네트워크 timeout은 기술 장애, 400·401·403·429는 요청·인증·권한·한도 계열 | 현재 정규화 실패 종류와 대체로 일치 |
 | 쿼터·가격 | 자동차 길찾기 10,000건/일, 무료 초과분은 월 1,000,000건 이하 구간 8원/건 | 90% 차단선은 9,000건/일; 유료 초과 자동 승인은 금지 |
 
+이 계약은 `R2-01` 착수일인 2026-09-21에 카카오모빌리티 공식 문서에서 다시 확인했다. Routy는 제휴용·다중 경유지·다중 출발지·다중 목적지 endpoint를 사용하지 않고 일반 자동차 길찾기 `GET https://apis-navi.kakaomobility.com/v1/directions`만 사용한다. 서버에서 `Authorization: KakaoAK {REST_API_KEY}`를 전달하고, 최종 후보의 각 인접 구간마다 경도·위도 순서의 `origin`과 `destination`만 보내 제공자 요청 한 건으로 계산한다. `waypoints`는 보내지 않으며 `priority=RECOMMEND`, `alternatives=false`, `summary=true`로 요청해 대안 경로와 상세 도로·안내 데이터를 받지 않는다.
+
+공식 무료 일일 제공량은 자동차 길찾기 10,000건이고, 무료 쿼터 초과분의 월 1,000,000건 이하 구간 가격은 8원/건이다. Routy는 이 수치의 90%인 9,000건/일에서 서비스 전체 신규 자동차 호출을 차단하고 유료 초과를 자동 허용하지 않는다. 기존 사용자별 60회/분·120회/일은 제공자 쿼터와 별개인 Routy 제품 한도로 유지한다. 재시도는 새 제공자 요청 한 건으로 차감한다. 이로써 `R2-01`의 endpoint·인증·쿼터·요금·인접 구간 요청 방식을 확정했으며 실제 HTTP Client와 설정·자동 테스트는 `R2-02` 범위다.
+
 결정 상태: C1-05A에서 `result_code=1`은 선택한 자동차 이동수단으로 제공자가 유효한 경로를 반환하지 못한 정상 결과 `RouteResult.NotFound`로 확정했다. 재시도·fallback 없이 422 `ROUTE_NOT_FOUND`로 일정 전체 저장을 차단하며 실제 원인을 도보·선박 필요 또는 물리적 통행 불가로 단정하지 않는다. 실패 구간은 `date + moveOrder + travelMode`로 식별한다. `moveOrder`는 최종 생성 후보의 해당 날짜 `items`에서 실패한 `MOVE`가 차지하는 1부터 시작하는 순서이며, 로그와 오류 응답에는 좌표·장소명·카카오 ID·제공자 `result_msg`를 남기지 않는다. 오류 DTO 구현은 `T1-06A`, 브라우저의 작성 상태 유지·구간 강조는 `W1-03B`에서 수행한다.
 
 Routy 자동차 요청은 인접 지점의 `origin`·`destination`만 사용하고 `waypoints`를 보내지 않는다. 따라서 공식상 경유지 도로 탐색 실패인 `result_code=101`과 경유지 주변 교통 장애인 `107`은 `RouteClientFailure.INVALID_RESPONSE`로 매핑한다. 두 코드는 retry 가능한 기술 장애가 아니므로 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`로 저장을 차단한다. 보안·관측에는 provider와 숫자 result code만 허용하고 `result_message`, 경유지 번호, 좌표와 payload는 남기지 않는다. 향후 경유지를 사용하게 되면 이 매핑을 그대로 재사용하지 않고 별도 Task에서 계약을 다시 감사한다.
