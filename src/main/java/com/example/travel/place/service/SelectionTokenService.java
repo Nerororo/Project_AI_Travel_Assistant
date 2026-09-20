@@ -2,7 +2,9 @@ package com.example.travel.place.service;
 
 import com.example.travel.place.config.SelectionTokenProperties;
 import com.example.travel.place.domain.PlaceRole;
+import com.example.travel.place.dto.PlaceSearchRegionCriteria;
 import com.example.travel.place.dto.SelectionTokenPlace;
+import com.example.travel.global.exception.ApiException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -40,16 +42,24 @@ public final class SelectionTokenService {
 
 	private final SelectionTokenProperties properties;
 	private final Clock clock;
+	private final PlaceSearchRegionValidator regionValidator;
 	private final Map<String, byte[]> keys;
 
-	public SelectionTokenService(SelectionTokenProperties properties, Clock clock) {
+	public SelectionTokenService(
+			SelectionTokenProperties properties,
+			Clock clock,
+			PlaceSearchRegionValidator regionValidator
+	) {
 		this.properties = properties;
 		this.clock = Objects.requireNonNull(clock, "clock must not be null");
+		this.regionValidator = Objects.requireNonNull(regionValidator, "regionValidator must not be null");
 		this.keys = validateAndDecode(properties);
 	}
 
 	public String issue(SelectionTokenPlace place) {
 		Objects.requireNonNull(place, "place must not be null");
+		regionValidator.validate(new PlaceSearchRegionCriteria(
+				place.regionId(), null, place.placeRole()));
 		Instant issuedAt = clock.instant();
 		JWTClaimsSet claims = new JWTClaimsSet.Builder()
 				.issuer(properties.issuer())
@@ -106,13 +116,16 @@ public final class SelectionTokenService {
 					URI.create(claims.getStringClaim("placeUrl")),
 					claims.getDoubleClaim("latitude"),
 					claims.getDoubleClaim("longitude"));
+			regionValidator.validate(new PlaceSearchRegionCriteria(
+					place.regionId(), null, place.placeRole()));
 			if (place.userId() != authenticatedUserId
 					|| !place.regionId().equals(expectedRegionId)
 					|| place.placeRole() != expectedRole) {
 				throw new InvalidSelectionTokenException();
 			}
 			return place;
-		} catch (ParseException | JOSEException | IllegalArgumentException | NullPointerException exception) {
+		} catch (ParseException | JOSEException | IllegalArgumentException | NullPointerException
+				| ApiException exception) {
 			throw new InvalidSelectionTokenException();
 		}
 	}

@@ -19,15 +19,14 @@ public record SelectionTokenPlace(
 		double longitude
 ) {
 
-	private static final Pattern REGION_ID = Pattern.compile("KR-[0-9]{2,10}");
 	private static final Pattern KAKAO_PLACE_ID = Pattern.compile("[0-9]{1,30}");
 
 	public SelectionTokenPlace {
 		if (userId <= 0) {
 			throw new IllegalArgumentException("userId must be positive");
 		}
-		if (regionId == null || !REGION_ID.matcher(regionId).matches()) {
-			throw new IllegalArgumentException("regionId must use the supported format");
+		if (regionId == null || regionId.isBlank() || regionId.length() > 100) {
+			throw new IllegalArgumentException("regionId must be between 1 and 100 characters");
 		}
 		Objects.requireNonNull(placeRole, "placeRole must not be null");
 		if (kakaoPlaceId == null || !KAKAO_PLACE_ID.matcher(kakaoPlaceId).matches()) {

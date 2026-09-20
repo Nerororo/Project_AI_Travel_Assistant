@@ -5,6 +5,12 @@ spring:
     password: ${DB_PASSWORD}
 
 routy:
+  kakao:
+    local:
+      rest-api-key: ${KAKAO_REST_API_KEY}
+      endpoint: https://dapi.kakao.com/v2/local/search/keyword.json
+      connect-timeout: ${KAKAO_LOCAL_CONNECT_TIMEOUT_MS:2000}ms
+      request-timeout: ${KAKAO_LOCAL_REQUEST_TIMEOUT_MS:6000}ms
   openai:
     api-key: ${OPENAI_API_KEY}
     model: ${OPENAI_MODEL:gpt-5.6-luna}

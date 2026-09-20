@@ -201,6 +201,10 @@ P1-01에서 장소 역할을 관광지·숙소·음식점으로 분리하고 역
 
 P1-03에서 ADR-041의 HS256 compact JWS `selectionToken` 발급·검증을 구현했다. JWT와 분리된 최소 256-bit Base64 key allowlist에서 active key로만 발급하고 이전 key도 token의 30분 수명 동안 검증할 수 있으며, `alg`·`typ`·`kid` header와 정확한 최소 payload만 허용한다. 인증 사용자·최종 지역·장소 역할, 카카오 장소 ID와 canonical URL, 국내 범위 좌표를 함께 검증하고 만료·서명 변조·사용자·지역·역할·payload·key 불일치를 같은 안전한 실패로 거절한다. DB·cache·서버 session 없이 불변 key map과 요청 지역 DTO만 사용하며 신규 단위 테스트와 루트 `test.ps1` 전체 240개 테스트가 실패·오류·건너뜀 없이 통과했다. Spring Bean 등록과 공개 장소 검색 API 연결은 실제 사용 조합 단계인 P1-05 범위다.
 
+P1-03A에서 장소 검색의 최종 `regionId`와 선택적 `districtFilterId` 검증 계약을 구현했다. `place`는 `region` 내부 Catalog·도메인 객체 대신 최소 공개 Service·DTO로 선택 가능 여부, 검색 필터 가능 여부와 상위 지역만 조회한다. 구·군 필터는 관광지 검색에서만 허용하고, 최종 지역과 부모가 다른 필터·미존재 항목·선택 불가능한 최종 지역·최종 regionId의 필터 오용·빈 필터를 외부 호출 전에 공통 `VALIDATION_FAILED`로 거절한다. `selectionToken`도 regionId의 숫자 구조를 해석하지 않고 같은 Catalog 검증을 사용하므로 논리 ID `KR-GWANGJU-URBAN`은 허용하고 임의 ID와 선택 불가능한 상위 지역은 거절한다. 관련 성공·실패 단위 테스트와 루트 `test.ps1` 전체 254개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 Kakao HTTP Client는 P1-04, 공개 장소 검색 API와 호출 한도 연결은 P1-05 범위다.
+
+P1-04에서 Java 21 `HttpClient`를 재사용하는 prod·smoke 전용 Kakao Local 실제 Client를 구현했다. 키워드 검색 endpoint에 `KakaoAK` REST API 키를 환경 변수로 주입하고 중심점의 경도 `x`·위도 `y`·반경 또는 `minLongitude,minLatitude,maxLongitude,maxLatitude` 순서의 `rect` 중 하나를 직렬화한다. 연결 timeout 2초와 재시도 포함 전체 6초 예산 안에서 연결 실패·timeout·5xx만 최대 한 번 재시도하며 400·401·403·429와 손상 응답은 재시도 없이 안전한 `PlaceClientFailure`로 변환한다. 성공·빈 결과·도로명 주소 우선 후보 매핑과 인증·URL·timeout·오류 변환을 실제 카카오 호출 없는 mock HTTP 테스트로 검증했고, 루트 `test.ps1` 전체 265개 테스트가 실패·오류·건너뜀 없이 통과했다. 공개 장소 검색 API, 주소 행정구역 검증, 사용자·서비스 호출 한도와 `selectionToken` 연결은 P1-05 범위다.
+
 ## 8. 완료 해석
 
 - Accepted ADR은 구현 완료가 아니다.

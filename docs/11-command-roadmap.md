@@ -238,14 +238,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-인증·호출 한도, 국내 지역 검색, 지역·메뉴 AI API, 지역 선택 화면, 순수 경로 알고리즘과 C1-01~04 Client 계약·Fake를 구현·검증하고 C1-05 공식 계약 감사를 마쳤다. C1-05A에서 Local 도시 전체 공간 검색, 자동차 결과 코드와 대중교통 후보·시간·상태 계약을 설계했고 G1-06에서 최종 지역 `searchBounds`, C1-05B에서 radius·rect 요청 DTO와 Fake 계약을 구현·검증했다. 실제 Kakao HTTP Client와 공개 좌표 endpoint는 아직 없다.
-
-P1-01에서 장소 역할별 검색 반경, 카테고리의 기본 체류 시간 변환, 호텔 제외와 관광지 30~480분의 10분 단위 조정 정책을 구현하고 전체 테스트로 검증했다.
-
-P1-02에서 `selectionToken`을 JWT와 분리된 전용 최소 256-bit key로 서명하는 HS256 compact JWS, 30분 만료, active·이전 key 교체, 최소 payload와 인증 사용자·지역·장소 역할 결합으로 확정했다. ADR-041과 운영 계약을 대조하고 `git diff --check`를 통과했으며, 문서 전용 설계 작업이므로 Gradle 테스트는 생략했다.
-
-P1-03에서 ADR-041의 HS256 compact JWS token 발급·검증, 30분 만료, active·이전 key 교체, 최소 header·payload, 인증 사용자·지역·역할과 카카오 ID·URL·국내 좌표 검증을 구현했다. 서버 저장소·cache·session 없이 만료·서명 변조·사용자·지역·역할·payload·key 불일치를 자동 테스트했고 루트 `test.ps1` 전체 240개 테스트와 `git diff --check`를 통과했다.
-
-다음 시작 작업은 `P1-03A`다. `districtFilterId`를 관광지 검색에만 허용하고 검색 필터 가능 여부, 최종 지역과의 상위 관계, 최종 regionId 사용 금지를 서버 계약과 테스트로 고정한다.
-
-날짜별 장소 배분·식사 시간표와 실제 경로 검증은 후속 단계에서 구현한다. AI 출력 문자열 정규화 보완은 별도 후속 작업으로 남아 있다.
+`P1-05`: 장소 검색 API를 지역 검증·Kakao Local Client·`selectionToken`과 연결하고 사용자당 20회/분·300회/일 및 서비스 전체 90% 차단선을 적용하며 임의 후보를 생성하지 않는지 검증한다.

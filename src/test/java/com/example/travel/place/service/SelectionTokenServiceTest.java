@@ -3,6 +3,10 @@ package com.example.travel.place.service;
 import com.example.travel.place.config.SelectionTokenProperties;
 import com.example.travel.place.domain.PlaceRole;
 import com.example.travel.place.dto.SelectionTokenPlace;
+import com.example.travel.global.exception.ApiException;
+import com.example.travel.global.exception.ErrorCode;
+import com.example.travel.region.dto.PlaceSearchRegion;
+import com.example.travel.region.service.PlaceSearchRegionService;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -20,11 +24,16 @@ import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SelectionTokenServiceTest {
+
+	private final PlaceSearchRegionValidator regionValidator = mock(PlaceSearchRegionValidator.class);
 
 	private static final Instant ISSUED_AT = Instant.parse("2026-09-18T00:00:00Z");
 	private static final SelectionTokenPlace PLACE = new SelectionTokenPlace(
@@ -44,6 +53,49 @@ class SelectionTokenServiceTest {
 		String token = service.issue(PLACE);
 
 		assertThat(service.verify(token, 42L, "KR-26", PlaceRole.ATTRACTION)).isEqualTo(PLACE);
+	}
+
+	@Test
+	void issuesAndVerifiesTokenForSelectableOpaqueRegionId() {
+		PlaceSearchRegionService regionService = mock(PlaceSearchRegionService.class);
+		when(regionService.findById("KR-GWANGJU-URBAN")).thenReturn(Optional.of(
+				new PlaceSearchRegion("KR-GWANGJU-URBAN", null, true, false)));
+		PlaceSearchRegionValidator catalogValidator = new PlaceSearchRegionValidator(regionService);
+		SelectionTokenService service = serviceAt(
+				ISSUED_AT, "active", keys(key("active", randomSecret())), catalogValidator);
+		SelectionTokenPlace gwangjuPlace = new SelectionTokenPlace(
+				42L,
+				"KR-GWANGJU-URBAN",
+				PlaceRole.ATTRACTION,
+				"26338954",
+				URI.create("https://place.map.kakao.com/26338954"),
+				35.1587,
+				126.85);
+
+		String token = service.issue(gwangjuPlace);
+
+		assertThat(service.verify(token, 42L, "KR-GWANGJU-URBAN", PlaceRole.ATTRACTION))
+				.isEqualTo(gwangjuPlace);
+	}
+
+	@Test
+	void rejectsUnknownAndNonSelectableRegionBeforeIssuingToken() {
+		PlaceSearchRegionService regionService = mock(PlaceSearchRegionService.class);
+		when(regionService.findById("KR-UNKNOWN")).thenReturn(Optional.empty());
+		when(regionService.findById("KR-51")).thenReturn(Optional.of(
+				new PlaceSearchRegion("KR-51", null, false, false)));
+		SelectionTokenService service = serviceAt(
+				ISSUED_AT,
+				"active",
+				keys(key("active", randomSecret())),
+				new PlaceSearchRegionValidator(regionService));
+
+		assertThatThrownBy(() -> service.issue(placeIn("KR-UNKNOWN")))
+				.isInstanceOfSatisfying(ApiException.class,
+						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
+		assertThatThrownBy(() -> service.issue(placeIn("KR-51")))
+				.isInstanceOfSatisfying(ApiException.class,
+						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
 	}
 
 	@Test
@@ -155,10 +207,30 @@ class SelectionTokenServiceTest {
 		return token.serialize();
 	}
 
-	private static SelectionTokenService serviceAt(Instant instant, String activeKeyId,
+	private SelectionTokenService serviceAt(Instant instant, String activeKeyId,
 			List<SelectionTokenProperties.SigningKey> keys) {
+		return serviceAt(instant, activeKeyId, keys, regionValidator);
+	}
+
+	private SelectionTokenService serviceAt(
+			Instant instant,
+			String activeKeyId,
+			List<SelectionTokenProperties.SigningKey> keys,
+			PlaceSearchRegionValidator validator
+	) {
 		SelectionTokenProperties properties = new SelectionTokenProperties("routy", activeKeyId, keys);
-		return new SelectionTokenService(properties, Clock.fixed(instant, ZoneOffset.UTC));
+		return new SelectionTokenService(properties, Clock.fixed(instant, ZoneOffset.UTC), validator);
+	}
+
+	private static SelectionTokenPlace placeIn(String regionId) {
+		return new SelectionTokenPlace(
+				42L,
+				regionId,
+				PlaceRole.ATTRACTION,
+				"26338954",
+				URI.create("https://place.map.kakao.com/26338954"),
+				35.1587,
+				126.85);
 	}
 
 	@SafeVarargs
