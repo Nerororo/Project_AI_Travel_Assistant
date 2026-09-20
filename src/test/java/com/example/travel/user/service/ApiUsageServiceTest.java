@@ -14,6 +14,7 @@ import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
@@ -54,6 +55,23 @@ class ApiUsageServiceTest {
 		assertThat(menuWindows).hasSize(2);
 		assertThat(menuWindows).extracting(ApiUsagePolicy.UsageWindow::limit)
 				.containsExactly(3L, 15L);
+	}
+
+	@Test
+	void policyAppliesExactPlaceUserAndServiceLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+
+		var windows = policy.windows(1L, UsageFeature.PLACE_SEARCH);
+
+		assertThat(windows).extracting(
+				ApiUsagePolicy.UsageWindow::scopeType,
+				ApiUsagePolicy.UsageWindow::windowType,
+				ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(
+						tuple(UsageScopeType.USER, UsageWindowType.MINUTE, 20L),
+						tuple(UsageScopeType.USER, UsageWindowType.DAY, 300L),
+						tuple(UsageScopeType.SERVICE, UsageWindowType.DAY, 90_000L));
 	}
 
 	@Test

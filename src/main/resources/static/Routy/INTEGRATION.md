@@ -238,6 +238,15 @@ URL 구조는 실제 정적 제공 방식과 서버 fallback을 확인한 뒤 W1
 - 만료 시각은 로그인 요청 시작 시각에 서버 TTL을 더해 계산하므로 응답 지연만큼 세션을 연장하지 않는다. 보호 요청과 화면 guard는 모두 같은 만료 시각을 사용한다.
 - 브라우저 타이머의 단일 최대 지연보다 TTL이 길면 남은 시간을 여러 번 예약하며, 각 callback에서 현재 시각을 다시 확인해 조기 만료와 overflow를 막는다.
 
+### 8.4 P1-06 장소 선택 메모리 상태
+
+- `js/place-selection-state.js`는 W1-02가 사용할 관광지·숙소 후보와 선택 상태의 순수 메모리 경계다. 화면·DOM·지도·API 요청을 담당하지 않는다.
+- `createStore()`로 작성 흐름마다 새 store를 만들고 `setContext(authenticatedUserId, regionId)`의 반환 세대를 검색 요청과 함께 보관한다. 사용자 또는 지역이 바뀌면 모든 후보와 선택을 폐기하며 이전 세대의 늦은 검색 응답과 선택 요청을 거절한다.
+- `acceptSearchResults(generation, role, places)`는 `ATTRACTION`과 `HOTEL` 응답의 카카오 ID·URL, 제공자 표시 이름, 주소, 좌표, 기본 체류시간과 `selectionToken`을 방어적으로 복사·동결한다. 관광지는 여러 개, 숙소는 정확히 하나를 직접 선택할 수 있고 숙소 자동 점수·순위는 만들지 않는다.
+- 완료·취소·인증 종료에서는 각각 `complete()`·`cancel()`·`authenticationEnded()`를 호출한다. `attachPageLifecycle(window)`는 `pagehide`에서 같은 전체 폐기를 수행하며 새로고침 복구를 제공하지 않는다.
+- 모듈은 localStorage·sessionStorage·IndexedDB·cookie·서버 저장소를 사용하지 않는다. W1-02는 인증 Client의 session 종료 callback과 지역 변경 action을 이 모듈에 연결하고, 상태 객체나 token·좌표를 DOM diagnostic·console에 출력하지 않는다.
+- `place-selection-state.test.cjs`는 방어적 복사, 관광지·숙소 선택, 사용자·지역 변경, 완료·취소·인증 종료, pagehide·새 store, 브라우저 저장소 미접근과 잘못된 provider 필드 거절을 실제 카카오 호출 없이 검증한다.
+
 ## 9. 작성 상태와 데이터 수명
 
 - 검색 좌표·주소·카테고리·제공자 장소명과 `selectionToken`은 현재 탭 JavaScript 메모리에만 둔다.

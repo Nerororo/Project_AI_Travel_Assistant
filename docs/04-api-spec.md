@@ -283,14 +283,16 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 }
 ~~~
 
-- placeRole은 ATTRACTION, HOTEL, RESTAURANT다.
+- 이 endpoint의 placeRole은 ATTRACTION만 허용한다. HOTEL은 `/api/places/hotels/search`, RESTAURANT는 `/api/places/restaurants/search`의 검증된 제작 흐름에서만 검색한다.
 - size는 1~15다.
 - regionId는 최종 선택 가능한 서울특별시·광역시·세종특별자치시 또는 도·특별자치도 아래 시·군 하나다.
 - districtFilterId는 ATTRACTION 검색에서만 사용하는 선택 필드다. 특별시·광역시 아래 `placeSearchFilterable=true`인 구·군 하나만 허용하고 상위 지역이 regionId와 일치해야 한다.
 - 도·특별자치도 아래 시·군과 세종특별자치시는 districtFilterId를 받을 수 없다. 선택 불가능한 항목, 다른 상위 지역의 구·군과 읍·면·동은 400 `VALIDATION_FAILED`다.
 - 최초 검색 중심은 regionId의 공공데이터 대표 좌표다.
-- 중심 이동 재검색에서만 center를 받을 수 있다.
-- 관광지는 대표 좌표 20km 안에서 먼저 검색한다. 결과가 부족하거나 사용자가 지역 전체 검색을 요청하면 모든 최종 선택 가능 지역에 미리 생성한 `searchBounds`를 카카오 `rect`로 사용하고 공식 지역명을 검색어에 포함한다. `rect` 직렬화 순서는 카카오의 `left X,left Y,right X,right Y`, 즉 `minLongitude,minLatitude,maxLongitude,maxLatitude`로 고정한다.
+- 중심 이동 재검색에서만 center를 받을 수 있으며 이때 역할별 허용 radiusMeters가 필수다.
+- center가 null이고 radiusMeters가 있으면 지역 대표 좌표를 중심으로 관광지를 20km 반경 검색한다.
+- center와 radiusMeters가 모두 null인 요청은 사용자가 지역 전체 검색을 명시적으로 요청한 경우로 해석하고, 공식 지역명을 query에 결합해 서버의 searchBounds를 rect로 사용한다.
+- 반경 결과가 적다는 이유만으로 서버가 지역 전체 검색으로 자동 전환하지 않는다. 지역 전체 검색은 사용자 요청 때만 모든 최종 선택 가능 지역에 미리 생성한 `searchBounds`를 카카오 `rect`로 사용하고 공식 지역명을 검색어에 포함한다. `rect` 직렬화 순서는 카카오의 `left X,left Y,right X,right Y`, 즉 `minLongitude,minLatitude,maxLongitude,maxLatitude`로 고정한다.
 - `searchBounds`는 공공 행정구역 WGS84 경계 전체를 감싸는 최소 축 정렬 사각형이며 클라이언트 요청·응답에 노출하지 않는 서버 내부 기준 데이터다. `MAP_BOUNDS`처럼 사용자가 이동한 현재 지도 영역과는 다른 값이다.
 - 반경·`searchBounds` 검색 모두 반환 주소가 선택 지역의 행정구역과 일치할 때만 결과로 사용한다. `searchBounds`가 주변 지역과 바다를 포함할 수 있으므로 사각형 포함 여부만으로 지역을 판정하지 않는다.
 - 반경 검색과 `searchBounds` 검색에서 같은 카카오 장소 ID가 나오면 하나로 합친다. 각 페이지와 보완 검색은 실제 외부 호출 수에 포함하며, 카카오의 노출 가능 결과 상한 때문에 도시의 모든 장소를 빠짐없이 제공한다고 보장하지 않는다.

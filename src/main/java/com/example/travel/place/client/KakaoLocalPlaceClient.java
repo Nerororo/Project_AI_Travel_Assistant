@@ -17,11 +17,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public final class KakaoLocalPlaceClient implements KakaoPlaceClient {
 
 	private static final int MAX_ATTEMPTS = 2;
 	private static final Duration MAX_ATTEMPT_TIMEOUT = Duration.ofSeconds(3);
+	private static final Pattern KAKAO_PLACE_ID = Pattern.compile("[0-9]{1,30}");
 
 	private final HttpClient httpClient;
 	private final ObjectMapper objectMapper;
@@ -39,10 +41,23 @@ public final class KakaoLocalPlaceClient implements KakaoPlaceClient {
 
 	@Override
 	public PlaceSearchResult search(PlaceSearchRequest request) {
+		return search(request, () -> { });
+	}
+
+	@Override
+	public PlaceSearchResult search(PlaceSearchRequest request, Runnable beforeRetry) {
 		Objects.requireNonNull(request, "request must not be null");
+		Objects.requireNonNull(beforeRetry, "beforeRetry must not be null");
 		long deadline = System.nanoTime() + properties.requestTimeout().toNanos();
 		for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			Duration remaining = remaining(deadline);
+			if (remaining.isZero()) {
+				throw failure(PlaceClientFailure.TIMEOUT);
+			}
+			if (attempt > 1) {
+				beforeRetry.run();
+			}
+			remaining = remaining(deadline);
 			if (remaining.isZero()) {
 				throw failure(PlaceClientFailure.TIMEOUT);
 			}
@@ -139,16 +154,29 @@ public final class KakaoLocalPlaceClient implements KakaoPlaceClient {
 		if (document == null) {
 			throw failure(PlaceClientFailure.INVALID_RESPONSE);
 		}
+		if (document.id() == null || !KAKAO_PLACE_ID.matcher(document.id()).matches()) {
+			throw failure(PlaceClientFailure.INVALID_RESPONSE);
+		}
+		URI placeUrl = URI.create(document.placeUrl());
+		if (!URI.create("https://place.map.kakao.com/" + document.id()).equals(placeUrl)) {
+			throw failure(PlaceClientFailure.INVALID_RESPONSE);
+		}
+		double latitude = Double.parseDouble(document.y());
+		double longitude = Double.parseDouble(document.x());
+		if (!Double.isFinite(latitude) || latitude < 33.0 || latitude > 39.0
+				|| !Double.isFinite(longitude) || longitude < 124.0 || longitude > 132.0) {
+			throw failure(PlaceClientFailure.INVALID_RESPONSE);
+		}
 		String address = hasText(document.roadAddressName())
 				? document.roadAddressName()
 				: document.addressName();
 		return new PlaceCandidate(
 				document.id(),
-				URI.create(document.placeUrl()),
+				placeUrl,
 				document.placeName(),
 				address,
-				Double.parseDouble(document.y()),
-				Double.parseDouble(document.x()),
+				latitude,
+				longitude,
 				document.categoryName());
 	}
 

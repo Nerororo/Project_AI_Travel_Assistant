@@ -21,9 +21,21 @@ public class PlaceSearchRegionService {
 		return catalog.findById(regionId)
 				.map(region -> new PlaceSearchRegion(
 						region.regionId(),
+						region.name(),
 						region.parentRegionId(),
 						region.selectable(),
-						region.placeSearchFilterable()
+						region.placeSearchFilterable(),
+						new PlaceSearchRegion.Coordinate(
+								region.representativeCoordinate().latitude(),
+								region.representativeCoordinate().longitude()),
+						region.searchBounds() == null ? null : new PlaceSearchRegion.Bounds(
+								region.searchBounds().minLatitude(),
+								region.searchBounds().minLongitude(),
+								region.searchBounds().maxLatitude(),
+								region.searchBounds().maxLongitude()),
+						new PlaceSearchRegion.AddressBoundary(
+								region.addressBoundary().region1Names(),
+								region.addressBoundary().region2Names())
 				));
 	}
 }

@@ -5,9 +5,16 @@ spring:
     password: ${DB_PASSWORD}
 
 routy:
+  place:
+    selection-token:
+      issuer: ${PLACE_SELECTION_TOKEN_ISSUER:routy}
+      active-key-id: ${PLACE_SELECTION_TOKEN_ACTIVE_KEY_ID}
+      keys:
+        - id: ${PLACE_SELECTION_TOKEN_ACTIVE_KEY_ID}
+          secret: ${PLACE_SELECTION_TOKEN_ACTIVE_KEY_SECRET}
   kakao:
     local:
-      rest-api-key: ${KAKAO_REST_API_KEY}
+      rest-api-key: ${KAKAO_LOCAL_API_KEY}
       endpoint: https://dapi.kakao.com/v2/local/search/keyword.json
       connect-timeout: ${KAKAO_LOCAL_CONNECT_TIMEOUT_MS:2000}ms
       request-timeout: ${KAKAO_LOCAL_REQUEST_TIMEOUT_MS:6000}ms

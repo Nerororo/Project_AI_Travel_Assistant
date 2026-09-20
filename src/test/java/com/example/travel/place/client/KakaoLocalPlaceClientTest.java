@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
@@ -116,8 +117,11 @@ class KakaoLocalPlaceClientTest {
 		when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
 				.thenReturn(unavailable, success);
 
-		assertThat(client.search(request()).places()).isEmpty();
+		Runnable beforeRetry = mock(Runnable.class);
+
+		assertThat(client.search(request(), beforeRetry).places()).isEmpty();
 		verify(httpClient, times(2)).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+		verify(beforeRetry).run();
 	}
 
 	@Test
@@ -140,6 +144,46 @@ class KakaoLocalPlaceClientTest {
 
 		assertFailure(PlaceClientFailure.INVALID_RESPONSE);
 
+		verify(httpClient).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+	}
+
+	@ParameterizedTest
+	@CsvSource(delimiter = '|', value = {
+			"abc|https://place.map.kakao.com/abc|127.0|36.0",
+			"123|https://place.map.kakao.com/456|127.0|36.0",
+			"123|https://example.com/123|127.0|36.0",
+			"123|https://place.map.kakao.com/123|127.0|40.0"
+	})
+	void rejectsInvalidProviderIdentityUrlOrKoreaCoordinate(
+			String id, String placeUrl, String x, String y
+	) throws Exception {
+		willRespond(200, """
+				{"meta":{"is_end":true},"documents":[{
+				  "id":"%s","place_url":"%s","place_name":"provider",
+				  "address_name":"address","road_address_name":"","x":"%s","y":"%s",
+				  "category_name":"category"
+				}]}
+				""".formatted(id, placeUrl, x, y));
+
+		assertFailure(PlaceClientFailure.INVALID_RESPONSE);
+		verify(httpClient).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
+	}
+
+	@Test
+	void doesNotReserveRetryUsageWhenOverallDeadlineAlreadyExpired() throws Exception {
+		client = new KakaoLocalPlaceClient(httpClient, new ObjectMapper(), properties(Duration.ofMillis(10)));
+		when(httpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+				.thenAnswer(invocation -> {
+					Thread.sleep(30);
+					throw new HttpTimeoutException("provider detail");
+				});
+		Runnable beforeRetry = mock(Runnable.class);
+
+		assertThatThrownBy(() -> client.search(request(), beforeRetry))
+				.isInstanceOfSatisfying(PlaceClientException.class,
+						exception -> assertThat(exception.failure()).isEqualTo(PlaceClientFailure.TIMEOUT));
+
+		verify(beforeRetry, never()).run();
 		verify(httpClient).send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class));
 	}
 

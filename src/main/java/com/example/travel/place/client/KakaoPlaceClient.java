@@ -9,4 +9,8 @@ package com.example.travel.place.client;
 public interface KakaoPlaceClient {
 
 	PlaceSearchResult search(PlaceSearchRequest request);
+
+	default PlaceSearchResult search(PlaceSearchRequest request, Runnable beforeRetry) {
+		return search(request);
+	}
 }
