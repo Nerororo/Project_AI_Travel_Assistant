@@ -1,6 +1,9 @@
 package com.example.travel.route.service;
 
+import com.example.travel.route.algorithm.Coordinate;
+import com.example.travel.route.algorithm.HaversineTravelTimeEstimator;
 import com.example.travel.route.algorithm.TravelMode;
+import com.example.travel.route.algorithm.TravelTimePolicy;
 import com.example.travel.route.client.FakeCarRouteClient;
 import com.example.travel.route.client.FakePublicTransitRouteClient;
 import com.example.travel.route.client.RouteClientException;
@@ -72,20 +75,6 @@ class RouteServiceTest {
 		assertThat(publicTransitClient.callCount()).isZero();
 	}
 
-	@ParameterizedTest
-	@EnumSource(value = RouteClientFailure.class, names = {
-			"TIMEOUT", "CONNECTION_FAILED", "PROVIDER_UNAVAILABLE"
-	})
-	void propagatesTechnicalFailureWithoutRetryOrFallback(RouteClientFailure failure) {
-		publicTransitClient.willFailWith(failure);
-
-		assertThatThrownBy(() -> service.findRoute(TravelMode.PUBLIC_TRANSIT, segment()))
-				.isInstanceOfSatisfying(RouteClientException.class,
-						exception -> assertThat(exception.failure()).isEqualTo(failure));
-		assertThat(publicTransitClient.callCount()).isEqualTo(1);
-		assertThat(carClient.callCount()).isZero();
-	}
-
 	@Test
 	void verifiesAllAdjacentCarSegmentsInOrderAndRoundsWithoutFixedBuffer() {
 		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
@@ -97,16 +86,17 @@ class RouteServiceTest {
 				RouteResult.found(601)
 		);
 
-		List<RouteSegmentTravelTime> result = service.findEstimatedTravelTimes(
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
 				TravelMode.CAR,
 				List.of(first, second, third)
 		);
 
-		assertThat(result).containsExactly(
+		assertThat(result.segmentTravelTimes()).containsExactly(
 				RouteSegmentTravelTime.found(0),
 				RouteSegmentTravelTime.found(10),
 				RouteSegmentTravelTime.found(20)
 		);
+		assertThat(result.fallbackApplied()).isFalse();
 		assertThat(carClient.receivedSegments()).containsExactly(first, second, third);
 		assertThat(publicTransitClient.callCount()).isZero();
 	}
@@ -123,12 +113,14 @@ class RouteServiceTest {
 	void roundsProviderSecondsUpAtEveryTenMinuteBoundary(long durationSeconds, int expectedMinutes) {
 		carClient.willReturn(RouteResult.found(durationSeconds));
 
-		List<RouteSegmentTravelTime> result = service.findEstimatedTravelTimes(
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
 				TravelMode.CAR,
 				List.of(segment())
 		);
 
-		assertThat(result).containsExactly(RouteSegmentTravelTime.found(expectedMinutes));
+		assertThat(result.segmentTravelTimes())
+				.containsExactly(RouteSegmentTravelTime.found(expectedMinutes));
+		assertThat(result.fallbackApplied()).isFalse();
 	}
 
 	@Test
@@ -137,30 +129,112 @@ class RouteServiceTest {
 		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
 		publicTransitClient.willReturnInOrder(RouteResult.found(2_220), RouteResult.notFound());
 
-		List<RouteSegmentTravelTime> result = service.findEstimatedTravelTimes(
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
 				TravelMode.PUBLIC_TRANSIT,
 				List.of(first, second)
 		);
 
-		assertThat(result).containsExactly(
+		assertThat(result.segmentTravelTimes()).containsExactly(
 				RouteSegmentTravelTime.found(40),
 				RouteSegmentTravelTime.notFound()
 		);
+		assertThat(result.fallbackApplied()).isFalse();
 		assertThat(publicTransitClient.receivedSegments()).containsExactly(first, second);
 		assertThat(carClient.callCount()).isZero();
 	}
 
 	@Test
 	void returnsAnImmutableEmptyResultWithoutCallingAClient() {
-		List<RouteSegmentTravelTime> result = service.findEstimatedTravelTimes(
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
 				TravelMode.CAR,
 				List.of()
 		);
 
-		assertThat(result).isEmpty();
-		assertThatThrownBy(() -> result.add(RouteSegmentTravelTime.found(10)))
+		assertThat(result.segmentTravelTimes()).isEmpty();
+		assertThat(result.fallbackApplied()).isFalse();
+		assertThatThrownBy(() -> result.segmentTravelTimes().add(RouteSegmentTravelTime.found(10)))
 				.isInstanceOf(UnsupportedOperationException.class);
 		assertThat(carClient.callCount()).isZero();
+		assertThat(publicTransitClient.callCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = RouteClientFailure.class, names = {
+			"TIMEOUT", "CONNECTION_FAILED", "PROVIDER_UNAVAILABLE"
+	})
+	void retriesTransientTechnicalFailureOnceAndUsesProviderResultOnSuccess(
+			RouteClientFailure failure
+	) {
+		RouteSegment routeSegment = segment();
+		publicTransitClient.willFailThenReturn(failure, RouteResult.found(601));
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.PUBLIC_TRANSIT,
+				List.of(routeSegment)
+		);
+
+		assertThat(result.segmentTravelTimes())
+				.containsExactly(RouteSegmentTravelTime.found(20));
+		assertThat(result.fallbackApplied()).isFalse();
+		assertThat(publicTransitClient.receivedSegments())
+				.containsExactly(routeSegment, routeSegment);
+		assertThat(carClient.callCount()).isZero();
+	}
+
+	@Test
+	void preservesNormalRouteAbsenceReturnedByRetryWithoutFallback() {
+		RouteSegment routeSegment = segment();
+		carClient.willFailThenReturn(RouteClientFailure.TIMEOUT, RouteResult.notFound());
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(routeSegment)
+		);
+
+		assertThat(result.segmentTravelTimes())
+				.containsExactly(RouteSegmentTravelTime.notFound());
+		assertThat(result.fallbackApplied()).isFalse();
+		assertThat(carClient.receivedSegments()).containsExactly(routeSegment, routeSegment);
+		assertThat(publicTransitClient.callCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = RouteClientFailure.class, names = {
+			"TIMEOUT", "CONNECTION_FAILED", "PROVIDER_UNAVAILABLE"
+	})
+	void fallsBackAllSegmentsAfterOneFailedRetry(RouteClientFailure failure) {
+		RouteSegment first = segment(37.5665, 126.9780, 37.5700, 126.9920);
+		RouteSegment second = segment(37.5700, 126.9920, 37.5512, 126.9882);
+		carClient.willReturnThenFail(RouteResult.found(600), failure);
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(first, second)
+		);
+
+		assertThat(result.segmentTravelTimes()).containsExactly(
+				fallbackTime(TravelMode.CAR, first),
+				fallbackTime(TravelMode.CAR, second)
+		);
+		assertThat(result.fallbackApplied()).isTrue();
+		assertThat(carClient.receivedSegments()).containsExactly(first, second, second);
+		assertThat(publicTransitClient.callCount()).isZero();
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = RouteClientFailure.class, names = {
+			"INVALID_REQUEST", "AUTHENTICATION_FAILED", "ACCESS_DENIED",
+			"RATE_LIMITED", "INVALID_RESPONSE"
+	})
+	void doesNotRetryOrFallbackNonTransientFailure(RouteClientFailure failure) {
+		carClient.willFailWith(failure);
+
+		assertThatThrownBy(() -> service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(segment())))
+				.isInstanceOfSatisfying(RouteClientException.class,
+						exception -> assertThat(exception.failure()).isEqualTo(failure));
+		assertThat(carClient.callCount()).isEqualTo(1);
 		assertThat(publicTransitClient.callCount()).isZero();
 	}
 
@@ -203,5 +277,15 @@ class RouteServiceTest {
 				new RouteSegment.Endpoint(originLatitude, originLongitude),
 				new RouteSegment.Endpoint(destinationLatitude, destinationLongitude)
 		);
+	}
+
+	private RouteSegmentTravelTime fallbackTime(TravelMode travelMode, RouteSegment segment) {
+		HaversineTravelTimeEstimator estimator = new HaversineTravelTimeEstimator(
+				TravelTimePolicy.defaultFor(travelMode)
+		);
+		return RouteSegmentTravelTime.found(estimator.estimateMinutes(
+				new Coordinate(segment.origin().latitude(), segment.origin().longitude()),
+				new Coordinate(segment.destination().latitude(), segment.destination().longitude())
+		));
 	}
 }

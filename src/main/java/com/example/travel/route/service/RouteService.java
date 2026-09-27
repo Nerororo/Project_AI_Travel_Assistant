@@ -1,11 +1,16 @@
 package com.example.travel.route.service;
 
+import com.example.travel.route.algorithm.Coordinate;
+import com.example.travel.route.algorithm.HaversineTravelTimeEstimator;
 import com.example.travel.route.algorithm.TravelMode;
+import com.example.travel.route.algorithm.TravelTimePolicy;
 import com.example.travel.route.client.CarRouteClient;
 import com.example.travel.route.client.PublicTransitRouteClient;
+import com.example.travel.route.client.RouteClientException;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,10 +44,10 @@ public class RouteService {
 	}
 
 	/**
-	 * Keeps segment order and rounds each provider duration up to ten-minute units.
-	 * Retry and fallback remain the responsibility of the later route integration policy.
+	 * Keeps segment order, retries transient technical failures once, and replaces the whole
+	 * request with Haversine estimates if that retry also fails transiently.
 	 */
-	public List<RouteSegmentTravelTime> findEstimatedTravelTimes(
+	public RouteTravelTimeResult findEstimatedTravelTimes(
 			TravelMode travelMode,
 			List<RouteSegment> orderedSegments
 	) {
@@ -50,9 +55,50 @@ public class RouteService {
 		Objects.requireNonNull(orderedSegments, "orderedSegments must not be null");
 		List<RouteSegment> segments = List.copyOf(orderedSegments);
 
+		List<RouteSegmentTravelTime> providerTravelTimes = new ArrayList<>(segments.size());
+		for (RouteSegment segment : segments) {
+			try {
+				providerTravelTimes.add(toTravelTime(findRouteWithRetry(travelMode, segment)));
+			}
+			catch (RouteClientException exception) {
+				if (!exception.failure().isTransientTechnicalFailure()) {
+					throw exception;
+				}
+				return RouteTravelTimeResult.fallback(estimateAllWithHaversine(travelMode, segments));
+			}
+		}
+		return RouteTravelTimeResult.verified(providerTravelTimes);
+	}
+
+	private RouteResult findRouteWithRetry(TravelMode travelMode, RouteSegment segment) {
+		try {
+			return findRoute(travelMode, segment);
+		}
+		catch (RouteClientException exception) {
+			if (!exception.failure().isTransientTechnicalFailure()) {
+				throw exception;
+			}
+			return findRoute(travelMode, segment);
+		}
+	}
+
+	private List<RouteSegmentTravelTime> estimateAllWithHaversine(
+			TravelMode travelMode,
+			List<RouteSegment> segments
+	) {
+		HaversineTravelTimeEstimator estimator = new HaversineTravelTimeEstimator(
+				TravelTimePolicy.defaultFor(travelMode)
+		);
 		return segments.stream()
-				.map(segment -> toTravelTime(findRoute(travelMode, segment)))
+				.map(segment -> RouteSegmentTravelTime.found(estimator.estimateMinutes(
+						toCoordinate(segment.origin()),
+						toCoordinate(segment.destination())
+				)))
 				.toList();
+	}
+
+	private Coordinate toCoordinate(RouteSegment.Endpoint endpoint) {
+		return new Coordinate(endpoint.latitude(), endpoint.longitude());
 	}
 
 	private RouteSegmentTravelTime toTravelTime(RouteResult result) {
