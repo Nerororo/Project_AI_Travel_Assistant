@@ -133,6 +133,9 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | R2-05~06 | `docs/01` FR-07~09, `docs/04` 7절, `docs/08` 6.7절, `docs/09` 7절 | 경로 결과 계약 변경 시 `docs/04`·관련 ADR |
 | R2-07A | `docs/01` FR-14, `docs/03` 8절, `docs/04` 11절, `docs/08` 6.7절, `docs/09` 5절 | 사용자 한도 공개 계약 변경 시 `user` 공개 Service·DTO |
 | R2-07B | R2-07A 계약, `docs/01` FR-08·FR-14, `docs/04` 7절, `docs/08` 6.7절, `docs/09` 4~5·7절 | 집계 metric 구현은 Q1-04로 이관하고 공개 관측 계약이 바뀔 때만 `global` 계약 검토 |
+| R2-07C | R2-07A~B 구현 결과, `docs/01` FR-08·FR-14, `docs/04` 7·11절, `docs/08` 6.7절, `docs/09` 5·7절 | `route/service/**`와 대응 route 테스트, 재시도 1회 확보를 위한 `user` 공개 Service 사용; 실제 metric·travelplan 연결은 금지 |
+| R2-07D | R2-07C 결과, `docs/01` FR-14, `docs/03` 8절, `docs/08` 6.7절, `docs/09` 4~5절 | `user` 공개 한도 결과 DTO·Service와 `route/service/**` 관측 전달 계약 및 대응 테스트; 실제 metric 등록은 Q1-04로 이관 |
+| R2-08 | R2-07A~D 구현 결과, `docs/08` 6.7절, `docs/10` 3·8·10·13절 | 발견한 문제의 책임 코드·문서; 새 문제 수정은 별도 Task와 Change Envelope로 분리 |
 | S1-01~04 | `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | 새 정책 결정이 필요할 때 `docs/06` |
 | S1-05 | `docs/01` 숙소·FR-03, `docs/04` 호텔 검색 endpoint, `docs/08` 6.4·6.6절 | place 공개 계약 변경 시 해당 Service·DTO |
 | S1-06 | `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10절 | place·route 공개 계약 변경 시 해당 Service·DTO |

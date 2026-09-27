@@ -25,7 +25,7 @@
 | 부분 구현 | 일부 코드·설정만 있고 완료 기준을 충족하지 않음 |
 | 구현·검증 완료 | 코드와 적용 가능한 완료 기준을 검증함 |
 
-## 2. 코드 기준선 (2026-09-17, F0-06 보완 완료)
+## 2. 코드 기준선 (2026-09-27, R2 완료)
 
 | 영역 | 상태 | 확인 근거 |
 |---|---|---|
@@ -37,13 +37,15 @@
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
-| Place | 하네스만 존재 | Client·Service·DTO 코드 없음 |
-| Route | 하네스만 존재 | 알고리즘·Client·Service 코드 없음 |
+| Place | P1 범위 구현·검증 완료 | Kakao Local Client, 장소 검색 Service·API, 지역·주소 검증, 체류시간 정책, `selectionToken`과 브라우저 메모리 선택 상태를 구현했으며 숙소·음식점 전용 검색은 S1 후속 작업 |
+| Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
 | TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
-| DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`를 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | 인증·지역·AI API 통합 검증 | 전체 135개 통과, JWT·호출 한도와 정확한 AI 분·일 경계·10분 requestId 상태·지역 기준 데이터·AI DTO와 실제 Client 요청·응답·재시도 및 지역·메뉴 API 계약을 검증 |
+| DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약을 MySQL 8.4에 적용하고 Hibernate validate 통과 |
+| 자동 테스트 | R2까지 377개 통과 | 최초·재시도 쿼터 실패의 USER·SERVICE 단독·동시 범위, 원자적 확보·rollback·미호출 반환, 시간 창 경계, 실제 호출 수와 최종 차감량, 외부 호출 중 트랜잭션 비활성을 포함한 R2 전체 회귀가 통과했다. |
 | 화면 | W1-00·W1-01A~C 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격, 회원가입·로그인 API adapter와 지역 직접 검색·정확히 3개인 AI 추천 후보 선택을 연결하고 서버 TTL 기반 메모리 인증·만료·보호 화면을 검증, 장소·일정 API 연결은 후속 범위 |
+
+현재 시작할 작업은 `S1-01`이다. 여행 날짜·활동 시간·체류 시간과 점심·저녁 입력 정책을 확정한다.
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -224,6 +226,16 @@ R2-04에서 R2-03 계약을 사용하는 prod·smoke 전용 카카오맵 대중�
 R2-05에서 `RouteService`가 정렬된 최종 후보의 인접 `RouteSegment` 목록을 입력 순서대로 이동수단별 Client 하나에만 전달하고, 성공한 제공자 예상 초를 `ceil(seconds / 600) × 10`분으로 올리는 계약을 구현했다. 0초는 0분으로 유지하고 별도 고정 buffer를 더하지 않으며, 결과에는 좌표·제공자 원문·원본 초 대신 구간 순서에 대응하는 10분 단위 `estimatedMinutes` 또는 정상 경로 없음만 남긴다. 정상 경로 없음은 fallback하지 않고 보존하며 기술 장애 재시도·일정 전체 fallback은 R2-06 책임으로 유지했다. 복수 구간 순서, CAR·PUBLIC_TRANSIT Client 분리, 0초와 1·599·600·601·1199·1200초 올림 경계, 빈 목록과 입력 검증을 Fake 기반 단위 테스트로 검증했고 루트 `test.ps1` 전체 344개 테스트가 실패·오류·건너뜀 없이 통과했다. 다음 백엔드 주 작업은 R2-06이다.
 
 R2-06에서 `RouteService`가 timeout·연결 실패·일시적 5xx로 정규화된 기술 장애만 같은 인접 구간에 한 번 재시도하고, 재시도도 같은 기술 장애이면 앞서 성공한 제공자 결과를 폐기한 뒤 일정 전체 구간을 이동수단별 Haversine 예상시간으로 다시 계산하도록 구현했다. 재시도 성공과 재시도에서 반환된 정상 경로 없음은 fallback하지 않으며, 인증·권한·잘못된 요청·rate limit·손상 응답은 재시도나 fallback 없이 기존 실패로 보존한다. 요청 범위의 `fallbackApplied`는 후속 완료 생성 응답 warning을 위한 전달 상태로만 유지하고 일정 DB에 저장하지 않는다. CAR·PUBLIC_TRANSIT의 일시 장애별 재시도, 전체 fallback과 부분 fallback 금지, 정상 경로 없음, 비일시적 실패를 Fake 기반으로 검증했고 루트 `test.ps1` 전체 353개 테스트와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. 다음 백엔드 주 작업은 R2-07A다.
+
+R2-07A에서 `RouteQuotaService`가 완료 후보의 정렬된 인접 구간 수를 제공자 요청 수로 계산하고 이동수단에 따라 `CAR_ROUTE`와 `PUBLIC_TRANSIT_ROUTE`를 분리해 user 도메인의 공개 `ApiUsageService`로 일괄 확보하도록 구현했다. 빈 후보는 카운터를 만들지 않으며, 다건 확보 중 사용자 분·일 또는 서비스 일 한도를 넘으면 같은 짧은 트랜잭션의 모든 증가가 rollback된다. CAR 다건 경계와 PUBLIC_TRANSIT 서비스 900건 경계를 격리 Testcontainers MySQL로 검증했고 확보 반환 뒤 활성 DB 트랜잭션이 없음을 확인했다. 루트 `test.ps1` 전체 358개 테스트와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. 쿼터 부족 시 외부 호출 0건·전체 Haversine fallback·warning·관측 전달은 R2-07B 책임으로 유지한다.
+
+R2-07B에서 `RouteVerificationService`가 경로 쿼터 사전 확보와 실제 경로 검증을 조합했다. 최초 확보 실패 시 자동차·대중교통 Client를 호출하지 않고 전체 구간을 Haversine 예상시간으로 계산하며 생성 응답용 warning과 `QUOTA_FALLBACK` 관측 결과를 전달하는 흐름은 Fake 기반으로 검증했고 당시 루트 `test.ps1` 363개가 통과했다. 이후 프로그램 흐름 감사에서 기술 장애 재시도 시 Client는 두 번 호출되지만 최초 인접 구간 수만 차감되어 재시도 1회분이 누락되는 계약 위반과, 관측 결과가 USER·SERVICE 차단 범위를 구분하지 못하는 공백을 발견했다. 따라서 R2-07B 구현 결과는 보존하되 R2 완료 판정을 철회하며, R2-07C에서 재시도 직전 추가 확보, R2-07D에서 차단 범위 전달, R2-08에서 전체 회귀·DoD를 확인한 뒤에만 S1-01로 이동한다. 실제 metric 등록은 여전히 Q1-04, 생성 API warning 매핑과 비영속 저장 흐름은 T1-06 책임이다.
+
+R2-07C에서 `RouteVerificationService`가 일시적 기술 장애 뒤 두 번째 Client 호출 직전에 `RouteQuotaService`로 같은 이동수단의 1회분을 추가 확보하도록 보완했다. 추가 확보가 성공한 경우에만 한 번 재시도하고, 부족하면 재시도 Client를 호출하지 않은 채 앞선 제공자 결과를 폐기해 전체 구간을 `QUOTA_UNAVAILABLE` Haversine fallback으로 반환한다. 재시도까지 기술 장애이면 최초 호출과 재시도를 모두 차감한 `TECHNICAL_FAILURE` 전체 fallback을 사용하며, 정상 경로 없음과 인증·권한·잘못된 요청·rate limit·손상 응답에는 추가 확보나 재시도가 없다. CAR·PUBLIC_TRANSIT 분리, 재시도 성공·재실패·추가 확보 거절과 비재시도 경계를 Fake 기반으로 검증했고 루트 `test.ps1` 전체 367개와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. USER·SERVICE 차단 범위 전달은 R2-07D, R2 전체 완료 판정은 R2-08 책임으로 유지한다.
+
+R2-07D에서 공개 `UsageReservationResult`가 한도 확보 실패의 `USER`·`SERVICE` 범위를 하나 또는 둘 모두 불변 집합으로 전달하도록 보완했다. 한 트랜잭션에서 실패한 모든 분·일 창을 검사하되 기존 최대 `retryAfterSeconds` 계산과 전체 rollback은 유지한다. 최초 일괄 확보와 기술 장애 재시도 직전 추가 확보의 차단 범위는 `RouteTravelTimeResult`를 거쳐 사용자·장소·좌표가 없는 `RouteObservationEvent`에만 전달하며, 생성 응답용 `ESTIMATED_TRAVEL_TIMES_USED` warning에는 내부 범위를 추가하지 않았다. USER 단독, SERVICE 단독, 동시 차단과 최초·재시도 fallback을 검증했고 루트 `test.ps1` 전체 369개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 지표 등록은 Q1-04, R2 전체 완료 판정은 R2-08 책임으로 유지한다.
+
+R2-08 회귀 감사에서 복수 구간을 선확보한 뒤 앞쪽 구간의 기술 재실패·비일시적 실패·재시도 한도 거절로 조기 종료하면 호출하지 않은 뒤쪽 구간까지 차감되는 결함을 발견했다. 별도 R2-08A Change Envelope로 `UsageReservationLease`가 확보 당시 창을 유지하게 하고, 조건부 감소를 사용하는 짧은 트랜잭션으로 미호출 최초 구간 몫만 반환하도록 보완했다. 이미 실행된 최초·재시도 호출은 반환하지 않으며 분 경계가 바뀌어도 원래 창만 감소한다. MySQL 통합 흐름에서 외부 Client 호출 중 트랜잭션 비활성, 2구간 선확보 후 첫 구간 재실패의 실제 2회 호출과 USER 분·일·SERVICE 일 최종 2회 차감 일치, 반환 중 한 창이 실패할 때 앞선 감소까지 rollback되는 원자성, 시간 경계를 검증했다. 전체 fallback·warning·관측 범위와 R2의 기존 성공·실패 경계까지 루트 `test.ps1` 377개 테스트와 `git diff --check`로 확인해 R2를 구현·검증 완료로 판정했다. 실제 metric 등록은 Q1-04, 생성 API 연결과 warning 비영속은 T1-06 책임으로 남는다.
 
 ## 8. 완료 해석
 

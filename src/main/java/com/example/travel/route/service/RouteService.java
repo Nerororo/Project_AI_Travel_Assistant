@@ -9,10 +9,15 @@ import com.example.travel.route.client.PublicTransitRouteClient;
 import com.example.travel.route.client.RouteClientException;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
+import com.example.travel.user.dto.UsageDenialScope;
+import com.example.travel.user.dto.UsageReservationResult;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 /**
  * Verifies ordered adjacent segments with the client for one travel mode.
@@ -33,7 +38,7 @@ public class RouteService {
 		);
 	}
 
-	public RouteResult findRoute(TravelMode travelMode, RouteSegment segment) {
+	RouteResult findRoute(TravelMode travelMode, RouteSegment segment) {
 		Objects.requireNonNull(travelMode, "travelMode must not be null");
 		Objects.requireNonNull(segment, "segment must not be null");
 
@@ -47,38 +52,161 @@ public class RouteService {
 	 * Keeps segment order, retries transient technical failures once, and replaces the whole
 	 * request with Haversine estimates if that retry also fails transiently.
 	 */
-	public RouteTravelTimeResult findEstimatedTravelTimes(
+	RouteTravelTimeResult findEstimatedTravelTimes(
 			TravelMode travelMode,
 			List<RouteSegment> orderedSegments
 	) {
+		return findEstimatedTravelTimes(
+				travelMode,
+				orderedSegments,
+				UsageReservationResult::success,
+				ignored -> { }
+		);
+	}
+
+	RouteTravelTimeResult findEstimatedTravelTimes(
+			TravelMode travelMode,
+			List<RouteSegment> orderedSegments,
+			Supplier<UsageReservationResult> retryQuotaReservation
+	) {
+		return findEstimatedTravelTimes(
+				travelMode,
+				orderedSegments,
+				retryQuotaReservation,
+				ignored -> { }
+		);
+	}
+
+	RouteTravelTimeResult findEstimatedTravelTimes(
+			TravelMode travelMode,
+			List<RouteSegment> orderedSegments,
+			Supplier<UsageReservationResult> retryQuotaReservation,
+			LongConsumer unusedInitialQuotaRelease
+	) {
 		Objects.requireNonNull(travelMode, "travelMode must not be null");
 		Objects.requireNonNull(orderedSegments, "orderedSegments must not be null");
+		Objects.requireNonNull(retryQuotaReservation, "retryQuotaReservation must not be null");
+		Objects.requireNonNull(unusedInitialQuotaRelease, "unusedInitialQuotaRelease must not be null");
 		List<RouteSegment> segments = List.copyOf(orderedSegments);
 
 		List<RouteSegmentTravelTime> providerTravelTimes = new ArrayList<>(segments.size());
-		for (RouteSegment segment : segments) {
+		for (int index = 0; index < segments.size(); index++) {
+			RouteSegment segment = segments.get(index);
 			try {
-				providerTravelTimes.add(toTravelTime(findRouteWithRetry(travelMode, segment)));
+				RouteAttempt attempt = findRouteWithRetry(
+						travelMode,
+						segment,
+						retryQuotaReservation
+				);
+				if (attempt.retryQuotaUnavailable()) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+					return fallbackWithHaversine(
+							travelMode,
+							segments,
+							RouteFallbackReason.QUOTA_UNAVAILABLE,
+							attempt.quotaDeniedScopes()
+					);
+				}
+				providerTravelTimes.add(toTravelTime(attempt.result()));
 			}
 			catch (RouteClientException exception) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
 				if (!exception.failure().isTransientTechnicalFailure()) {
 					throw exception;
 				}
-				return RouteTravelTimeResult.fallback(estimateAllWithHaversine(travelMode, segments));
+				return fallbackWithHaversine(
+						travelMode,
+						segments,
+						RouteFallbackReason.TECHNICAL_FAILURE
+				);
+			}
+			catch (RuntimeException exception) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+				throw exception;
 			}
 		}
 		return RouteTravelTimeResult.verified(providerTravelTimes);
 	}
 
-	private RouteResult findRouteWithRetry(TravelMode travelMode, RouteSegment segment) {
+	private void releaseUnusedInitialQuota(
+			int segmentCount,
+			int attemptedSegmentIndex,
+			LongConsumer unusedInitialQuotaRelease
+	) {
+		long unusedRequestCount = segmentCount - attemptedSegmentIndex - 1L;
+		if (unusedRequestCount > 0) {
+			unusedInitialQuotaRelease.accept(unusedRequestCount);
+		}
+	}
+
+	RouteTravelTimeResult fallbackWithHaversine(
+			TravelMode travelMode,
+			List<RouteSegment> orderedSegments,
+			RouteFallbackReason fallbackReason
+	) {
+		return fallbackWithHaversine(travelMode, orderedSegments, fallbackReason, Set.of());
+	}
+
+	RouteTravelTimeResult fallbackWithHaversine(
+			TravelMode travelMode,
+			List<RouteSegment> orderedSegments,
+			RouteFallbackReason fallbackReason,
+			Set<UsageDenialScope> quotaDeniedScopes
+	) {
+		Objects.requireNonNull(travelMode, "travelMode must not be null");
+		Objects.requireNonNull(orderedSegments, "orderedSegments must not be null");
+		Objects.requireNonNull(fallbackReason, "fallbackReason must not be null");
+		List<RouteSegment> segments = List.copyOf(orderedSegments);
+		return RouteTravelTimeResult.fallback(
+				estimateAllWithHaversine(travelMode, segments),
+				fallbackReason,
+				quotaDeniedScopes
+		);
+	}
+
+	private RouteAttempt findRouteWithRetry(
+			TravelMode travelMode,
+			RouteSegment segment,
+			Supplier<UsageReservationResult> retryQuotaReservation
+	) {
 		try {
-			return findRoute(travelMode, segment);
+			return RouteAttempt.completed(findRoute(travelMode, segment));
 		}
 		catch (RouteClientException exception) {
 			if (!exception.failure().isTransientTechnicalFailure()) {
 				throw exception;
 			}
-			return findRoute(travelMode, segment);
+			UsageReservationResult reservation = Objects.requireNonNull(
+					retryQuotaReservation.get(),
+					"retryQuotaReservation result must not be null"
+			);
+			if (!reservation.acquired()) {
+				return RouteAttempt.quotaUnavailable(reservation.deniedScopes());
+			}
+			return RouteAttempt.completed(findRoute(travelMode, segment));
+		}
+	}
+
+	private record RouteAttempt(
+			RouteResult result,
+			boolean retryQuotaUnavailable,
+			Set<UsageDenialScope> quotaDeniedScopes
+	) {
+
+		private RouteAttempt {
+			quotaDeniedScopes = Set.copyOf(quotaDeniedScopes);
+		}
+
+		private static RouteAttempt completed(RouteResult result) {
+			return new RouteAttempt(
+					Objects.requireNonNull(result, "result must not be null"),
+					false,
+					Set.of()
+			);
+		}
+
+		private static RouteAttempt quotaUnavailable(Set<UsageDenialScope> deniedScopes) {
+			return new RouteAttempt(null, true, deniedScopes);
 		}
 	}
 

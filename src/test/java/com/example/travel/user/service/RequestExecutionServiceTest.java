@@ -4,11 +4,13 @@ import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.user.dto.RequestExecutionLease;
 import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.dto.UsageDenialScope;
 import com.example.travel.user.dto.UsageReservationResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,7 +43,7 @@ class RequestExecutionServiceTest {
 		RequestExecutionLease lease = lease();
 		when(executionTransaction.begin(lease.userId(), lease.feature(), lease.requestId())).thenReturn(lease);
 		when(usageService.tryAcquire(lease.userId(), lease.feature(), 3))
-				.thenReturn(UsageReservationResult.denied(25));
+				.thenReturn(UsageReservationResult.denied(25, Set.of(UsageDenialScope.USER)));
 
 		var result = service.tryStart(lease.userId(), lease.feature(), lease.requestId(), 3);
 

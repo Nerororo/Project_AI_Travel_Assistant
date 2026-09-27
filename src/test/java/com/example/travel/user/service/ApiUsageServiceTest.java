@@ -5,18 +5,22 @@ import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.user.domain.UsageScopeType;
 import com.example.travel.user.domain.UsageWindowType;
 import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.dto.UsageDenialScope;
+import com.example.travel.user.dto.UsageReservationLease;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class ApiUsageServiceTest {
 
@@ -126,7 +130,10 @@ class ApiUsageServiceTest {
 	@Test
 	void returnsDenialAndMapsItToCommonRateLimitException() {
 		ApiUsageReservationTransaction transaction = mock(ApiUsageReservationTransaction.class);
-		doThrow(new ApiUsageReservationTransaction.UsageLimitExceeded(37L))
+		doThrow(new ApiUsageReservationTransaction.UsageLimitExceeded(
+				37L,
+				Set.of(UsageDenialScope.USER, UsageDenialScope.SERVICE)
+		))
 				.when(transaction).acquire(5L, UsageFeature.PLACE_SEARCH, 1L);
 		ApiUsageService service = new ApiUsageService(transaction);
 
@@ -134,6 +141,8 @@ class ApiUsageServiceTest {
 
 		assertThat(result.acquired()).isFalse();
 		assertThat(result.retryAfterSeconds()).isEqualTo(37L);
+		assertThat(result.deniedScopes())
+				.containsExactlyInAnyOrder(UsageDenialScope.USER, UsageDenialScope.SERVICE);
 		assertThatThrownBy(() -> service.acquireOrThrow(5L, UsageFeature.PLACE_SEARCH, 1L))
 				.isInstanceOfSatisfying(ApiException.class, exception -> {
 					assertThat(exception.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
@@ -146,6 +155,26 @@ class ApiUsageServiceTest {
 		ApiUsageService service = new ApiUsageService(mock(ApiUsageReservationTransaction.class));
 
 		assertThatThrownBy(() -> service.tryAcquire(1L, UsageFeature.CAR_ROUTE, 0L))
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void delegatesAPositiveReleaseToTheShortTransaction() {
+		ApiUsageReservationTransaction transaction = mock(ApiUsageReservationTransaction.class);
+		ApiUsageService service = new ApiUsageService(transaction);
+		UsageReservationLease reservation = UsageReservationLease.acquired(
+				Instant.parse("2026-09-16T00:00:00Z")
+		);
+
+		service.release(3L, UsageFeature.CAR_ROUTE, reservation, 2L);
+
+		verify(transaction).release(
+				3L,
+				UsageFeature.CAR_ROUTE,
+				Instant.parse("2026-09-16T00:00:00Z"),
+				2L
+		);
+		assertThatThrownBy(() -> service.release(3L, UsageFeature.CAR_ROUTE, reservation, 0L))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

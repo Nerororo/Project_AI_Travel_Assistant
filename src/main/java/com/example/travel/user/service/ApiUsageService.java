@@ -3,6 +3,7 @@ package com.example.travel.user.service;
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.dto.UsageReservationLease;
 import com.example.travel.user.dto.UsageReservationResult;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.stereotype.Service;
@@ -22,15 +23,23 @@ public class ApiUsageService {
 	}
 
 	public UsageReservationResult tryAcquire(long userId, UsageFeature feature, long amount) {
+		return reserve(userId, feature, amount).result();
+	}
+
+	public UsageReservationLease reserve(long userId, UsageFeature feature, long amount) {
 		if (amount <= 0) {
 			throw new IllegalArgumentException("amount must be positive");
 		}
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			try {
-				reservationTransaction.acquire(userId, feature, amount);
-				return UsageReservationResult.success();
+				return UsageReservationLease.acquired(
+						reservationTransaction.acquire(userId, feature, amount)
+				);
 			} catch (ApiUsageReservationTransaction.UsageLimitExceeded exception) {
-				return UsageReservationResult.denied(exception.retryAfterSeconds());
+				return UsageReservationLease.denied(UsageReservationResult.denied(
+						exception.retryAfterSeconds(),
+						exception.deniedScopes()
+				));
 			} catch (CannotAcquireLockException exception) {
 				if (attempt == MAX_TRANSACTION_ATTEMPTS) {
 					throw exception;
@@ -52,5 +61,20 @@ public class ApiUsageService {
 					result.retryAfterSeconds()
 			);
 		}
+	}
+
+	public void release(
+			long userId,
+			UsageFeature feature,
+			UsageReservationLease reservation,
+			long amount
+	) {
+		if (amount <= 0) {
+			throw new IllegalArgumentException("amount must be positive");
+		}
+		if (!reservation.result().acquired()) {
+			throw new IllegalArgumentException("Only an acquired reservation can be released");
+		}
+		reservationTransaction.release(userId, feature, reservation.windowReference(), amount);
 	}
 }

@@ -36,6 +36,26 @@ public interface ApiUsageCounterRepository extends JpaRepository<ApiUsageCounter
 
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query(value = """
+			UPDATE api_usage_counters
+			SET used_count = used_count - :amount
+			WHERE scope_type = :scopeType
+			  AND scope_id = :scopeId
+			  AND feature = :feature
+			  AND window_type = :windowType
+			  AND window_start = :windowStart
+			  AND used_count >= :amount
+			""", nativeQuery = true)
+	int decrementIfReserved(
+			@Param("scopeType") String scopeType,
+			@Param("scopeId") String scopeId,
+			@Param("feature") String feature,
+			@Param("windowType") String windowType,
+			@Param("windowStart") Instant windowStart,
+			@Param("amount") long amount
+	);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query(value = """
 			INSERT IGNORE INTO api_usage_counters
 			    (scope_type, scope_id, feature, window_type, window_start, used_count, expires_at)
 			VALUES
@@ -63,5 +83,17 @@ public interface ApiUsageCounterRepository extends JpaRepository<ApiUsageCounter
 			return true;
 		}
 		return incrementIfAvailable(scope, scopeId, featureName, window, windowStart, amount, limit) == 1;
+	}
+
+	default boolean release(UsageScopeType scopeType, String scopeId, UsageFeature feature,
+			UsageWindowType windowType, Instant windowStart, long amount) {
+		return decrementIfReserved(
+				scopeType.name(),
+				scopeId,
+				feature.name(),
+				windowType.name(),
+				windowStart,
+				amount
+		) == 1;
 	}
 }

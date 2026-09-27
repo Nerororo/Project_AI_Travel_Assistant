@@ -10,6 +10,8 @@ import com.example.travel.route.client.RouteClientException;
 import com.example.travel.route.client.RouteClientFailure;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
+import com.example.travel.user.dto.UsageDenialScope;
+import com.example.travel.user.dto.UsageReservationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,6 +20,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
@@ -198,6 +203,25 @@ class RouteServiceTest {
 		assertThat(publicTransitClient.callCount()).isZero();
 	}
 
+	@Test
+	void normalRouteAbsenceDoesNotRequestRetryQuota() {
+		AtomicInteger retryReservations = new AtomicInteger();
+		carClient.willReturn(RouteResult.notFound());
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(segment()),
+				() -> {
+					retryReservations.incrementAndGet();
+					return UsageReservationResult.success();
+				}
+		);
+
+		assertThat(result.segmentTravelTimes()).containsExactly(RouteSegmentTravelTime.notFound());
+		assertThat(retryReservations).hasValue(0);
+		assertThat(carClient.callCount()).isEqualTo(1);
+	}
+
 	@ParameterizedTest
 	@EnumSource(value = RouteClientFailure.class, names = {
 			"TIMEOUT", "CONNECTION_FAILED", "PROVIDER_UNAVAILABLE"
@@ -227,15 +251,79 @@ class RouteServiceTest {
 			"RATE_LIMITED", "INVALID_RESPONSE"
 	})
 	void doesNotRetryOrFallbackNonTransientFailure(RouteClientFailure failure) {
+		AtomicInteger retryReservations = new AtomicInteger();
 		carClient.willFailWith(failure);
 
 		assertThatThrownBy(() -> service.findEstimatedTravelTimes(
 				TravelMode.CAR,
-				List.of(segment())))
+				List.of(segment()),
+				() -> {
+					retryReservations.incrementAndGet();
+					return UsageReservationResult.success();
+				}))
 				.isInstanceOfSatisfying(RouteClientException.class,
 						exception -> assertThat(exception.failure()).isEqualTo(failure));
+		assertThat(retryReservations).hasValue(0);
 		assertThat(carClient.callCount()).isEqualTo(1);
 		assertThat(publicTransitClient.callCount()).isZero();
+	}
+
+	@Test
+	void retryQuotaDenialKeepsEveryDeniedScopeOnTheFallbackResult() {
+		RouteSegment routeSegment = segment();
+		carClient.willFailWith(RouteClientFailure.TIMEOUT);
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(routeSegment),
+				() -> UsageReservationResult.denied(
+						31L,
+						Set.of(UsageDenialScope.USER, UsageDenialScope.SERVICE)
+				)
+		);
+
+		assertThat(result.fallbackReason()).isEqualTo(RouteFallbackReason.QUOTA_UNAVAILABLE);
+		assertThat(result.quotaDeniedScopes())
+				.containsExactlyInAnyOrder(UsageDenialScope.USER, UsageDenialScope.SERVICE);
+		assertThat(carClient.callCount()).isEqualTo(1);
+	}
+
+	@Test
+	void releasesUncalledInitialSegmentsAfterAnEarlyTechnicalFallback() {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		RouteSegment third = segment(2.0, 2.0, 3.0, 3.0);
+		AtomicLong released = new AtomicLong();
+		carClient.willFailWith(RouteClientFailure.TIMEOUT);
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(first, second, third),
+				UsageReservationResult::success,
+				released::addAndGet
+		);
+
+		assertThat(carClient.receivedSegments()).containsExactly(first, first);
+		assertThat(released).hasValue(2L);
+		assertThat(result.fallbackReason()).isEqualTo(RouteFallbackReason.TECHNICAL_FAILURE);
+	}
+
+	@Test
+	void releasesUncalledInitialSegmentsBeforePropagatingANonTransientFailure() {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		AtomicLong released = new AtomicLong();
+		carClient.willFailWith(RouteClientFailure.INVALID_REQUEST);
+
+		assertThatThrownBy(() -> service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(first, second),
+				UsageReservationResult::success,
+				released::addAndGet
+		)).isInstanceOf(RouteClientException.class);
+
+		assertThat(carClient.receivedSegments()).containsExactly(first);
+		assertThat(released).hasValue(1L);
 	}
 
 	@Test

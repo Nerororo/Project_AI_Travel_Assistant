@@ -27,11 +27,14 @@ public class ApiUsagePolicy {
 	}
 
 	public List<UsageWindow> windows(long userId, UsageFeature feature) {
+		return windows(userId, feature, clock.instant());
+	}
+
+	List<UsageWindow> windows(long userId, UsageFeature feature, Instant now) {
 		if (userId <= 0) {
 			throw new IllegalArgumentException("userId must be positive");
 		}
 		FeatureLimits limits = FeatureLimits.forFeature(feature);
-		Instant now = clock.instant();
 		Instant minuteStart = now.truncatedTo(ChronoUnit.MINUTES);
 		ZonedDateTime seoulNow = now.atZone(SEOUL);
 		Instant dayStart = seoulNow.toLocalDate().atStartOfDay(SEOUL).toInstant();

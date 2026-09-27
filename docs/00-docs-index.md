@@ -6,7 +6,8 @@ Routy는 서울특별시·광역시·세종특별자치시 또는 도·특별자
 
 - Java 21, Spring Boot 4.1.1, Gradle
 - 목표 DB: MySQL 8.4, Spring Data JPA, Flyway
-- 현재 코드: Spring Boot 골격과 `GET /hello`
+- 현재 코드: 인증·지역·AI·장소 검색과 순수 경로 알고리즘, 자동차·대중교통 경로 Client, 실제 호출 수와 일치하는 최초·재시도 경로 쿼터, USER·SERVICE 차단 범위 전달과 전체 Haversine fallback까지 구현·검증
+- 지금 시작할 작업: `S1-01` 날짜·활동 시간·체류·식사 입력 정책
 - AI: 허용 지역 후보와 음식 검색어 구조화
 - 장소: 카카오 Local
 - 경로: 카카오모빌리티 자동차, 카카오맵 대중교통
