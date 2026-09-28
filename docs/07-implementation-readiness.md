@@ -219,6 +219,8 @@ R2-02에서 prod·smoke 전용 카카오모빌리티 자동차 HTTP Client와 �
 
 R2-03에서 2026-09-21 카카오맵 공식 REST 문서를 다시 확인하고 대중교통 경로 계약을 실제 HTTP 전송과 분리해 구현했다. 계약 객체는 `GET https://dapi.kakao.com/v2/routing/publictraffic`에 REST API 키 인증과 WGS84 `start_x`·`start_y`·`end_x`·`end_y`만 구성하며 장소명·경유지·여행 날짜·출발 시각은 보내지 않는다. `OK`는 제공자 배열 순서의 첫 `routes[0].properties.totalTime`만 `Found`로 변환하고, `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`는 `NotFound`, `EQUAL_POINTS`는 0초 성공, `INVALID_REQUEST`는 요청 실패로 정규화한다. 누락·알 수 없는 status와 손상된 첫 후보는 뒤 후보로 대체하지 않고 `INVALID_RESPONSE`로 처리하며 steps·path·정류장·차량·요금·landingURL은 DTO에 담지 않는다. 기존 공용 한도 정책의 `PUBLIC_TRANSIT_ROUTE` 사용자 60회/분·120회/일과 서비스 900회/일을 회귀 검증했고, prod·smoke 설정은 `KAKAO_REST_API_KEY` 환경변수만 참조한다. 실제 `HttpClient.send`와 대중교통 Bean 연결은 R2-04로 유보했으며 루트 `test.ps1` 전체 323개 테스트와 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 R2-04다.
 
+R2-04에서 R2-03 계약을 사용하는 prod·smoke 전용 카카오맵 대중교통 HTTP Client와 `PublicTransitRouteClient` Bean을 구현했다. Client는 계약 객체가 만든 인접 구간 요청을 한 번 전송하고 2xx 응답만 계약 객체에 전달하며, 400·401·403·429·5xx·그 밖의 HTTP 상태와 timeout·연결·I/O·interrupt 실패를 제공자 원문 없는 공통 `RouteClientFailure`로 정규화한다. 자체 재시도·fallback·10분 단위 올림은 후속 R2-05~06 책임으로 추가하지 않았고, 기존 `CarRouteClient`·`PublicTransitRouteClient` 타입과 Fake 기반 `RouteService` 테스트가 일정의 이동수단 하나에 해당하는 Client만 호출함을 계속 보장한다. 실제 외부 호출 없는 mock HTTP 테스트와 루트 `test.ps1` 전체 334개 테스트가 실패·오류·건너뜀 없이 통과했으며 다음 백엔드 주 작업은 R2-05다.
+
 ## 8. 완료 해석
 
 - Accepted ADR은 구현 완료가 아니다.
