@@ -215,6 +215,10 @@ P1-07A에서 감사 중 확인한 계약·흐름 차이를 사용자 결정에 �
 
 R2-01에서 2026-09-21 카카오모빌리티 공식 자동차 길찾기·가격 문서를 재확인했다. Routy는 일반 `GET https://apis-navi.kakaomobility.com/v1/directions`에 REST API 키로 인증하고, 최종 후보의 인접 구간별 `origin`·`destination`만 보내며 `waypoints`는 사용하지 않는다. 요청 옵션은 `RECOMMEND`, 대안 경로 없음, 요약 응답으로 확정했다. 공식 10,000건/일 무료 쿼터와 무료 초과분 8원/건을 기준으로 Routy 서비스는 9,000건/일에서 자동차 신규 호출을 차단하고 유료 초과를 자동 허용하지 않는다. 기존 사용자 60회/분·120회/일 계약은 유지한다. 이 Task는 공식 계약 확정만 수행했으며 실제 HTTP Client·설정·Fake 기반 자동 테스트는 R2-02 범위다.
 
+R2-02에서 prod·smoke 전용 카카오모빌리티 자동차 HTTP Client와 설정을 구현했다. Client는 인접 구간의 경도·위도 순서 `origin`·`destination`과 `priority=RECOMMEND`, `alternatives=false`, `summary=true`만 보내고 `waypoints`·장소명·상세 도로 요청은 보내지 않는다. HTTP 상태와 `result_code=0, 1, 101~107`을 확정된 `RouteResult`·`RouteClientFailure`로 변환하며 성공 시 첫 경로의 `summary.duration`만 전달하고 provider 원문·좌표·상세 경로는 보관하거나 노출하지 않는다. 재시도·fallback은 R2-06, 완료 후보의 구간 수 일괄 쿼터 확보는 R2-07A 책임으로 유지했다. 기존 MySQL 공용 카운터의 `CAR_ROUTE` 사용자 60회/분·120회/일과 서비스 9,000회/일 정책을 회귀 검증하고, 사용자 요청에 따른 영속성 절편으로 허용 기능값 CHECK migration을 추가했다. 루트 `test.ps1` 전체 308개 테스트와 `git diff --check`가 통과했으며 다음 백엔드 주 작업은 R2-03이다.
+
+R2-03에서 2026-09-21 카카오맵 공식 REST 문서를 다시 확인하고 대중교통 경로 계약을 실제 HTTP 전송과 분리해 구현했다. 계약 객체는 `GET https://dapi.kakao.com/v2/routing/publictraffic`에 REST API 키 인증과 WGS84 `start_x`·`start_y`·`end_x`·`end_y`만 구성하며 장소명·경유지·여행 날짜·출발 시각은 보내지 않는다. `OK`는 제공자 배열 순서의 첫 `routes[0].properties.totalTime`만 `Found`로 변환하고, `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`는 `NotFound`, `EQUAL_POINTS`는 0초 성공, `INVALID_REQUEST`는 요청 실패로 정규화한다. 누락·알 수 없는 status와 손상된 첫 후보는 뒤 후보로 대체하지 않고 `INVALID_RESPONSE`로 처리하며 steps·path·정류장·차량·요금·landingURL은 DTO에 담지 않는다. 기존 공용 한도 정책의 `PUBLIC_TRANSIT_ROUTE` 사용자 60회/분·120회/일과 서비스 900회/일을 회귀 검증했고, prod·smoke 설정은 `KAKAO_REST_API_KEY` 환경변수만 참조한다. 실제 `HttpClient.send`와 대중교통 Bean 연결은 R2-04로 유보했으며 루트 `test.ps1` 전체 323개 테스트와 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 R2-04다.
+
 ## 8. 완료 해석
 
 - Accepted ADR은 구현 완료가 아니다.

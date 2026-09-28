@@ -75,6 +75,40 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
+	void policyAppliesExactCarRouteUserAndServiceLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+
+		var windows = policy.windows(1L, UsageFeature.CAR_ROUTE);
+
+		assertThat(windows).extracting(
+				ApiUsagePolicy.UsageWindow::scopeType,
+				ApiUsagePolicy.UsageWindow::windowType,
+				ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(
+						tuple(UsageScopeType.USER, UsageWindowType.MINUTE, 60L),
+						tuple(UsageScopeType.USER, UsageWindowType.DAY, 120L),
+						tuple(UsageScopeType.SERVICE, UsageWindowType.DAY, 9_000L));
+	}
+
+	@Test
+	void policyAppliesExactPublicTransitUserAndServiceLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+
+		var windows = policy.windows(1L, UsageFeature.PUBLIC_TRANSIT_ROUTE);
+
+		assertThat(windows).extracting(
+				ApiUsagePolicy.UsageWindow::scopeType,
+				ApiUsagePolicy.UsageWindow::windowType,
+				ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(
+						tuple(UsageScopeType.USER, UsageWindowType.MINUTE, 60L),
+						tuple(UsageScopeType.USER, UsageWindowType.DAY, 120L),
+						tuple(UsageScopeType.SERVICE, UsageWindowType.DAY, 900L));
+	}
+
+	@Test
 	void retryAfterSecondsRoundsRemainingFractionUp() {
 		Instant now = Instant.parse("2026-09-16T14:59:00.100Z");
 		ApiUsagePolicy policy = new ApiUsagePolicy(Clock.fixed(now, ZoneOffset.UTC));
