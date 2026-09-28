@@ -23,7 +23,7 @@ public final class StayDurationPolicy {
 		return switch (role) {
 			case ATTRACTION -> OptionalInt.of(classify(providerCategory).minutes);
 			case RESTAURANT -> OptionalInt.of(RESTAURANT_MINUTES);
-			case HOTEL -> OptionalInt.empty();
+			case HOTEL, TRAVEL_BOUNDARY -> OptionalInt.empty();
 		};
 	}
 

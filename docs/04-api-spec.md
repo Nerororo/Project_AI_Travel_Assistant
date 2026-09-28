@@ -340,6 +340,20 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
 - 관광지 검색의 districtFilterId를 숙소 검색에 자동 적용하지 않는다. 숙소 후보는 선택 관광지 기반 검색 중심과 사용자가 지정한 지도 영역으로 탐색한다.
 - 좌표·주소·검색 원문은 지도 표시와 선택 지역 검증에만 사용하고 작성 흐름 종료 시 폐기한다.
 
+### POST /api/places/travel-boundaries/search
+
+선택한 최종 여행 지역 안에서 첫날 시작과 마지막 날 종료에 사용할 경계 장소를 검색한다. Request는 `regionId`, `query`, 선택적 현재 지도 `center`·`radiusMeters`, `page`, `size`를 받으며 `districtFilterId`와 `placeRole`은 받지 않는다. 초기 검색은 `center`와 `radiusMeters`를 모두 생략하고, 지도 이동 재검색은 `center`와 정확히 `20000`인 `radiusMeters`를 함께 전달한다. 둘 중 하나만 전달하거나 다른 반경을 전달하면 400 `VALIDATION_FAILED`다.
+
+- 서버가 사용하는 역할은 `TRAVEL_BOUNDARY`로 고정한다.
+- 초기 검색은 지역 대표 좌표의 20km 반경을 사용하고 지도 이동 재검색은 사용자가 이동한 중심의 20km 반경을 사용하며, 반환 주소가 선택한 최종 지역에 속하는지 검증한다.
+- 사용자가 시작·종료 경계를 각각 직접 선택한다. 같은 후보 token을 두 경계에 사용하는 것은 허용한다.
+- 결과는 카카오 장소명·주소·좌표·URL과 `selectionToken`을 제작 화면에서만 제공하며 `suggestedStayMinutes`는 제공하지 않는다.
+- `selectionToken`은 현재 사용자·regionId·`TRAVEL_BOUNDARY` 역할·카카오 장소 ID·URL·좌표를 보호한다. 브라우저 메모리와 estimate·create 요청 안에서만 사용하고 응답 전에 폐기한다.
+- 경계는 관광지·숙소·음식점으로 재해석하지 않고 관광지 5개 제한, 체류시간과 완료 일정의 영속 `PlanPlace`에 포함하지 않는다.
+- 호출 한도와 제공자 장애 계약은 일반 카카오 장소 검색과 동일하다.
+
+estimate와 create는 검색 Response를 계산 입력으로 사용하지 않는다. place의 공개 `TravelBoundarySelectionService`가 token의 서명·만료·현재 사용자·regionId·`TRAVEL_BOUNDARY` 역할을 검증하고, 카카오 장소 ID·URL·좌표만 가진 `TravelBoundarySelection`을 요청 지역 변수로 전달한다.
+
 ---
 
 ## 6. 제작 중 일정 계산 API
@@ -354,6 +368,8 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
   "travelMode": "CAR",
   "startDate": "2026-10-01",
   "endDate": "2026-10-03",
+  "startBoundarySelectionToken": "signed-boundary-token",
+  "endBoundarySelectionToken": "signed-boundary-token",
   "days": [
     {
       "date": "2026-10-01",
@@ -384,15 +400,21 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
 - foods는 사용자가 확정한 중복 없는 메뉴 1~5개이며 각 값은 trim 후 1~50자다.
 - 모든 날짜 조건 포함, 시작 < 종료
 - travelMode는 CAR 또는 PUBLIC_TRANSIT
+- 시작·종료 경계 token은 필수이며 서명·만료·현재 사용자·regionId·TRAVEL_BOUNDARY 역할이 일치해야 한다. 두 token이 같은 장소인 것은 허용한다.
 - 표시 이름 trim 후 1~50자
 - stayMinutes 30~480, 10의 배수
 - 하루 관광지 최대 5개
+- 전체 관광지 수는 여행 일수 × 5 이하
 - 1박 이상이면 호텔 필수, 당일치기는 null
 - selectionToken의 서명·만료·역할 일치
 - 모든 장소의 day·order가 모두 null이거나 모두 지정됐는지
 - clientPlaceId가 요청 안에서 중복되지 않는 브라우저용 UUID인지
 
 day와 order가 모두 null이면 서버가 날짜와 순서를 자동 추천한다. 모든 장소에 값이 있으면 사용자가 조정한 날짜와 순서를 보존하고 시간표만 다시 계산한다. 일부 장소에만 값이 있거나 날짜·순서가 중복·누락되면 400 `VALIDATION_FAILED`다.
+
+자동 배치는 선택 관광지를 `clientPlaceId` 안정 키로 구분해 정확히 한 번 보존한다. 각 날짜의 고정 출발·도착 경계와 활동 시간을 사용해 예상 초과가 가장 작은 날짜·장소 조합을 반복 선택하고, 같은 비용은 날짜와 안정 키 순서로 해소한다. 날짜별 장소 집합이 정해지면 Nearest Neighbor와 2-opt로 해당 날짜 순서를 확정한다. 사용자 배치는 날짜·순서를 다시 최적화하지 않는다.
+
+자동·사용자 배치 모두 Haversine 예상 이동시간, 체류시간과 식사 예산을 반영한 `plannedEndTime`이 `activityEndTime`을 넘으면 장소를 삭제·이동하거나 체류시간을 줄이지 않고 422 `PLAN_CAPACITY_EXCEEDED`를 반환한다. `details`는 최초 초과 날짜의 `date`, `plannedEndTime`, `allowedEndTime`, `overMinutes`를 포함하며 `adjustments`는 완료 생성과 같은 허용 값만 사용한다. estimate 실패 Response에는 부분 일정이나 좌표·장소 식별자를 포함하지 않는다.
 
 Response는 날짜별 순서와 추정 시각을 반환한다. `routeVerified=false`는 아직 외부 경로 제공자에게 인접 구간을 조회하지 않았다는 뜻이다. 이후 외부 경로 조회가 성공하더라도 미래 여행일의 시간표·운행 여부나 실제 소요시간이 검증됐다는 뜻은 아니다.
 
@@ -445,6 +467,8 @@ Request는 estimate 입력에 다음 필드를 추가한다.
   "travelMode": "CAR",
   "startDate": "2026-10-01",
   "endDate": "2026-10-03",
+  "startBoundarySelectionToken": "signed-boundary-token",
+  "endBoundarySelectionToken": "signed-boundary-token",
   "days": [],
   "places": [],
   "hotelSelectionToken": "signed-token",
@@ -461,6 +485,7 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 ~~~
 
 - title은 trim 후 1~100자다.
+- 시작·종료 경계 token은 estimate와 동일한 사용자·regionId·TRAVEL_BOUNDARY 역할 계약을 다시 검증하고 실제 경로 계산 뒤 즉시 폐기한다. 경계 장소는 PlanPlace로 저장하지 않는다.
 - mealType은 LUNCH 또는 DINNER다.
 - 식사시간은 60분이다.
 - restaurantSelectionToken은 식당을 선택했을 때만 전달한다.
@@ -714,7 +739,7 @@ Response는 후보별 `selectionToken`, 임시 카카오 장소명·링크·좌�
 장소 선택 토큰, estimate, 일정 생성의 좌표 기반 계산 endpoint는 다음 확정 조건을 구현하고 검증한 뒤에만 완료 또는 운영 가능으로 표시한다.
 
 1. 선택 좌표를 한 브라우저 탭의 JavaScript 메모리에 유지
-2. 브라우저가 estimate와 create에 필요한 값을 각 요청으로 전달
+2. 브라우저가 관광지·숙소·여행 시작·종료 경계의 token을 estimate와 create의 각 요청으로 전달
 3. 서버는 각 요청의 지역 변수에서 거리·순서·길찾기에만 사용하고 응답 전에 폐기
 4. 완료·취소·새로고침·탭 종료 시 브라우저에서 폐기
 5. 장소 ID·URL과 사용자 작성 정보만 영속 저장

@@ -129,6 +129,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | P1-06 | `docs/01` 6절 제작 중 데이터 수명, `docs/04` 5·12절, `docs/08` 7~8절, `Routy/INTEGRATION.md` | 메뉴·식사·일정·음식점 상태는 후속 Task, API 계약 오류 발견 시 문서 변경 제안 |
 | P1-07 | `docs/08` 6.4·7~8절, `docs/10` 7·15절 | 발견한 문제의 책임 문서 |
 | P1-07A | P1-07 감사 결과, `docs/01` 관광지·숙소, `docs/04` 장소·호텔 검색, `docs/06` ADR-035, `docs/08` 6.4절, `docs/10` 7절 | `place/**`와 대응 테스트, 합의된 책임 문서; 숙소·음식점 전용 endpoint 실제 구현은 후속 S1 작업 |
+| P1-07B | S1-02 ADR-042, `docs/01` 여행 조건·경계, `docs/04` 여행 경계 검색·estimate endpoint, `docs/08` 6.4·6.6절, `docs/10` 7·9·15절 | `place/**`의 `TRAVEL_BOUNDARY` 역할·전용 검색·selectionToken 공개 DTO와 대응 테스트; travelplan 계산·정적 화면·Entity·Repository·migration은 금지 |
+| P1-07C | P1-07B 감사 결과, `docs/02` place 공개 경계, `docs/04` 여행 경계 검색·estimate endpoint, `docs/08` 6.4절, `docs/10` 7·9·15절 | `place/dto/**`·`place/service/**`의 20km 계약·경계 전용 공개 token 검증 Service·최소 DTO와 대응 place 테스트, 합의된 책임 문서; `travelplan/**`·`route/**`·`user/**`·정적 화면·Entity·Repository·migration·설정·dependency는 금지 |
 | R2-01~04 | C1-05 감사 기록, `docs/01` FR-07~08·FR-14, `docs/04` 7·11절, `docs/08` 4·6.7절, `docs/09` 5·7절 | 공식 계약 변경 시 C1-05 재검토 후 `docs/04`·`docs/06` |
 | R2-05~06 | `docs/01` FR-07~09, `docs/04` 7절, `docs/08` 6.7절, `docs/09` 7절 | 경로 결과 계약 변경 시 `docs/04`·관련 ADR |
 | R2-07A | `docs/01` FR-14, `docs/03` 8절, `docs/04` 11절, `docs/08` 6.7절, `docs/09` 5절 | 사용자 한도 공개 계약 변경 시 `user` 공개 Service·DTO |
@@ -136,7 +138,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | R2-07C | R2-07A~B 구현 결과, `docs/01` FR-08·FR-14, `docs/04` 7·11절, `docs/08` 6.7절, `docs/09` 5·7절 | `route/service/**`와 대응 route 테스트, 재시도 1회 확보를 위한 `user` 공개 Service 사용; 실제 metric·travelplan 연결은 금지 |
 | R2-07D | R2-07C 결과, `docs/01` FR-14, `docs/03` 8절, `docs/08` 6.7절, `docs/09` 4~5절 | `user` 공개 한도 결과 DTO·Service와 `route/service/**` 관측 전달 계약 및 대응 테스트; 실제 metric 등록은 Q1-04로 이관 |
 | R2-08 | R2-07A~D 구현 결과, `docs/08` 6.7절, `docs/10` 3·8·10·13절 | 발견한 문제의 책임 코드·문서; 새 문제 수정은 별도 Task와 Change Envelope로 분리 |
-| S1-01~04 | `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | 새 정책 결정이 필요할 때 `docs/06` |
+| S1-01~02 | `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | 새 정책 결정이 필요할 때 `docs/06` |
+| S1-03~04 | P1-07C 공개 경계 검증 Service·최소 DTO와 ADR-042, `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | `travelplan` 계산·estimate Controller·DTO와 대응 테스트; place 내부 구현 변경은 별도 P1 Task |
 | S1-05 | `docs/01` 숙소·FR-03, `docs/04` 호텔 검색 endpoint, `docs/08` 6.4·6.6절 | place 공개 계약 변경 시 해당 Service·DTO |
 | S1-06 | `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10절 | place·route 공개 계약 변경 시 해당 Service·DTO |
 | S1-06A | `docs/02` Spring 계층·place·travelplan·recommendation 책임, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10절 | Controller 패키지는 place의 travelplan 역참조 없이 단일 조정 Service를 호출하는 의존 방향을 확인한 뒤 Change Envelope에서 확정 |
@@ -155,7 +158,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03B | T1-06A의 422 응답, W1-03 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 상태·구간 강조와 직접 대응 UI 테스트; API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
 | W1-03A | W1-00 공통 골격, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-04~05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-04·W1-05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-04A | W1-04 구현 결과, `docs/01` FR-11, `docs/02` 8절, `docs/06` ADR-031, `docs/08` 6.9·8절, `docs/10` 14~15절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 고정 다운로드 템플릿·동작과 직접 대응 UI·브라우저 테스트; 완료 일정 조회 DTO가 계약을 표현하지 못하면 화면에서 우회하지 않고 별도 API 문서·백엔드 Task 제안 |
 | W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
 | Q1-01~02 | `docs/09` 2~4·9절, `docs/10` 13절 | 발견한 계약 불일치의 책임 문서 |
 | Q1-03~04 | `docs/09` 4·8절, `docs/10` 13절 | dependency가 필요할 때 `build.gradle`과 관련 ADR |

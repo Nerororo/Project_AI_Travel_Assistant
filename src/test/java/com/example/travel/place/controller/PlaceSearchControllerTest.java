@@ -6,6 +6,8 @@ import com.example.travel.global.exception.GlobalExceptionHandler;
 import com.example.travel.global.security.AuthenticatedUser;
 import com.example.travel.place.dto.PlaceSearchApiRequest;
 import com.example.travel.place.dto.PlaceSearchApiResponse;
+import com.example.travel.place.dto.TravelBoundarySearchApiRequest;
+import com.example.travel.place.dto.TravelBoundarySearchApiResponse;
 import com.example.travel.place.service.PlaceSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,6 +92,56 @@ class PlaceSearchControllerTest {
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{"regionId":"","placeRole":"ATTRACTION","query":" ",
+							 "radiusMeters":20001,"page":0,"size":16}
+							"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+	}
+
+	@Test
+	void returnsTravelBoundaryCandidatesWithoutStayOrInternalRoleFields() throws Exception {
+		UUID requestId = UUID.randomUUID();
+		when(service.searchTravelBoundaries(
+				eq(7L), eq(requestId), any(TravelBoundarySearchApiRequest.class)))
+				.thenReturn(new TravelBoundarySearchApiResponse(List.of(
+						new TravelBoundarySearchApiResponse.Place(
+								"1", URI.create("https://place.map.kakao.com/1"),
+								"provider", "address", 36.1, 127.1, "boundary-token")),
+						1, false));
+
+		mockMvc.perform(post("/api/places/travel-boundaries/search")
+					.header("Idempotency-Key", requestId)
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"regionId":"KR-CITY","query":" station ",
+							 "center":null,"radiusMeters":null,"page":1,"size":15}
+							"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.places[0].kakaoPlaceId").value("1"))
+				.andExpect(jsonPath("$.places[0].selectionToken").value("boundary-token"))
+				.andExpect(jsonPath("$.places[0].suggestedStayMinutes").doesNotExist())
+				.andExpect(jsonPath("$.places[0].placeRole").doesNotExist())
+				.andExpect(jsonPath("$.places[0].providerCategory").doesNotExist());
+
+		verify(service).searchTravelBoundaries(7L, requestId,
+				new TravelBoundarySearchApiRequest("KR-CITY", "station", null, null, 1, 15));
+	}
+
+	@Test
+	void validatesTravelBoundaryRequestHeadersAndFields() throws Exception {
+		mockMvc.perform(post("/api/places/travel-boundaries/search")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"regionId":"KR-CITY","query":"station","page":1,"size":15}
+							"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("Idempotency-Key"));
+
+		mockMvc.perform(post("/api/places/travel-boundaries/search")
+					.header("Idempotency-Key", UUID.randomUUID())
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"regionId":"","query":" ","center":{"latitude":32.9,"longitude":132.1},
 							 "radiusMeters":20001,"page":0,"size":16}
 							"""))
 				.andExpect(status().isBadRequest())

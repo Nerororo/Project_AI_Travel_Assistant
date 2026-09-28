@@ -14,6 +14,8 @@ import com.example.travel.place.dto.PlaceSearchApiRequest;
 import com.example.travel.place.dto.PlaceSearchApiResponse;
 import com.example.travel.place.dto.PlaceSearchRegionCriteria;
 import com.example.travel.place.dto.SelectionTokenPlace;
+import com.example.travel.place.dto.TravelBoundarySearchApiRequest;
+import com.example.travel.place.dto.TravelBoundarySearchApiResponse;
 import com.example.travel.region.dto.PlaceSearchRegion;
 import com.example.travel.region.service.PlaceSearchRegionService;
 import com.example.travel.user.dto.RequestExecutionLease;
@@ -94,6 +96,44 @@ public class PlaceSearchService {
 		}
 	}
 
+	public TravelBoundarySearchApiResponse searchTravelBoundaries(
+			long userId,
+			UUID requestId,
+			TravelBoundarySearchApiRequest request
+	) {
+		validateBoundaryRequest(request);
+		regionValidator.validate(new PlaceSearchRegionCriteria(
+				request.regionId(), null, PlaceRole.TRAVEL_BOUNDARY));
+		PlaceSearchRegion travelRegion = requiredRegion(request.regionId());
+
+		RequestStartResult start = requestExecutionService.tryStart(
+				userId, UsageFeature.PLACE_SEARCH, requestId, 1);
+		if (!start.started()) {
+			throw new ApiException(
+					ErrorCode.RATE_LIMIT_EXCEEDED, null, List.of(), start.retryAfterSeconds());
+		}
+
+		RequestExecutionLease lease = start.lease();
+		try {
+			PlaceSearchResult result = kakaoPlaceClient.search(
+					toBoundaryClientRequest(request, travelRegion),
+					() -> apiUsageService.acquireOrThrow(userId, UsageFeature.PLACE_SEARCH, 1));
+			TravelBoundarySearchApiResponse response = toBoundaryResponse(result, userId, travelRegion);
+			if (!requestExecutionService.markSucceeded(lease)) {
+				throw new IllegalStateException("Request execution could not be completed");
+			}
+			return response;
+		}
+		catch (PlaceClientException exception) {
+			requestExecutionService.releaseAfterFailure(lease);
+			throw new ApiException(ErrorCode.PLACE_PROVIDER_UNAVAILABLE);
+		}
+		catch (RuntimeException exception) {
+			requestExecutionService.releaseAfterFailure(lease);
+			throw exception;
+		}
+	}
+
 	private void validateRequest(PlaceSearchApiRequest request) {
 		if (request == null || request.placeRole() != PlaceRole.ATTRACTION) {
 			throw validationFailed();
@@ -108,6 +148,17 @@ public class PlaceSearchService {
 			return;
 		}
 		if (!PlaceSearchRadiusPolicy.radiiMeters(request.placeRole()).contains(request.radiusMeters())) {
+			throw validationFailed();
+		}
+	}
+
+	private void validateBoundaryRequest(TravelBoundarySearchApiRequest request) {
+		if (request == null || (request.center() == null) != (request.radiusMeters() == null)) {
+			throw validationFailed();
+		}
+		if (request.radiusMeters() != null
+				&& !PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.TRAVEL_BOUNDARY)
+						.contains(request.radiusMeters())) {
 			throw validationFailed();
 		}
 	}
@@ -149,6 +200,33 @@ public class PlaceSearchService {
 				request.radiusMeters(), request.page(), request.size());
 	}
 
+	private PlaceSearchRequest toBoundaryClientRequest(
+			TravelBoundarySearchApiRequest request,
+			PlaceSearchRegion travelRegion
+	) {
+		double latitude;
+		double longitude;
+		if (request.center() == null) {
+			PlaceSearchRegion.Coordinate coordinate = travelRegion.representativeCoordinate();
+			if (coordinate == null) {
+				throw validationFailed();
+			}
+			latitude = coordinate.latitude();
+			longitude = coordinate.longitude();
+		}
+		else {
+			latitude = request.center().latitude();
+			longitude = request.center().longitude();
+		}
+		return PlaceSearchRequest.around(
+				request.query(),
+				new PlaceSearchRequest.SearchCenter(latitude, longitude),
+				request.radiusMeters() == null
+						? PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.TRAVEL_BOUNDARY).getFirst()
+						: request.radiusMeters(),
+				request.page(), request.size());
+	}
+
 	private PlaceSearchApiResponse toResponse(
 			PlaceSearchResult result,
 			long userId,
@@ -167,6 +245,41 @@ public class PlaceSearchService {
 				.map(candidate -> toResponsePlace(candidate, userId, travelRegion.regionId(), role))
 				.toList();
 		return new PlaceSearchApiResponse(places, result.page(), result.hasNext());
+	}
+
+	private TravelBoundarySearchApiResponse toBoundaryResponse(
+			PlaceSearchResult result,
+			long userId,
+			PlaceSearchRegion travelRegion
+	) {
+		Map<String, PlaceCandidate> accepted = new LinkedHashMap<>();
+		for (PlaceCandidate candidate : result.places()) {
+			if (matches(candidate.address(), travelRegion)) {
+				accepted.putIfAbsent(candidate.kakaoPlaceId(), candidate);
+			}
+		}
+		List<TravelBoundarySearchApiResponse.Place> places = accepted.values().stream()
+				.map(candidate -> toBoundaryResponsePlace(candidate, userId, travelRegion.regionId()))
+				.toList();
+		return new TravelBoundarySearchApiResponse(places, result.page(), result.hasNext());
+	}
+
+	private TravelBoundarySearchApiResponse.Place toBoundaryResponsePlace(
+			PlaceCandidate candidate,
+			long userId,
+			String regionId
+	) {
+		String token = selectionTokenService.issue(new SelectionTokenPlace(
+				userId,
+				regionId,
+				PlaceRole.TRAVEL_BOUNDARY,
+				candidate.kakaoPlaceId(),
+				candidate.placeUrl(),
+				candidate.latitude(),
+				candidate.longitude()));
+		return new TravelBoundarySearchApiResponse.Place(
+				candidate.kakaoPlaceId(), candidate.placeUrl(), candidate.providerDisplayName(),
+				candidate.address(), candidate.latitude(), candidate.longitude(), token);
 	}
 
 	private PlaceSearchApiResponse.Place toResponsePlace(

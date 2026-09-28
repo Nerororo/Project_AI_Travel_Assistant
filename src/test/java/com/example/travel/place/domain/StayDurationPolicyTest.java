@@ -34,10 +34,11 @@ class StayDurationPolicyTest {
 	}
 
 	@Test
-	void restaurantIsFixedAndHotelHasNoTourismStayDuration() {
+	void restaurantIsFixedAndNonVisitRolesHaveNoTourismStayDuration() {
 		assertThat(StayDurationPolicy.suggestedMinutes(PlaceRole.RESTAURANT, null))
 				.isEqualTo(OptionalInt.of(60));
 		assertThat(StayDurationPolicy.suggestedMinutes(PlaceRole.HOTEL, null)).isEmpty();
+		assertThat(StayDurationPolicy.suggestedMinutes(PlaceRole.TRAVEL_BOUNDARY, null)).isEmpty();
 	}
 
 	@Test

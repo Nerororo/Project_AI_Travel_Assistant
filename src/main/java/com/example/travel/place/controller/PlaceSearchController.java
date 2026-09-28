@@ -3,6 +3,8 @@ package com.example.travel.place.controller;
 import com.example.travel.global.security.AuthenticatedUser;
 import com.example.travel.place.dto.PlaceSearchApiRequest;
 import com.example.travel.place.dto.PlaceSearchApiResponse;
+import com.example.travel.place.dto.TravelBoundarySearchApiRequest;
+import com.example.travel.place.dto.TravelBoundarySearchApiResponse;
 import com.example.travel.place.service.PlaceSearchService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,5 +33,14 @@ public class PlaceSearchController {
 			@Valid @RequestBody PlaceSearchApiRequest request
 	) {
 		return placeSearchService.search(user.userId(), requestId, request);
+	}
+
+	@PostMapping("/travel-boundaries/search")
+	public TravelBoundarySearchApiResponse searchTravelBoundaries(
+			@AuthenticationPrincipal AuthenticatedUser user,
+			@RequestHeader("Idempotency-Key") UUID requestId,
+			@Valid @RequestBody TravelBoundarySearchApiRequest request
+	) {
+		return placeSearchService.searchTravelBoundaries(user.userId(), requestId, request);
 	}
 }

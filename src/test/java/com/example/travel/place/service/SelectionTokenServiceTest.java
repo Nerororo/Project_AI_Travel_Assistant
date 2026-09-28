@@ -56,6 +56,26 @@ class SelectionTokenServiceTest {
 	}
 
 	@Test
+	void issuesAndVerifiesTravelBoundaryTokenOnlyForItsDedicatedRole() {
+		SelectionTokenService service = serviceAt(
+				ISSUED_AT, "active", keys(key("active", randomSecret())));
+		SelectionTokenPlace boundary = new SelectionTokenPlace(
+				42L,
+				"KR-26",
+				PlaceRole.TRAVEL_BOUNDARY,
+				"26338954",
+				URI.create("https://place.map.kakao.com/26338954"),
+				35.1587,
+				129.1604);
+
+		String token = service.issue(boundary);
+
+		assertThat(service.verify(token, 42L, "KR-26", PlaceRole.TRAVEL_BOUNDARY))
+				.isEqualTo(boundary);
+		assertInvalid(() -> service.verify(token, 42L, "KR-26", PlaceRole.ATTRACTION));
+	}
+
+	@Test
 	void issuesAndVerifiesTokenForSelectableOpaqueRegionId() {
 		PlaceSearchRegionService regionService = mock(PlaceSearchRegionService.class);
 		when(regionService.findById("KR-GWANGJU-URBAN")).thenReturn(Optional.of(

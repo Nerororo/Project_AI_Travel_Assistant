@@ -12,6 +12,7 @@ class PlaceSearchRadiusPolicyTest {
 		assertThat(PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.ATTRACTION)).containsExactly(20_000);
 		assertThat(PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.HOTEL)).containsExactly(5_000, 10_000);
 		assertThat(PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.RESTAURANT)).containsExactly(1_000, 3_000, 5_000);
+		assertThat(PlaceSearchRadiusPolicy.radiiMeters(PlaceRole.TRAVEL_BOUNDARY)).containsExactly(20_000);
 	}
 
 	@Test

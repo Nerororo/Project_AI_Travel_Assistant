@@ -37,15 +37,15 @@
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
-| Place | P1 범위 구현·검증 완료 | Kakao Local Client, 장소 검색 Service·API, 지역·주소 검증, 체류시간 정책, `selectionToken`과 브라우저 메모리 선택 상태를 구현했으며 숙소·음식점 전용 검색은 S1 후속 작업 |
+| Place | P1 범위와 P1-07B~C 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계 검색 Service·API, 지역·주소 검증, 체류시간 정책, 역할별 `selectionToken`과 경계 전용 공개 검증 Service·최소 DTO를 구현했다. 관광지·숙소 선택 메모리 상태는 구현됐지만 여행 경계의 브라우저 연결은 W1, estimate·create 요청 수명은 S1·T1 후속 작업이다. |
 | Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
-| TravelPlan | 하네스만 존재 | Entity·Repository·Service·DTO 코드 없음 |
+| TravelPlan | S1-01 입력 정책 구현·검증, S1-02 배치 설계·P1-07B~C 경계 계약 완료 | 여행 기간·활동 시간·체류·식사 입력 정책을 구현했고 경계 기반 날짜 배치·시간 예산은 ADR-042로 확정했다. 경계 검색과 전용 token 공개 검증 계약은 구현했으며 추정 Service S1-03은 미구현 |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약을 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | R2까지 377개 통과 | 최초·재시도 쿼터 실패의 USER·SERVICE 단독·동시 범위, 원자적 확보·rollback·미호출 반환, 시간 창 경계, 실제 호출 수와 최종 차감량, 외부 호출 중 트랜잭션 비활성을 포함한 R2 전체 회귀가 통과했다. |
+| 자동 테스트 | P1-07C까지 407개 통과 | 기존 회귀와 여행 경계의 고정 20km 검색·지역 필터·역할 token·공개 최소 DTO·한도·제공자 장애 계약을 Docker/Testcontainers 기반 루트 `test.ps1`로 함께 검증했다. |
 | 화면 | W1-00·W1-01A~C 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격, 회원가입·로그인 API adapter와 지역 직접 검색·정확히 3개인 AI 추천 후보 선택을 연결하고 서버 TTL 기반 메모리 인증·만료·보호 화면을 검증, 장소·일정 API 연결은 후속 범위 |
 
-현재 시작할 작업은 `S1-01`이다. 여행 날짜·활동 시간·체류 시간과 점심·저녁 입력 정책을 확정한다.
+현재 시작할 작업은 `S1-03`이다. P1-07C의 공개 경계 검증 Service·최소 DTO를 사용해 Haversine 기반 추정 일정 Service를 구현한다.
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -236,6 +236,16 @@ R2-07C에서 `RouteVerificationService`가 일시적 기술 장애 뒤 두 번�
 R2-07D에서 공개 `UsageReservationResult`가 한도 확보 실패의 `USER`·`SERVICE` 범위를 하나 또는 둘 모두 불변 집합으로 전달하도록 보완했다. 한 트랜잭션에서 실패한 모든 분·일 창을 검사하되 기존 최대 `retryAfterSeconds` 계산과 전체 rollback은 유지한다. 최초 일괄 확보와 기술 장애 재시도 직전 추가 확보의 차단 범위는 `RouteTravelTimeResult`를 거쳐 사용자·장소·좌표가 없는 `RouteObservationEvent`에만 전달하며, 생성 응답용 `ESTIMATED_TRAVEL_TIMES_USED` warning에는 내부 범위를 추가하지 않았다. USER 단독, SERVICE 단독, 동시 차단과 최초·재시도 fallback을 검증했고 루트 `test.ps1` 전체 369개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 지표 등록은 Q1-04, R2 전체 완료 판정은 R2-08 책임으로 유지한다.
 
 R2-08 회귀 감사에서 복수 구간을 선확보한 뒤 앞쪽 구간의 기술 재실패·비일시적 실패·재시도 한도 거절로 조기 종료하면 호출하지 않은 뒤쪽 구간까지 차감되는 결함을 발견했다. 별도 R2-08A Change Envelope로 `UsageReservationLease`가 확보 당시 창을 유지하게 하고, 조건부 감소를 사용하는 짧은 트랜잭션으로 미호출 최초 구간 몫만 반환하도록 보완했다. 이미 실행된 최초·재시도 호출은 반환하지 않으며 분 경계가 바뀌어도 원래 창만 감소한다. MySQL 통합 흐름에서 외부 Client 호출 중 트랜잭션 비활성, 2구간 선확보 후 첫 구간 재실패의 실제 2회 호출과 USER 분·일·SERVICE 일 최종 2회 차감 일치, 반환 중 한 창이 실패할 때 앞선 감소까지 rollback되는 원자성, 시간 경계를 검증했다. 전체 fallback·warning·관측 범위와 R2의 기존 성공·실패 경계까지 루트 `test.ps1` 377개 테스트와 `git diff --check`로 확인해 R2를 구현·검증 완료로 판정했다. 실제 metric 등록은 Q1-04, 생성 API 연결과 warning 비영속은 T1-06 책임으로 남는다.
+
+S1-01에서 `TravelPeriod`, `DailyActivityWindow`, `TravelConditions`로 1~7일 여행 기간과 기간 내 모든 날짜의 정확히 한 번인 활동 시간, 시작 시각이 종료 시각보다 빠른 조건과 단일 이동수단을 검증했다. 체류 시간 30~480분·10분 단위, 한쪽 식사 이동 여유 기본 15분·0~60분 경계와 점심 11:30~14:00·저녁 17:30~20:30 안의 60분 슬롯 및 12:00·18:00 우선 배치를 순수 정책으로 고정했다. 집중 테스트 17개와 루트 `test.ps1` 전체 394개 테스트, `git diff --check`가 통과했다. 첫 전체 실행에서는 기존 OpenAI 50ms timeout 테스트가 요청 기록 전 assertion에 도달해 한 번 실패했지만 단독 재실행과 전체 재실행에서 통과했으며 S1 코드와의 의존 관계는 없었다. 날짜별 배치·시간 예산은 S1-02 책임으로 남는다.
+
+A1-06 회귀 보완에서 `OpenAiClientTest`의 요청 timeout 검증이 테스트 HTTP 서버 스레드의 요청 기록보다 먼저 호출 수를 검사할 수 있던 경쟁 조건을 수정했다. 서버가 요청을 기록한 직후 `CountDownLatch` 신호를 보내고 테스트가 제한된 시간 동안 그 신호를 기다린 뒤 정확히 1회 호출을 검사한다. 운영 `OpenAiClient`는 변경하지 않았다. 해당 timeout 테스트 5회 반복, `OpenAiClientTest` 전체와 루트 `test.ps1` 전체 394개 테스트 및 `git diff --check`가 통과했으며 다음 시작 작업은 계속 S1-02다.
+
+S1-02에서 기존 요구사항의 첫날 시작·마지막 날 종료 경계를 estimate Request가 표현하지 못하는 공백을 확인했다. 사용자가 선택 지역 안의 경계를 직접 선택하고 `TRAVEL_BOUNDARY` selectionToken을 estimate·create 요청 안에서만 사용하는 계약, 모든 선택 관광지를 보존하는 결정적 greedy 날짜 배치, 식사 포함 시간 예산과 `PLAN_CAPACITY_EXCEEDED` 거절 규칙을 ADR-042로 확정했다. 구현 코드는 수정하지 않은 문서 전용 설계 작업이므로 Gradle은 생략했고 문서 계약 검색과 `git diff --check`로 정합성을 확인했다. 경계 검색·token 공개 계약은 P1-07B, 추정 계산은 그 다음 S1-03 책임이다.
+
+P1-07B에서 인증된 `POST /api/places/travel-boundaries/search`와 공개 요청·응답 DTO를 추가했다. 초기 검색은 선택 지역 대표 좌표의 20km 반경을 사용하고 지도 이동 재검색은 중심 좌표와 20km 반경을 함께 받으며, 반환 주소가 선택 지역에 속하는 후보만 남겨 사용자·지역·`TRAVEL_BOUNDARY` 역할에 묶인 30분 `selectionToken`을 발급한다. 기존 관광지 검색은 새 역할을 받지 않고, 경계 응답에는 체류시간·내부 역할·제공자 카테고리를 노출하지 않는다. 기존 requestId 처리와 Place 호출 한도를 재사용하며 Entity·Repository·migration·정적 UI·TravelPlan 계산은 변경하지 않았다. Place 집중 테스트 84개와 Docker/Testcontainers MySQL을 포함한 루트 `test.ps1` 전체 401개 테스트가 통과했다. estimate 계산과 요청 종료 시 좌표 폐기 검증은 S1-03 이후 책임이다.
+
+P1-07C에서 여행 경계의 초기 검색은 중심·반경 생략, 지도 이동 검색은 중심과 정확히 20km 반경을 함께 전달하도록 DTO·Service·API 계약을 정렬했다. place의 공개 `TravelBoundarySelectionService`는 token 검증 역할을 `TRAVEL_BOUNDARY`로 고정하고 검색 Response 대신 카카오 장소 ID·URL·좌표만 가진 최소 `TravelBoundarySelection`을 반환한다. 경계 검색의 빈 결과·중복 제거·한도 거절·제공자 장애와 lease 해제·재시도 직전 추가 차감을 직접 회귀 검증했다. Place 집중 테스트 90개와 Docker/Testcontainers MySQL을 포함한 루트 `test.ps1` 전체 407개 테스트가 통과했다. 여행 경계의 브라우저 메모리 연결과 estimate·create 요청 종료 시 좌표 폐기는 각각 W1과 S1·T1 후속 책임으로 남겼다.
 
 ## 8. 완료 해석
 

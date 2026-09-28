@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,6 +33,7 @@ class OpenAiClientTest {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final Queue<StubResponse> responses = new ArrayDeque<>();
 	private final List<CapturedRequest> requests = new ArrayList<>();
+	private final CountDownLatch requestCaptured = new CountDownLatch(1);
 	private HttpServer server;
 	private OpenAiClient client;
 
@@ -141,7 +144,7 @@ class OpenAiClientTest {
 	}
 
 	@Test
-	void convertsRequestTimeoutWithoutUnboundedRetries() {
+	void convertsRequestTimeoutWithoutUnboundedRetries() throws InterruptedException {
 		responses.add(new StubResponse(200, "{}", Map.of(), 200));
 		var timeoutProperties = new OpenAiProperties(
 				"unit-test-credential",
@@ -157,6 +160,7 @@ class OpenAiClientTest {
 		);
 
 		assertUnavailable(() -> client.recommendRegions(regionPrompt()));
+		assertThat(requestCaptured.await(1, TimeUnit.SECONDS)).isTrue();
 		assertThat(requests).hasSize(1);
 	}
 
@@ -204,6 +208,7 @@ class OpenAiClientTest {
 	private void handle(HttpExchange exchange) throws IOException {
 		String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 		requests.add(new CapturedRequest(exchange.getRequestHeaders().getFirst("Authorization"), body));
+		requestCaptured.countDown();
 		StubResponse response = responses.remove();
 		if (response.delayMillis() > 0) {
 			try {

@@ -11,6 +11,7 @@ import com.example.travel.place.client.PlaceSearchResult;
 import com.example.travel.place.domain.PlaceRole;
 import com.example.travel.place.dto.PlaceSearchApiRequest;
 import com.example.travel.place.dto.SelectionTokenPlace;
+import com.example.travel.place.dto.TravelBoundarySearchApiRequest;
 import com.example.travel.region.dto.PlaceSearchRegion;
 import com.example.travel.region.service.PlaceSearchRegionService;
 import com.example.travel.user.dto.RequestExecutionLease;
@@ -127,8 +128,123 @@ class PlaceSearchServiceTest {
 	}
 
 	@Test
+	void searchesTravelBoundariesFromRegionCenterAndIssuesDedicatedTokens() {
+		String matchingAddress = city().addressBoundary().region1Names().getFirst()
+				+ " " + city().addressBoundary().region2Names().getFirst() + " road";
+		when(client.search(any(), any())).thenReturn(new PlaceSearchResult(List.of(
+				candidate("1", matchingAddress, "category"),
+				candidate("1", matchingAddress + " duplicate", "category"),
+				candidate("2", "outside region road", "category")), 1, false));
+
+		var response = service.searchTravelBoundaries(
+				7L, requestId, boundaryRequest(null, null));
+
+		ArgumentCaptor<PlaceSearchRequest> providerRequest = ArgumentCaptor.forClass(PlaceSearchRequest.class);
+		verify(client).search(providerRequest.capture(), any());
+		assertThat(providerRequest.getValue().center())
+				.isEqualTo(new PlaceSearchRequest.SearchCenter(36.0, 127.0));
+		assertThat(providerRequest.getValue().radiusMeters()).isEqualTo(20_000);
+		assertThat(response.places()).singleElement().satisfies(place -> {
+			assertThat(place.kakaoPlaceId()).isEqualTo("1");
+			assertThat(place.selectionToken()).isEqualTo("signed-token");
+		});
+		ArgumentCaptor<SelectionTokenPlace> tokenPlace = ArgumentCaptor.forClass(SelectionTokenPlace.class);
+		verify(tokenService).issue(tokenPlace.capture());
+		assertThat(tokenPlace.getValue().placeRole()).isEqualTo(PlaceRole.TRAVEL_BOUNDARY);
+	}
+
+	@Test
+	void searchesTravelBoundariesFromMovedMapCenter() {
+		when(client.search(any(), any())).thenReturn(PlaceSearchResult.empty(2));
+		TravelBoundarySearchApiRequest.Center center =
+				new TravelBoundarySearchApiRequest.Center(35.2, 129.1);
+
+		service.searchTravelBoundaries(7L, requestId, boundaryRequest(center, 20_000));
+
+		ArgumentCaptor<PlaceSearchRequest> providerRequest = ArgumentCaptor.forClass(PlaceSearchRequest.class);
+		verify(client).search(providerRequest.capture(), any());
+		assertThat(providerRequest.getValue().center())
+				.isEqualTo(new PlaceSearchRequest.SearchCenter(35.2, 129.1));
+		assertThat(providerRequest.getValue().radiusMeters()).isEqualTo(20_000);
+	}
+
+	@Test
+	void rejectsIncompleteOrUnsupportedTravelBoundaryRadiusBeforeUsageOrProviderCall() {
+		TravelBoundarySearchApiRequest.Center center =
+				new TravelBoundarySearchApiRequest.Center(35.2, 129.1);
+
+		for (TravelBoundarySearchApiRequest request : List.of(
+				boundaryRequest(center, null),
+				boundaryRequest(null, 20_000),
+				boundaryRequest(center, 0),
+				boundaryRequest(center, 10_000),
+				boundaryRequest(center, 19_999),
+				boundaryRequest(center, 20_001))) {
+			assertThatThrownBy(() -> service.searchTravelBoundaries(7L, requestId, request))
+					.isInstanceOfSatisfying(ApiException.class,
+							exception -> assertThat(exception.errorCode())
+									.isEqualTo(ErrorCode.VALIDATION_FAILED));
+		}
+
+		verify(executionService, never()).tryStart(anyLong(), any(), any(), eq(1L));
+		verify(client, never()).search(any(), any());
+	}
+
+	@Test
+	void preservesEmptyTravelBoundaryResultWithoutIssuingTokens() {
+		when(client.search(any(), any())).thenReturn(PlaceSearchResult.empty(1));
+
+		var response = service.searchTravelBoundaries(
+				7L, requestId, boundaryRequest(null, null));
+
+		assertThat(response.places()).isEmpty();
+		verify(tokenService, never()).issue(any());
+		verify(executionService).markSucceeded(lease);
+	}
+
+	@Test
+	void stopsTravelBoundarySearchBeforeProviderWhenUsageLimitIsDenied() {
+		when(executionService.tryStart(7L, UsageFeature.PLACE_SEARCH, requestId, 1))
+				.thenReturn(RequestStartResult.rateLimited(42));
+
+		assertThatThrownBy(() -> service.searchTravelBoundaries(
+				7L, requestId, boundaryRequest(null, null)))
+				.isInstanceOfSatisfying(ApiException.class, exception -> {
+					assertThat(exception.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
+					assertThat(exception.retryAfterSeconds()).isEqualTo(42);
+				});
+		verify(client, never()).search(any(), any());
+	}
+
+	@Test
+	void convertsTravelBoundaryProviderFailureAndReleasesRequestId() {
+		when(client.search(any(), any())).thenThrow(
+				new PlaceClientException(PlaceClientFailure.TIMEOUT));
+
+		assertThatThrownBy(() -> service.searchTravelBoundaries(
+				7L, requestId, boundaryRequest(null, null)))
+				.isInstanceOfSatisfying(ApiException.class,
+						exception -> assertThat(exception.errorCode())
+								.isEqualTo(ErrorCode.PLACE_PROVIDER_UNAVAILABLE));
+		verify(executionService).releaseAfterFailure(lease);
+	}
+
+	@Test
+	void acquiresOneAdditionalUsagePermitBeforeTravelBoundaryProviderRetry() {
+		when(client.search(any(), any())).thenAnswer(invocation -> {
+			Runnable beforeRetry = invocation.getArgument(1);
+			beforeRetry.run();
+			return PlaceSearchResult.empty(1);
+		});
+
+		service.searchTravelBoundaries(7L, requestId, boundaryRequest(null, null));
+
+		verify(usageService).acquireOrThrow(7L, UsageFeature.PLACE_SEARCH, 1);
+	}
+
+	@Test
 	void rejectsHotelAndRestaurantFromAttractionSearchBeforeUsageOrProviderCall() {
-		for (PlaceRole role : List.of(PlaceRole.HOTEL, PlaceRole.RESTAURANT)) {
+		for (PlaceRole role : List.of(PlaceRole.HOTEL, PlaceRole.RESTAURANT, PlaceRole.TRAVEL_BOUNDARY)) {
 			assertThatThrownBy(() -> service.search(7L, requestId, radiusRequest(role, 5_000)))
 					.isInstanceOfSatisfying(ApiException.class,
 							exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
@@ -191,6 +307,14 @@ class PlaceSearchServiceTest {
 
 	private PlaceSearchApiRequest radiusRequest(PlaceRole role, int radius) {
 		return new PlaceSearchApiRequest("KR-CITY", null, role, "검색어", null, radius, 1, 15);
+	}
+
+	private TravelBoundarySearchApiRequest boundaryRequest(
+			TravelBoundarySearchApiRequest.Center center,
+			Integer radius
+	) {
+		return new TravelBoundarySearchApiRequest(
+				"KR-CITY", "station", center, radius, 1, 15);
 	}
 
 	private PlaceCandidate candidate(String id, String address, String category) {

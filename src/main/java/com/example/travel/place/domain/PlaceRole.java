@@ -6,5 +6,6 @@ package com.example.travel.place.domain;
 public enum PlaceRole {
 	ATTRACTION,
 	HOTEL,
-	RESTAURANT
+	RESTAURANT,
+	TRAVEL_BOUNDARY
 }

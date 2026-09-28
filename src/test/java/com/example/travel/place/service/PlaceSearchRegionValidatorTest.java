@@ -43,7 +43,7 @@ class PlaceSearchRegionValidatorTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = PlaceRole.class, names = {"HOTEL", "RESTAURANT"})
+	@EnumSource(value = PlaceRole.class, names = {"HOTEL", "RESTAURANT", "TRAVEL_BOUNDARY"})
 	void rejectsDistrictFilterForNonAttractionSearch(PlaceRole placeRole) {
 		assertValidationFailure(criteria("KR-26", "KR-26350", placeRole));
 	}
