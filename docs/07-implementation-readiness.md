@@ -221,6 +221,8 @@ R2-03에서 2026-09-21 카카오맵 공식 REST 문서를 다시 확인하고 �
 
 R2-04에서 R2-03 계약을 사용하는 prod·smoke 전용 카카오맵 대중교통 HTTP Client와 `PublicTransitRouteClient` Bean을 구현했다. Client는 계약 객체가 만든 인접 구간 요청을 한 번 전송하고 2xx 응답만 계약 객체에 전달하며, 400·401·403·429·5xx·그 밖의 HTTP 상태와 timeout·연결·I/O·interrupt 실패를 제공자 원문 없는 공통 `RouteClientFailure`로 정규화한다. 자체 재시도·fallback·10분 단위 올림은 후속 R2-05~06 책임으로 추가하지 않았고, 기존 `CarRouteClient`·`PublicTransitRouteClient` 타입과 Fake 기반 `RouteService` 테스트가 일정의 이동수단 하나에 해당하는 Client만 호출함을 계속 보장한다. 실제 외부 호출 없는 mock HTTP 테스트와 루트 `test.ps1` 전체 334개 테스트가 실패·오류·건너뜀 없이 통과했으며 다음 백엔드 주 작업은 R2-05다.
 
+R2-05에서 `RouteService`가 정렬된 최종 후보의 인접 `RouteSegment` 목록을 입력 순서대로 이동수단별 Client 하나에만 전달하고, 성공한 제공자 예상 초를 `ceil(seconds / 600) × 10`분으로 올리는 계약을 구현했다. 0초는 0분으로 유지하고 별도 고정 buffer를 더하지 않으며, 결과에는 좌표·제공자 원문·원본 초 대신 구간 순서에 대응하는 10분 단위 `estimatedMinutes` 또는 정상 경로 없음만 남긴다. 정상 경로 없음은 fallback하지 않고 보존하며 기술 장애 재시도·일정 전체 fallback은 R2-06 책임으로 유지했다. 복수 구간 순서, CAR·PUBLIC_TRANSIT Client 분리, 0초와 1·599·600·601·1199·1200초 올림 경계, 빈 목록과 입력 검증을 Fake 기반 단위 테스트로 검증했고 루트 `test.ps1` 전체 344개 테스트가 실패·오류·건너뜀 없이 통과했다. 다음 백엔드 주 작업은 R2-06이다.
+
 ## 8. 완료 해석
 
 - Accepted ADR은 구현 완료가 아니다.

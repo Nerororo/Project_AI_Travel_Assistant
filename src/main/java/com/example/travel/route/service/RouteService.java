@@ -6,12 +6,16 @@ import com.example.travel.route.client.PublicTransitRouteClient;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Thin route-client boundary. Retry, fallback and rounding policies are added in later route tasks.
+ * Verifies ordered adjacent segments with the client for one travel mode.
  */
 public class RouteService {
+
+	private static final long ROUNDING_UNIT_SECONDS = 600L;
+	private static final int ROUNDING_UNIT_MINUTES = 10;
 
 	private final CarRouteClient carRouteClient;
 	private final PublicTransitRouteClient publicTransitRouteClient;
@@ -32,5 +36,40 @@ public class RouteService {
 			case CAR -> carRouteClient.findRoute(segment);
 			case PUBLIC_TRANSIT -> publicTransitRouteClient.findRoute(segment);
 		};
+	}
+
+	/**
+	 * Keeps segment order and rounds each provider duration up to ten-minute units.
+	 * Retry and fallback remain the responsibility of the later route integration policy.
+	 */
+	public List<RouteSegmentTravelTime> findEstimatedTravelTimes(
+			TravelMode travelMode,
+			List<RouteSegment> orderedSegments
+	) {
+		Objects.requireNonNull(travelMode, "travelMode must not be null");
+		Objects.requireNonNull(orderedSegments, "orderedSegments must not be null");
+		List<RouteSegment> segments = List.copyOf(orderedSegments);
+
+		return segments.stream()
+				.map(segment -> toTravelTime(findRoute(travelMode, segment)))
+				.toList();
+	}
+
+	private RouteSegmentTravelTime toTravelTime(RouteResult result) {
+		return switch (result) {
+			case RouteResult.Found found -> RouteSegmentTravelTime.found(roundUpToTenMinutes(
+					found.durationSeconds()
+			));
+			case RouteResult.NotFound ignored -> RouteSegmentTravelTime.notFound();
+		};
+	}
+
+	private int roundUpToTenMinutes(long durationSeconds) {
+		if (durationSeconds == 0L) {
+			return 0;
+		}
+		long roundedUnits = Math.addExact(durationSeconds, ROUNDING_UNIT_SECONDS - 1L)
+				/ ROUNDING_UNIT_SECONDS;
+		return Math.toIntExact(Math.multiplyExact(roundedUnits, ROUNDING_UNIT_MINUTES));
 	}
 }
