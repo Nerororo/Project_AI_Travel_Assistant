@@ -332,12 +332,28 @@ selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토�
 
 선택 관광지의 `selectionToken` 목록과 검색 모드를 받아 제작 중 지도에 숙소 후보를 표시한다.
 
-- `GEOMETRIC_MEDIAN`: 관광지의 기하 중앙값 주변 5km를 기본으로 검색하며 사용자가 요청하면 10km로 넓힌다.
-- `MEDOID`: 다른 관광지까지 Haversine 거리 합이 가장 작은 실제 관광지 주변을 검색한다.
-- `MAP_BOUNDS`: 사용자가 이동한 현재 지도 영역 안을 검색한다.
+인증과 `Idempotency-Key` UUID 헤더가 필요하다. Request는 `regionId`, `attractionSelectionTokens`(중복 없는 관광지 1~35개의 token), `mode`, 선택적 `radiusMeters`·`bounds`, `page`(1~45), `size`(1~15)를 받는다. 선택 관광지 token은 현재 사용자·regionId·`ATTRACTION` 역할로 검증하며, 검증 실패·중복 장소 ID·모드별 입력 불일치는 외부 호출과 호출량 차감 전에 400 `VALIDATION_FAILED`로 거절한다.
+
+~~~json
+{
+  "regionId": "KR-CITY",
+  "attractionSelectionTokens": ["signed-attraction-token"],
+  "mode": "GEOMETRIC_MEDIAN",
+  "radiusMeters": null,
+  "bounds": null,
+  "page": 1,
+  "size": 15
+}
+~~~
+
+- `GEOMETRIC_MEDIAN`: 관광지의 기하 중앙값 주변 5km를 기본으로 검색하며 사용자가 요청할 때만 `radiusMeters=10000`으로 넓힌다. `radiusMeters`는 생략·`5000`·`10000`만 허용하고 `bounds`는 받지 않는다.
+- `MEDOID`: 다른 관광지까지 Haversine 거리 합이 가장 작은 실제 관광지 주변 5km를 검색한다. `radiusMeters`와 `bounds`는 받지 않는다.
+- `MAP_BOUNDS`: 사용자가 이동한 현재 지도 영역의 `bounds`(`minLatitude`, `minLongitude`, `maxLatitude`, `maxLongitude`) 안을 검색한다. 최솟값은 최댓값보다 작아야 하며 `radiusMeters`는 받지 않는다.
 - 숙소 결과는 점수나 거리 합으로 추천 순위를 만들지 않는다.
 - 관광지와 숙소 마커, 숙소 목록을 동기화하고 사용자가 하나를 선택한다.
 - 관광지 검색의 districtFilterId를 숙소 검색에 자동 적용하지 않는다. 숙소 후보는 선택 관광지 기반 검색 중심과 사용자가 지정한 지도 영역으로 탐색한다.
+- 카카오 검색어는 서버의 `숙소`로 고정하며 선택 지역의 주소 행정구역에 속하는 후보만 반환한다. 응답의 `places`는 제공자 결과 순서로 중복 ID를 제거한 `kakaoPlaceId`, `placeUrl`, `providerDisplayName`, `address`, 좌표, `HOTEL` 역할 `selectionToken`을 포함하며 `page`·`hasNext`를 반환한다. 숙소 체류시간·점수·추천 순위는 포함하지 않는다.
+- 장소 검색 공통 사용자 한도와 requestId 처리·재시도 계약을 적용한다. 빈 결과는 빈 목록으로 반환하고 제공자 장애는 공통 장소 오류로 처리한다.
 - 좌표·주소·검색 원문은 지도 표시와 선택 지역 검증에만 사용하고 작성 흐름 종료 시 폐기한다.
 
 ### POST /api/places/travel-boundaries/search
@@ -375,6 +391,16 @@ estimate와 create는 검색 Response를 계산 입력으로 사용하지 않는
       "date": "2026-10-01",
       "activityStartTime": "10:00",
       "activityEndTime": "20:00"
+    },
+    {
+      "date": "2026-10-02",
+      "activityStartTime": "09:00",
+      "activityEndTime": "20:00"
+    },
+    {
+      "date": "2026-10-03",
+      "activityStartTime": "09:00",
+      "activityEndTime": "18:00"
     }
   ],
   "places": [
@@ -689,11 +715,17 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 estimate와 동일한 제작 데이터, 확정된 날짜·순서, 식사 날짜·종류와 메뉴 검색어를 브라우저 메모리에서 전달한다. 서버는 시간표와 식사 슬롯을 다시 계산해 존재 여부와 직전·직후 기준 장소를 검증한 뒤 후보를 조회한다. 기본 장소 검색과 동일한 저장·토큰 정책을 사용한다.
 
+인증과 `Idempotency-Key` UUID 헤더가 필요하다. Request는 `estimate`에 `POST /api/travel-plans/estimate`와 같은 입력을 넣되 모든 관광지의 `day`·`order`를 확정해 전달하고, `mealDate`, `mealType`(`LUNCH`·`DINNER`), `menuQuery`(1~50자), 선택적 `referenceAttractionClientPlaceId`와 `bounds`, `page`(1~45), `size`(1~15)를 받는다. 기준 관광지 ID는 해당 식사 날짜에 배치된 관광지여야 한다. `bounds`는 `minLatitude`·`minLongitude`·`maxLatitude`·`maxLongitude`이며 최소값은 최대값보다 작아야 한다. 무효 입력·식사 슬롯 부재는 외부 호출 전 400 `VALIDATION_FAILED`로 거절한다.
+
 검색 반경은 1km, 3km, 최대 5km이며 후보가 없으면 빈 배열과 이유를 반환한다. 후보는 시간 적합성을 검사하고 Haversine 동선 이탈이 작은 순으로 정렬한다. 식당을 자동 확정하지 않는다.
+
+주소 검증을 통과한 후보가 없을 때만 다음 반경으로 넓힌다. 현재 지도 영역 `bounds`가 있으면 반경 확대 대신 해당 영역을 한 번 검색한다. 각 실제 제공자 호출과 기술 장애 재시도 전에는 장소 검색 호출량을 확보한다. 제공자 장애는 빈 결과로 바꾸지 않고 503 `PLACE_PROVIDER_UNAVAILABLE`로 반환한다.
 
 관광지 검색의 districtFilterId를 음식점 검색에 자동 적용하지 않는다. 음식점은 식사 슬롯의 직전·직후 장소, 선택적 기준 관광지와 현재 지도 영역을 기준으로 탐색한다.
 
 Response는 후보별 `selectionToken`, 임시 카카오 장소명·링크·좌표와 예상 이탈시간을 반환한다. 제작 화면은 직전·직후 장소, 기준 관광지와 후보 마커를 목록과 연동하고 지도 이동 후 현재 영역 재검색을 제공한다. 선택한 음식점만 최종 생성 Request의 식사 항목에 전달한다. 완료 후 저장 일정으로 음식점을 다시 검색하거나 추가·교체하는 기능은 제공하지 않는다.
+
+Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nextPlace`·선택적 `referenceAttraction`의 역할·좌표·해당 관광지의 `clientPlaceId`, `page`·`hasNext`와 정렬된 `places`를 넣는다. 후보에는 카카오 장소 ID·링크·제공자 표시명·주소·좌표·`RESTAURANT` 역할 `selectionToken`·`detourKilometers`·`estimatedDetourMinutes`를 포함한다. 후보가 없거나 모두 식사 전후 시간에 맞지 않으면 `places=[]`, `emptyReason=NO_CANDIDATES`를 반환하며 선택 장소를 자동 지정하지 않는다.
 
 ---
 

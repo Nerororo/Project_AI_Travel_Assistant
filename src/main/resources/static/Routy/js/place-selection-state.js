@@ -5,7 +5,8 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.RoutyPlaceSelectionState = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  const ROLES = Object.freeze({ATTRACTION: 'ATTRACTION', HOTEL: 'HOTEL'});
+  const ROLES = Object.freeze({ATTRACTION: 'ATTRACTION', HOTEL: 'HOTEL', TRAVEL_BOUNDARY: 'TRAVEL_BOUNDARY'});
+  const BOUNDARY_SLOTS = Object.freeze({START: 'START', END: 'END'});
   const roleValues = new Set(Object.values(ROLES));
 
   function text(value, name) {
@@ -27,8 +28,8 @@
     if (parsedUrl.protocol !== 'https:' || parsedUrl.hostname !== 'place.map.kakao.com') {
       throw new TypeError('Invalid placeUrl');
     }
-    const suggestedStayMinutes = value.suggestedStayMinutes;
-    if (role === ROLES.HOTEL && suggestedStayMinutes !== null) throw new TypeError('Hotel stay suggestion must be null');
+    const suggestedStayMinutes = role === ROLES.ATTRACTION ? value.suggestedStayMinutes : value.suggestedStayMinutes ?? null;
+    if (role !== ROLES.ATTRACTION && suggestedStayMinutes !== null) throw new TypeError('Non-attraction stay suggestion must be null');
     if (role === ROLES.ATTRACTION
         && (!Number.isInteger(suggestedStayMinutes) || suggestedStayMinutes < 30
           || suggestedStayMinutes > 480 || suggestedStayMinutes % 10 !== 0)) {
@@ -47,29 +48,33 @@
   }
 
   function createStore() {
-    let authenticatedUserId = null;
+    let authenticatedSessionId = null;
     let regionId = null;
     let generation = 0;
     let candidates = new Map();
     let attractions = new Map();
     let hotel = null;
+    let startBoundary = null;
+    let endBoundary = null;
 
     function erase() {
       candidates = new Map();
       attractions = new Map();
       hotel = null;
+      startBoundary = null;
+      endBoundary = null;
     }
 
     function context() {
-      return Object.freeze({authenticatedUserId, regionId, generation});
+      return Object.freeze({authenticatedSessionId, regionId, generation});
     }
 
-    function setContext(nextUserId, nextRegionId) {
-      if (!Number.isSafeInteger(nextUserId) || nextUserId <= 0) throw new TypeError('authenticatedUserId must be positive');
+    function setContext(nextSessionId, nextRegionId) {
+      if (!Number.isSafeInteger(nextSessionId) || nextSessionId <= 0) throw new TypeError('authenticatedSessionId must be positive');
       text(nextRegionId, 'regionId');
-      if (authenticatedUserId !== nextUserId || regionId !== nextRegionId) {
+      if (authenticatedSessionId !== nextSessionId || regionId !== nextRegionId) {
         erase();
-        authenticatedUserId = nextUserId;
+        authenticatedSessionId = nextSessionId;
         regionId = nextRegionId;
         generation++;
       }
@@ -77,7 +82,7 @@
     }
 
     function current(expectedGeneration) {
-      return authenticatedUserId !== null && regionId !== null && expectedGeneration === generation;
+      return authenticatedSessionId !== null && regionId !== null && expectedGeneration === generation;
     }
 
     function acceptSearchResults(expectedGeneration, role, places) {
@@ -110,16 +115,35 @@
       return false;
     }
 
+    function selectBoundary(expectedGeneration, slot, kakaoPlaceId) {
+      if (!current(expectedGeneration)) return false;
+      const selected = candidates.get(ROLES.TRAVEL_BOUNDARY)?.get(kakaoPlaceId);
+      if (!selected) return false;
+      if (slot === BOUNDARY_SLOTS.START) startBoundary = selected;
+      else if (slot === BOUNDARY_SLOTS.END) endBoundary = selected;
+      else return false;
+      return true;
+    }
+
+    function unselectBoundary(expectedGeneration, slot) {
+      if (!current(expectedGeneration)) return false;
+      if (slot === BOUNDARY_SLOTS.START && startBoundary) { startBoundary = null; return true; }
+      if (slot === BOUNDARY_SLOTS.END && endBoundary) { endBoundary = null; return true; }
+      return false;
+    }
+
     function selected() {
       return Object.freeze({
         attractions: Object.freeze([...attractions.values()]),
-        hotel
+        hotel,
+        startBoundary,
+        endBoundary
       });
     }
 
     function clear() {
       erase();
-      authenticatedUserId = null;
+      authenticatedSessionId = null;
       regionId = null;
       generation++;
     }
@@ -132,9 +156,10 @@
       return () => windowLike.removeEventListener('pagehide', discard);
     }
 
-    return Object.freeze({context, setContext, acceptSearchResults, select, unselect, selected, clear,
+    return Object.freeze({context, setContext, acceptSearchResults, select, unselect, selectBoundary, unselectBoundary,
+      selected, clear,
       complete: clear, cancel: clear, authenticationEnded: clear, attachPageLifecycle});
   }
 
-  return Object.freeze({ROLES, createStore});
+  return Object.freeze({ROLES, BOUNDARY_SLOTS, createStore});
 });

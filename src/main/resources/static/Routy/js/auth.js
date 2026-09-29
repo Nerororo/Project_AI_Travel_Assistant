@@ -50,6 +50,8 @@
     let expiresAt = 0;
     let timer;
     let generation = 0;
+    let sessionSequence = 0;
+    let activeSessionId = null;
     let pending = null;
     function scheduleExpiration(expectedExpiresAt) {
       clearTimer(timer);
@@ -66,11 +68,15 @@
       clearTimer(timer);
       token = null;
       expiresAt = 0;
+      activeSessionId = null;
       onSessionEnd(reason);
     }
     function isAuthenticated() {
       if (token && now() >= expiresAt) clear('expired');
       return token !== null;
+    }
+    function sessionContextId() {
+      return isAuthenticated() ? activeSessionId : null;
     }
     function cancel() {
       generation++;
@@ -103,6 +109,8 @@
           clearTimer(timer);
           token = body.accessToken;
           expiresAt = expiresAtCandidate;
+          sessionSequence = sessionSequence === Number.MAX_SAFE_INTEGER ? 1 : sessionSequence + 1;
+          activeSessionId = sessionSequence;
           scheduleExpiration(expiresAt);
           return {ok: true};
         }
@@ -125,7 +133,7 @@
       if (response.status === 401) clear('expired');
       return response;
     }
-    return Object.freeze({submit, cancel, clear, isAuthenticated, protectedRequest});
+    return Object.freeze({submit, cancel, clear, isAuthenticated, sessionContextId, protectedRequest});
   }
   return Object.freeze({validate, apiError, expirationTime, createClient, isProtected: route => protectedRoutes.has(route)});
 });

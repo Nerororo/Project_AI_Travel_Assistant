@@ -12,6 +12,7 @@ import com.example.travel.travelplan.dto.EstimateCommand;
 import com.example.travel.travelplan.dto.EstimateResult;
 import com.example.travel.travelplan.dto.EstimateVisit;
 import com.example.travel.travelplan.dto.EstimatedDay;
+import com.example.travel.travelplan.dto.ResolvedEstimate;
 import com.example.travel.travelplan.dto.TravelConditions;
 import com.example.travel.travelplan.dto.TravelPlanEstimateApiRequest;
 import com.example.travel.travelplan.dto.TravelPlanEstimateApiResponse;
@@ -44,6 +45,10 @@ public class TravelPlanEstimateApiService {
 	}
 
 	public TravelPlanEstimateApiResponse estimate(long userId, TravelPlanEstimateApiRequest request) {
+		return toResponse(resolveAndEstimate(userId, request).result());
+	}
+
+	public ResolvedEstimate resolveAndEstimate(long userId, TravelPlanEstimateApiRequest request) {
 		TravelConditions conditions = validateRequest(userId, request);
 		List<EstimateVisit> visits = new ArrayList<>(request.places().size());
 		for (TravelPlanEstimateApiRequest.Place place : request.places()) {
@@ -59,7 +64,7 @@ public class TravelPlanEstimateApiService {
 		}
 		EstimateCommand command = new EstimateCommand(userId, request.regionId(), conditions,
 				request.startBoundarySelectionToken(), request.endBoundarySelectionToken(), visits, hotel);
-		return toResponse(estimateService.estimate(command));
+		return new ResolvedEstimate(command, estimateService.estimate(command));
 	}
 
 	private static TravelConditions validateRequest(long userId, TravelPlanEstimateApiRequest request) {

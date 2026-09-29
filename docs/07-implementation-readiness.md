@@ -37,15 +37,15 @@
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
-| Place | P1 범위와 P1-07B~D 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계 검색 Service·API, 지역·주소 검증, 체류시간 정책, 역할별 `selectionToken`과 경계·관광지·숙소의 공개 검증 Service·최소 DTO를 구현했다. 무효 token은 안전한 400으로 변환한다. 관광지·숙소 선택 메모리 상태는 구현됐지만 여행 경계의 브라우저 연결은 W1, 숙소 후보 검색은 S1-05, create 요청 수명은 T1 후속 작업이다. |
+| Place | P1 범위·P1-07B~D·S1-05·S1-06A 서버 범위 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계·숙소 전용 검색에 음식점 전용 검색 Service를 연결했다. 음식점은 확정 일정 기준의 검색 중심에서 1·3·5km로 확대하거나 현재 지도 영역을 검색하고, 주소 검증 뒤 `RESTAURANT` token을 발급한다. 지역·역할별 token 검증과 숙소의 점수 없는 직접 선택 계약을 유지한다. 브라우저 지도·목록 연결은 W1, create 요청 수명은 T1 후속 작업이다. |
 | Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
-| Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
-| TravelPlan | S1-01~04 구현·검증 완료 | 공개 place 검증 Service가 요청 범위에서 token을 좌표로 바꾸고, `POST /api/travel-plans/estimate`가 자동·사용자 배치, Haversine 시간표, 식사 예산과 초과 거절을 응답한다. 인증·validation·422를 검증했으며 DB와 실제 Route Client는 호출하지 않는다. create와 숙소 후보 검색은 후속 작업이다. |
+| Recommendation | S1-06·S1-06A 서버 범위 구현·검증 완료 | 재계산된 식사 시각과 직전·직후 장소의 가용 시각으로 후보의 시간 적합성을 검사하고 Haversine 추가 이동거리와 결정적 동률 규칙으로 정렬한다. 음식점 검색 HTTP와 연결했으며 빈 후보와 제공자 장애를 구분한다. 지도·목록 연동과 사용자 직접 선택은 W1 후속 범위다. |
+| TravelPlan | S1-01~04·S1-06A 구현·검증 완료 | 공개 place 검증 Service가 요청 범위에서 token을 좌표로 바꾸고, estimate가 자동·사용자 배치와 Haversine 시간표·식사 예산·초과 거절을 응답한다. 음식점 검색 조정 Service는 확정된 날짜·순서를 다시 계산해 식사 슬롯과 직전·직후 기준 장소를 확인한 뒤 place·recommendation 공개 계약을 조합한다. DB와 실제 Route Client는 호출하지 않으며 create는 후속 작업이다. |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약을 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | S1-04까지 427개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 공개 token 검증, estimate HTTP의 인증·입력·초과 응답을 함께 검증했다. 실패·오류·건너뜀은 0개다. |
-| 화면 | W1-00·W1-01A~C 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격, 회원가입·로그인 API adapter와 지역 직접 검색·정확히 3개인 AI 추천 후보 선택을 연결하고 서버 TTL 기반 메모리 인증·만료·보호 화면을 검증, 장소·일정 API 연결은 후속 범위 |
+| 자동 테스트 | S1-06A까지 455개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 음식점 반경 확대·주소·token·중복 requestId, 일정 재계산·식사 슬롯, HTTP 입력·인증·오류 경계를 함께 검증했다. 실패·오류·건너뜀은 0개다. |
+| 화면 | W1-00·W1-01A~C 구현·검증 완료, W1-02 비시각 계약 일부 정렬 | 공통 app shell·6개 view·8단계 Workspace 골격과 인증·지역 연결을 검증했다. 기존 상태 모듈은 숙소 응답의 체류시간 필드 부재, 세션별 식별값, 여행 시작·종료 경계 선택을 처리하지만 장소·지도·일정 API 화면 연결은 아직 없다. |
 
-현재 시작할 백엔드 작업은 `S1-05`이다. 숙소 후보를 기하 중앙값 5·10km, 메도이드, 현재 지도 영역에서 탐색하는 전용 제작 흐름을 구현한다. S1-04의 estimate API는 선택된 숙소 token을 검증하지만 후보 검색 자체를 제공하지 않는다.
+현재 시작할 백엔드 작업은 `S1-07`이다. 일정 계산과 추천의 DoD를 점검한다. 숙소·음식점 검색의 브라우저 지도·목록 연결은 W1에 남는다.
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -250,6 +250,14 @@ P1-07C에서 여행 경계의 초기 검색은 중심·반경 생략, 지도 이
 S1-03에서 `TravelPlanEstimateService`가 P1-07C 공개 경계 Service로 시작·종료 token을 검증하고, 호출자가 이미 검증해 전달한 관광지·숙소 좌표를 해당 요청 안에서만 사용해 Haversine 예상 이동시간과 Nearest Neighbor·2-opt 순서를 계산한다. ADR-042의 날짜·장소 후보 비교, 사용자 day·order 보존, 하루 5개, 식사 포함 시간 예산, 최초 초과 날짜의 422와 부분 일정 비반환을 구현했다. Service 결과는 `routeVerified=false`이고 DB·서버 세션·실제 Route Client를 사용하지 않는다. TravelPlan 집중 테스트 25개와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 415개 테스트가 실패·오류·건너뜀 없이 통과했다. S1-04의 HTTP 요청 변환은 관광지·숙소 token을 검증된 좌표로 바꿀 공개 place 계약과 무효 경계 token의 400 변환을 먼저 확인해야 하며, 이 계약을 위해 place 내부를 바꿔야 한다면 별도 P1 Task로 분리한다.
 
 P1-07D에서 place 소유 공개 Service가 관광지·숙소 역할을 각각 고정해 token의 서명·만료·사용자·지역을 검증하고 카카오 장소 ID·URL·좌표만 요청 범위 DTO로 전달하도록 했다. 무효 관광지·숙소·여행 경계 token은 내부 예외나 payload를 노출하지 않는 `VALIDATION_FAILED` 400으로 변환한다. S1-04에서는 인증된 estimate Controller가 요청 DTO를 검증하고 한 Service에서 token을 해석한 뒤 기존 추정 계산에 전달한다. 응답은 `routeVerified=false`와 날짜별 항목·시간만 포함하며 422 초과 시 부분 일정을 반환하지 않는다. TravelPlan 집중 테스트와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 427개 테스트가 실패·오류·건너뜀 없이 통과했다. 숙소 후보 검색·브라우저 연결·완료 생성과 좌표 수명 전체 검증은 각각 S1-05·W1·T1의 후속 범위다.
+
+S1-05에서 인증·`Idempotency-Key`가 필요한 `POST /api/places/hotels/search`를 구현했다. 현재 사용자·지역·관광지 역할로 token을 검증한 뒤, 기하 중앙값 기본 5km와 명시적 10km 확대, 실제 관광지 메도이드 5km 또는 현재 지도 사각형으로 카카오 숙소 후보를 검색한다. 선택 지역 주소 검증·중복 ID 제거 후 `HOTEL` token을 발급하며 체류시간·거리 점수·자동 순위는 응답하지 않는다. 무효 입력은 외부 호출과 호출량 차감 전에 거절하고, 기존 장소 검색의 사용자 한도·requestId·재시도 실패 계약을 재사용한다. Place 집중 테스트와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 440개 테스트가 실패·오류·건너뜀 없이 통과했다. 브라우저 지도·목록 동기화와 실제 운영 제공자 정책 검증은 이번 서버 작업의 완료 판정에 포함하지 않았다.
+
+W1-02 비시각 계약 정렬에서는 S1-05 숙소 응답에 `suggestedStayMinutes`가 없는 형태를 기존 장소 메모리 상태가 내부 `null`로 수용하도록 수정했다. 로그인 API나 JWT 내용을 바꾸지 않고 인증 Client가 로그인 성공마다 새 메모리 전용 `sessionContextId`를 제공하며, 상태 모듈은 인증 세션·지역 변경을 이전 후보와 선택의 폐기 경계로 사용한다. `TRAVEL_BOUNDARY` 후보와 독립적인 시작·종료 선택도 작성 흐름의 탭 메모리 상태에 추가하고 같은 장소의 양쪽 선택, 인증 종료·완료·취소·`pagehide` 폐기를 검증했다. W1-02 문서에는 실제 화면 구현 시 경계 선택·당일치기 숙소 건너뛰기·token 무효 시 재선택·페이지 결과와 기존 선택의 구분을 명시했고, API 명세의 3일 estimate 예시 날짜 목록을 바로잡았다. Node·Chromium 48개와 루트 `test.ps1` 440개가 실패·오류·건너뜀 없이 통과했다. `index.html`·`preview.js`·지도·API adapter는 수정하지 않았으므로 W1-02 화면 연결 완료나 카카오 데이터 수명 전체 DoD 완료로 표시하지 않는다.
+
+S1-06에서 요청 범위의 음식점 후보를 재계산된 식사 슬롯과 직전 장소 이용 가능 시각·직후 장소 도착 시각으로 평가한다. 두 이동 구간의 Haversine 예상시간으로 식사 전후 도착 가능 여부를 먼저 검사하고, 가능한 후보는 `직전→음식점→직후` 거리에서 직행 거리를 뺀 추가 이동거리 오름차순과 장소 ID로 정렬한다. 후보가 없거나 모두 시간에 맞지 않으면 `NO_CANDIDATES`, 제공자 조회 실패는 `PROVIDER_FAILURE`로 반환한다. 추천은 선택이나 일정에 반영하지 않는다. 집중 테스트 4개와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 444개가 실패·오류·건너뜀 없이 통과했다. 실제 음식점 조회·HTTP 응답·지도 연결은 S1-06A·W1의 후속 범위다.
+
+S1-06A에서 인증·`Idempotency-Key`가 필요한 `POST /api/places/restaurants/search`를 연결했다. 조정 Service는 확정된 날짜·순서의 작성 입력을 다시 검증·계산하고 요청한 식사 슬롯, 직전·직후 장소와 선택적 기준 관광지를 찾아 place 공개 Service에 전달한다. place는 1·3·5km 순서 또는 현재 지도 영역에서 검색하고 주소 검증·중복 제거 뒤 `RESTAURANT` token을 발급한다. recommendation은 시간에 맞는 후보만 Haversine 추가 이동거리 순으로 정렬한다. 빈 후보는 이유가 있는 200 응답, 제공자 장애는 503이며 선택이나 일정을 자동 변경하지 않는다. 집중 테스트 10개와 인증 통합 테스트 1개를 포함한 루트 `test.ps1` 전체 455개가 실패·오류·건너뜀 없이 통과했다. 브라우저 지도·목록·직접 선택과 완료 생성의 좌표 수명 검증은 W1·T1 후속 범위다.
 
 ## 8. 완료 해석
 

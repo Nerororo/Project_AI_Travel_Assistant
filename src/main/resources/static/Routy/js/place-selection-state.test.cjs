@@ -46,14 +46,46 @@ test('supports multiple attractions and exactly one directly selected hotel', ()
   assert.equal(store.selected().hotel.kakaoPlaceId, '4');
 });
 
-test('user and region changes erase candidates tokens coordinates and previous generation access', () => {
+test('accepts the actual hotel response shape without a stay field and rejects a numeric stay', () => {
+  const store = state.createStore();
+  const context = store.setContext(7, 'KR-CITY');
+  const hotel = place('3');
+  delete hotel.suggestedStayMinutes;
+  assert.equal(store.acceptSearchResults(context.generation, state.ROLES.HOTEL, [hotel]), true);
+  assert.equal(store.select(context.generation, state.ROLES.HOTEL, '3'), true);
+  assert.equal(store.selected().hotel.suggestedStayMinutes, null);
+  assert.throws(() => store.acceptSearchResults(context.generation, state.ROLES.HOTEL, [place('4')]));
+});
+
+test('keeps start and end boundary selections independently and allows the same place for both', () => {
+  const store = state.createStore();
+  const context = store.setContext(7, 'KR-CITY');
+  const boundary = place('8');
+  delete boundary.suggestedStayMinutes;
+  store.acceptSearchResults(context.generation, state.ROLES.TRAVEL_BOUNDARY, [boundary]);
+  assert.equal(store.select(context.generation, state.ROLES.TRAVEL_BOUNDARY, '8'), false);
+  assert.equal(store.selectBoundary(context.generation, state.BOUNDARY_SLOTS.START, '8'), true);
+  assert.equal(store.selectBoundary(context.generation, state.BOUNDARY_SLOTS.END, '8'), true);
+  assert.equal(store.selected().startBoundary.kakaoPlaceId, '8');
+  assert.equal(store.selected().endBoundary.kakaoPlaceId, '8');
+  assert.equal(store.selected().startBoundary.suggestedStayMinutes, null);
+  assert.equal(store.unselectBoundary(context.generation, state.BOUNDARY_SLOTS.START), true);
+  assert.equal(store.selected().startBoundary, null);
+  assert.equal(store.selected().endBoundary.kakaoPlaceId, '8');
+  assert.throws(() => store.acceptSearchResults(context.generation, state.ROLES.TRAVEL_BOUNDARY, [place('9')]));
+});
+
+test('authentication session and region changes erase candidates tokens coordinates and previous generation access', () => {
   for (const next of [[8, 'KR-CITY'], [7, 'KR-OTHER']]) {
     const store = state.createStore();
     const old = store.setContext(7, 'KR-CITY');
     store.acceptSearchResults(old.generation, state.ROLES.ATTRACTION, [place()]);
     store.select(old.generation, state.ROLES.ATTRACTION, '1');
+    store.acceptSearchResults(old.generation, state.ROLES.TRAVEL_BOUNDARY,
+      [place('8', {suggestedStayMinutes: null})]);
+    store.selectBoundary(old.generation, state.BOUNDARY_SLOTS.START, '8');
     const changed = store.setContext(...next);
-    assert.deepEqual(store.selected(), {attractions: [], hotel: null});
+    assert.deepEqual(store.selected(), {attractions: [], hotel: null, startBoundary: null, endBoundary: null});
     assert.equal(store.select(old.generation, state.ROLES.ATTRACTION, '1'), false);
     assert.equal(store.acceptSearchResults(old.generation, state.ROLES.ATTRACTION, [place()]), false);
     assert.ok(changed.generation > old.generation);
@@ -66,9 +98,12 @@ test('completion cancellation and authentication end make old selections unusabl
     const context = store.setContext(7, 'KR-CITY');
     store.acceptSearchResults(context.generation, state.ROLES.ATTRACTION, [place()]);
     store.select(context.generation, state.ROLES.ATTRACTION, '1');
+    store.acceptSearchResults(context.generation, state.ROLES.TRAVEL_BOUNDARY,
+      [place('8', {suggestedStayMinutes: null})]);
+    store.selectBoundary(context.generation, state.BOUNDARY_SLOTS.END, '8');
     store[action]();
-    assert.deepEqual(store.selected(), {attractions: [], hotel: null});
-    assert.equal(store.context().authenticatedUserId, null);
+    assert.deepEqual(store.selected(), {attractions: [], hotel: null, startBoundary: null, endBoundary: null});
+    assert.equal(store.context().authenticatedSessionId, null);
     assert.equal(store.select(context.generation, state.ROLES.ATTRACTION, '1'), false);
   }
 });
@@ -83,9 +118,12 @@ test('pagehide clears memory and detached lifecycle no longer mutates the store'
   const context = store.setContext(7, 'KR-CITY');
   store.acceptSearchResults(context.generation, state.ROLES.ATTRACTION, [place()]);
   store.select(context.generation, state.ROLES.ATTRACTION, '1');
+  store.acceptSearchResults(context.generation, state.ROLES.TRAVEL_BOUNDARY,
+    [place('8', {suggestedStayMinutes: null})]);
+  store.selectBoundary(context.generation, state.BOUNDARY_SLOTS.START, '8');
   const detach = store.attachPageLifecycle(windowLike);
   listeners.get('pagehide')();
-  assert.deepEqual(store.selected(), {attractions: [], hotel: null});
+  assert.deepEqual(store.selected(), {attractions: [], hotel: null, startBoundary: null, endBoundary: null});
   detach();
   assert.equal(listeners.has('pagehide'), false);
 });
@@ -102,7 +140,7 @@ test('a reload creates a fresh empty store and browser persistence is never touc
     first.acceptSearchResults(context.generation, state.ROLES.ATTRACTION, [place()]);
     first.select(context.generation, state.ROLES.ATTRACTION, '1');
     const reloaded = state.createStore();
-    assert.deepEqual(reloaded.selected(), {attractions: [], hotel: null});
+    assert.deepEqual(reloaded.selected(), {attractions: [], hotel: null, startBoundary: null, endBoundary: null});
   } finally {
     for (const [name, descriptor] of Object.entries(descriptors)) {
       if (descriptor) Object.defineProperty(globalThis, name, descriptor);

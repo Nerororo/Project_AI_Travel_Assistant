@@ -70,6 +70,21 @@ test('login accepts server-configured TTL and expires from request start consist
   assert.equal(h.client.isAuthenticated(), false);
   assert.deepEqual(h.ended, ['expired']);
 });
+test('exposes only a transient session context ID that changes on each login', async () => {
+  const data = credentials();
+  const h = harness(async () => reply(200, loginBody()));
+  assert.equal(h.client.sessionContextId(), null);
+  await h.client.submit('login', data.email, data.password);
+  const first = h.client.sessionContextId();
+  assert.equal(Number.isSafeInteger(first) && first > 0, true);
+  assert.equal(h.client.sessionContextId(), first);
+  h.client.clear();
+  assert.equal(h.client.sessionContextId(), null);
+  await h.client.submit('login', data.email, data.password);
+  assert.notEqual(h.client.sessionContextId(), first);
+  h.advance(3600000);
+  assert.equal(h.client.sessionContextId(), null);
+});
 test('TTL longer than the browser timer limit does not expire early', async () => {
   const data = credentials();
   const thirtyDays = 30 * 24 * 60 * 60;
