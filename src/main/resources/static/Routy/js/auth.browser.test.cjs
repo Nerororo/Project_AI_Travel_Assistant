@@ -13,7 +13,7 @@ const {setTimeout: delay} = require('node:timers/promises');
 
 test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
-  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
+  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/menu-workspace.js', 'js/menu-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
   const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
   const account = {email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')};
   const token = Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.');
@@ -25,6 +25,8 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   let regionRecommendationCalls = 0;
   let recommendationHeaders;
   const placeRequests = [];
+  const menuRequests = [];
+  let menuMode = 'success';
   const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && ['/api/users', '/api/auth/login'].includes(req.url)) {
       for await (const _ of req) { /* Discard request data immediately. */ }
@@ -67,6 +69,27 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
         {regionId: 'opaque-b', name: '속초시', provinceName: '강원특별자치도', reason: '조용한 바닷가를 둘러볼 수 있어요.'},
         {regionId: 'opaque-c', name: '여수시', provinceName: '전라남도', reason: '섬과 해안 풍경이 이어져요.'}
       ]}));
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/api/ai/menus/analyze') {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const body = JSON.parse(raw);
+      menuRequests.push({body, headers: req.headers});
+      const mode = menuMode;
+      if (mode === 'delayed') await delay(350);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-store');
+      if (mode === 'unavailable') {
+        res.writeHead(503);
+        res.end(JSON.stringify({code: 'AI_UNAVAILABLE', message: 'untrusted-response'}));
+      } else {
+        res.writeHead(200);
+        res.end(JSON.stringify({menus: [
+          {name: '가상 국밥', searchQuery: '국밥', reason: '따뜻한 한 끼', targetClientPlaceId: body.attractions[0]?.clientPlaceId || null},
+          {name: '가상 전골', searchQuery: '전골', reason: '함께 먹기 좋은 메뉴', targetClientPlaceId: null}
+        ]}));
+      }
       return;
     }
     if (req.method === 'POST' && ['/api/places/search', '/api/places/travel-boundaries/search', '/api/places/hotels/search'].includes(req.url)) {
@@ -261,6 +284,9 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   });
   await t.test('W1-02 keeps place selections in memory and uses dedicated place APIs', async () => {
     await navigate('/workspace');
+    assert.equal(await evaluate(`document.querySelector('[data-step="2"]').disabled`), true);
+    await click('[data-step="2"]');
+    assert.equal(await evaluate(`document.querySelector('[data-step="0"]').getAttribute('aria-current')`), 'step');
     await click('#next-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="1"]').getAttribute('aria-current')`), 'step');
     await evaluate(`document.querySelector('#trip-days').value='2';document.querySelector('#trip-days').dispatchEvent(new Event('change'))`);
@@ -284,14 +310,22 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('input[name="boundary-slot"][value="END"]');
     await click('#place-results .place-result button');
     assert.equal(await evaluate(`document.querySelector('#boundary-selected').textContent.includes('시작: 가상 역') && document.querySelector('#boundary-selected').textContent.includes('종료: 가상 역')`), true);
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').disabled`), true);
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('[data-step="2"]').getAttribute('aria-current')`), 'step');
     await click('#next-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="3"]').getAttribute('aria-current')`), 'step');
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('[data-step="3"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('#hotel-status').textContent.includes('숙소를 직접 선택')`), true);
     await evaluate(`document.querySelector('#hotel-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#hotel-results .place-result').length === 1`);
     assert.equal(placeRequests.at(-1).path, '/api/places/hotels/search');
     assert.deepEqual(placeRequests.at(-1).body.attractionSelectionTokens, ['fake-attraction-1-token']);
     await click('#hotel-results .place-result button');
     assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '1곳');
+    assert.equal(await evaluate(`(()=>{const heading=document.querySelector('#step-title').getBoundingClientRect();return heading.top >= document.querySelector('.site-header').getBoundingClientRect().bottom && heading.top < innerHeight})()`), true);
+    assert.equal(await evaluate(`document.querySelector('#hotel-map').classList.contains('is-unavailable')`), true);
     await screenshot('w1-02-hotel-desktop.png');
     assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
     assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
@@ -301,15 +335,88 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('[data-step="2"]');
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
     await screenshot('w1-02-attractions-mobile.png');
+    await click('#attractions-workspace [data-place-view="map"]');
+    assert.equal(await evaluate(`document.querySelector('#attractions-workspace .place-layout').dataset.mobileView`), 'map');
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('#attractions-workspace .place-list-pane')).display`), 'none');
+    assert.equal(await evaluate(`document.querySelector('#attractions-workspace [data-place-view="map"]').getAttribute('aria-pressed')`), 'true');
+    await evaluate(`document.querySelector('#place-map').scrollIntoView({block:'center'})`);
+    await screenshot('w1-02-map-mobile.png');
+    await click('#attractions-workspace [data-place-view="list"]');
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('#attractions-workspace .place-list-pane')).display !== 'none'`), true);
+    assert.equal(await evaluate(`document.querySelector('#boundary-selected').textContent.includes('시작: 가상 역')`), true);
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await click('[data-step="1"]');
     await evaluate(`document.querySelector('#trip-days').value='1';document.querySelector('#trip-days').dispatchEvent(new Event('change'))`);
     await click('#next-step');
     await click('#next-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="3"]').disabled`), true);
+    await click('[data-step="3"]');
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
     assert.equal(await evaluate(`document.querySelector('#hotel-selected').textContent.includes('선택한 숙소 없음')`), true);
     await click('#previous-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="2"]').getAttribute('aria-current')`), 'step');
+  });
+  await t.test('W1-02A analyzes, edits, adds and confirms menus without losing drafts on failure', async () => {
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('#menu-workspace').hidden`), false);
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
+    menuMode = 'unavailable';
+    await evaluate(`document.querySelector('#menu-request').value='따뜻한 지역 음식';document.querySelector('#menu-analysis-form').requestSubmit()`);
+    await until(`document.querySelector('#menu-status').textContent.includes('직접 메뉴를 입력')`);
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 0);
+    await evaluate(`document.querySelector('#menu-direct-name').value='직접 고른 메뉴';document.querySelector('#menu-direct-query').value='직접 검색어';document.querySelector('#menu-direct-query').focus()`);
+    await key('Enter', 'Enter', 13);
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 1);
+    await click('#menu-confirm');
+    assert.equal(await evaluate(`document.querySelector('#menu-confirmed-status').textContent.includes('확정했습니다')`), true);
+    await evaluate(`document.querySelector('#menu-request').value='따뜻한 지역 음식';document.querySelector('#menu-analysis-form').requestSubmit()`);
+    await until(`document.querySelector('#menu-status').textContent.includes('직접 메뉴를 입력')`);
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 1);
+    assert.equal(await evaluate(`document.querySelector('#menu-confirmed-status').textContent.includes('확정했습니다')`), true);
+    menuMode = 'success';
+    await evaluate(`document.querySelector('#menu-analysis-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#menu-draft .menu-card').length === 2`);
+    assert.equal(menuRequests.at(-1).body.regionId, 'opaque-b');
+    assert.equal(menuRequests.at(-1).body.request, '따뜻한 지역 음식');
+    assert.equal(menuRequests.at(-1).body.attractions.length, 1);
+    assert.match(menuRequests.at(-1).body.attractions[0].clientPlaceId, /^[0-9a-f-]{36}$/);
+    assert.equal(menuRequests.at(-1).body.attractions[0].displayName, '내 바닷가');
+    assert.equal(JSON.stringify(menuRequests.at(-1).body).includes('fake-attraction-1-token'), false);
+    assert.match(menuRequests.at(-1).headers['idempotency-key'], /^[0-9a-f-]{36}$/);
+    assert.notEqual(menuRequests.at(-1).headers['idempotency-key'], menuRequests.at(-2).headers['idempotency-key']);
+    assert.equal(menuRequests.at(-1).headers.authorization, `Bearer ${token}`);
+    await screenshot('w1-02a-menu-desktop.png');
+    await evaluate(`document.querySelector('#menu-draft .menu-card input').value='내 국밥';document.querySelector('#menu-draft .menu-card input').dispatchEvent(new Event('input'))`);
+    await click('#menu-draft .menu-card:nth-child(2) button');
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 1);
+    menuMode = 'delayed';
+    await evaluate(`document.querySelector('#menu-analysis-form').requestSubmit()`);
+    await until(`document.querySelector('#menu-submit').disabled`);
+    await evaluate(`document.querySelector('#menu-direct-name').value='직접 추가한 메뉴';document.querySelector('#menu-direct-query').value='직접 추가 검색어';document.querySelector('#menu-direct-form').requestSubmit()`);
+    await delay(450);
+    assert.equal(await evaluate(`document.querySelector('#menu-draft').textContent.includes('직접 추가한 메뉴')`), false);
+    assert.equal(await evaluate(`Array.from(document.querySelectorAll('#menu-draft .menu-card input')).some(input => input.value === '직접 추가한 메뉴')`), true);
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 2);
+    menuMode = 'success';
+    await click('#menu-confirm');
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="5"]').getAttribute('aria-current')`), 'step');
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('#menu-draft .menu-card input').value`), '내 국밥');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+    await screenshot('w1-02a-menu-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await click('[data-step="2"]');
+    await click('[data-place-role="ATTRACTION"]');
+    await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value='새 바닷가';document.querySelector('#attraction-selected input[type="text"]').dispatchEvent(new Event('input'))`);
+    await click('[data-step="4"]');
+    assert.equal(await evaluate(`document.querySelector('#menu-confirmed-status').textContent.includes('검토 중')`), true);
+    assert.equal(await evaluate(`document.querySelector('#menu-draft select').textContent.includes('새 바닷가')`), true);
   });
   await t.test('W1-02 district filter is explicit and a new region discards prior place selections', async () => {
     await click('[data-step="0"]');
@@ -317,6 +424,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await until(`document.querySelector('#region-search-results [data-region-id="opaque-metro"]') !== null`);
     await click('#region-search-results [data-region-id="opaque-metro"]');
     assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '0곳');
+    assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 0);
     await click('#next-step'); await click('#next-step');
     await evaluate(`document.querySelector('#district-query').value='해운대';document.querySelector('#district-form').requestSubmit()`);
     await until(`document.querySelector('#district-results button') !== null`);

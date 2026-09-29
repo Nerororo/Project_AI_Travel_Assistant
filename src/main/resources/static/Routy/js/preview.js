@@ -15,11 +15,11 @@
   });
 
   const STEPS = Object.freeze([
-    ['지역 선택', '어디로 떠나고 싶나요?', '직접 검색하거나 세 곳을 추천받는 화면이 이 영역에 연결됩니다.'],
+    ['지역 선택', '어디로 떠나고 싶나요?', '국내 여행 지역을 직접 검색하거나 AI가 제안한 세 곳에서 선택해 주세요.'],
     ['여행 조건', '여행의 시간과 이동을 정해요', '1~7일의 기간과 자동차 또는 대중교통 하나를 선택합니다.'],
-    ['관광지', '가고 싶은 장면을 골라요', '검색 목록과 지도, 마커를 한 화면에서 연결할 자리입니다.'],
-    ['숙소', '하루의 시작과 끝을 정해요', '순위 없이 지도 탐색 결과에서 사용자가 숙소를 직접 선택합니다.'],
-    ['메뉴', '여행 사이의 맛을 생각해요', 'AI가 구조화한 메뉴를 검토하고 직접 수정하는 영역입니다.'],
+    ['관광지', '가고 싶은 장면을 골라요', '관광지와 여행의 시작·종료 장소를 검색해 직접 선택해 주세요.'],
+    ['숙소', '머무를 숙소를 골라요', '검색 결과를 목록과 지도에서 살펴보고 숙소를 직접 선택해 주세요.'],
+    ['메뉴', '여행 사이의 맛을 생각해요', '먹고 싶은 음식을 분석하거나 직접 메뉴를 추가하고 확정해 주세요.'],
     ['추정 일정', '하루 안에 들어오는지 살펴봐요', '실제 경로 검증 전 추정 일정과 조정 지점을 표시합니다.'],
     ['음식점', '식사 시간의 장소를 골라요', '식사 슬롯 앞뒤 장소와 후보를 목록·지도에 함께 표시합니다.'],
     ['검토', '이제 실제 경로를 확인할 차례예요', '완료 생성의 영향과 경고를 확인하고 중복 제출을 막습니다.']
@@ -111,6 +111,7 @@
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const hoverFine = window.matchMedia('(hover: hover) and (pointer: fine)');
     let currentStep = 0;
+    let furthestStep = 0;
     let currentState = 'initial';
     let tiltFrame = 0;
     const auth = window.RoutyAuth;
@@ -126,6 +127,7 @@
     let regionVersion = 0;
     let regionPending = null;
     let placeController;
+    let menuController;
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
       resetJourney();
       cancelForm();
@@ -183,8 +185,10 @@
     function resetJourney() {
       cancelRegionRequest();
       placeController?.reset();
+      menuController?.reset();
       selectedRegion = null;
       currentStep = 0;
+      furthestStep = 0;
       currentState = 'initial';
       document.querySelectorAll('[data-state]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === 'initial')));
       if (cancelDialog.open) cancelDialog.close();
@@ -216,8 +220,10 @@
       document.querySelector('.summary-empty').hidden = Boolean(selectedRegion);
     }
     function selectRegion(region, source) {
+      const changed = selectedRegion?.regionId !== region.regionId;
       selectedRegion = Object.freeze({regionId: region.regionId, name: region.name, provinceName: region.provinceName || ''});
       placeController.setRegion(selectedRegion);
+      if (changed) { menuController?.reset(); furthestStep = 0; renderStep(false); }
       document.querySelectorAll('[data-region-id]').forEach(button => {
         const selected = button.dataset.regionId === selectedRegion.regionId;
         button.textContent = selected ? '선택됨' : '이 지역 선택';
@@ -345,8 +351,23 @@
       stateStage.innerHTML = `<div class="stage-content${errorClass}"><span class="stage-symbol" aria-hidden="true">${model.symbol}</span><h3>${model.title}</h3><p>${model.description}</p></div>`;
     }
 
+    function nextReachableStep() {
+      return currentStep < 4 && placeController ? placeController.nextStep(currentStep) : Math.min(currentStep + 1, STEPS.length - 1);
+    }
+
+    function updateStepAvailability() {
+      const days = placeController?.summary().days || 1;
+      const reachable = Math.max(furthestStep, nextReachableStep());
+      stepList.querySelectorAll('[data-step]').forEach(button => {
+        const index = Number(button.dataset.step);
+        button.disabled = index > reachable || (index === 3 && days === 1);
+        button.dataset.progress = index === currentStep ? 'current' : index <= furthestStep ? 'visited' : 'upcoming';
+      });
+    }
+
     function renderStep(focusHeading) {
       currentStep = clampStep(currentStep);
+      furthestStep = Math.max(furthestStep, currentStep);
       stepList.replaceChildren(...STEPS.map(([label], index) => {
         const item = document.createElement('li');
         const button = document.createElement('button');
@@ -359,17 +380,22 @@
         item.append(button);
         return item;
       }));
+      updateStepAvailability();
       const [, title, description] = STEPS[currentStep];
       stepTitle.textContent = title;
       stepDescription.textContent = description;
       stepCount.textContent = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}`;
       previousStep.disabled = currentStep === 0;
-      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 구조로 돌아가기 ↺' : '다음 구조 보기 →';
+      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 단계로 돌아가기 ↺' : currentStep >= 4 ? '다음 단계 미리보기 →' : '다음 단계 →';
       regionWorkspace.hidden = currentStep !== 0;
       placeController?.showStep(currentStep);
-      futureStepPreview.hidden = currentStep < 4;
-      document.querySelector('#step-badge').textContent = currentStep === 0 ? 'W1-01B · CONNECTED' : currentStep <= 3 ? 'W1-02 · CONNECTED' : 'W1 · STRUCTURE';
-      if (focusHeading) stepTitle.focus({preventScroll: true});
+      menuController?.showStep(currentStep, selectedRegion?.regionId, placeController?.attractionContexts() || []);
+      futureStepPreview.hidden = currentStep < 5;
+      document.querySelector('#step-badge').textContent = currentStep === 0 ? '지역 선택' : currentStep <= 3 ? '여행 장소 선택' : currentStep === 4 ? '메뉴 선택' : '기능 준비 중';
+      document.querySelector('#step-action-note').textContent = currentStep <= 4 ? '선택한 내용은 이 작성 흐름에서만 유지됩니다.' : '후속 단계는 아직 연결 중입니다.';
+      const activeButton = stepList.querySelector('[aria-current="step"]');
+      if (activeButton) stepList.scrollLeft = activeButton.offsetLeft - stepList.offsetLeft - (stepList.clientWidth - activeButton.offsetWidth) / 2;
+      if (focusHeading) { stepTitle.scrollIntoView({block: 'start', behavior: 'instant'}); stepTitle.focus({preventScroll: true}); }
     }
 
     function updateNavigation(view) {
@@ -450,17 +476,23 @@
     });
 
     function advanceAllowed(target) {
+      const days = placeController.summary().days;
+      if (target === 3 && days === 1) return false;
       if (target <= currentStep) return true;
+      if (target > Math.max(furthestStep, nextReachableStep())) return false;
       if (currentStep === 0 && !selectedRegion) { setRegionStatus('search', '먼저 여행 지역을 선택해 주세요.', true); return false; }
-      if (currentStep <= 2 && target > 2) {
+      if (target > 2) {
         const message = placeController.canLeave(2);
         if (message) { currentStep = 2; renderStep(true); document.querySelector('[data-place-role="ATTRACTION"]').click(); document.querySelector('#place-status').textContent = message; document.querySelector('#place-status').focus({preventScroll: true}); return false; }
       }
-      if (currentStep === 3 && target > 3) {
+      if (target > 3 && days > 1) {
         const message = placeController.canLeave(3);
-        if (message) { document.querySelector('#hotel-status').textContent = message; document.querySelector('#hotel-status').focus({preventScroll: true}); return false; }
+        if (message) { currentStep = 3; renderStep(true); document.querySelector('#hotel-status').textContent = message; document.querySelector('#hotel-status').focus({preventScroll: true}); return false; }
       }
-      if (target === 3 && placeController.summary().days === 1) return false;
+      if (target > 4) {
+        const message = menuController.canLeave(selectedRegion.regionId, placeController.attractionContexts());
+        if (message) { currentStep = 4; renderStep(true); menuController.showError(message); return false; }
+      }
       return true;
     }
 
@@ -514,7 +546,9 @@
       document.querySelector('#summary-days').textContent = `${summary.days}일`;
       document.querySelector('#summary-mode').textContent = summary.travelMode === 'CAR' ? '자동차' : '대중교통';
       document.querySelector('#summary-places').textContent = `${summary.attractionCount}곳`;
+      updateStepAvailability();
     });
+    menuController = window.RoutyMenuWorkspace.mount(document, window, client);
     renderStep(false);
     renderState();
     showRoute(false);

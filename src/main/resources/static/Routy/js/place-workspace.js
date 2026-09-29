@@ -81,11 +81,15 @@
       if (ready) { map.relayout(); return true; }
       try {
         const maps = await loadMapSdk(window);
+        element.classList.remove('is-unavailable');
+        element.replaceChildren();
         map = new maps.Map(element, {center: new maps.LatLng(36.5, 127.8), level: 12});
         ready = true;
         status.textContent = '';
         return true;
       } catch (_) {
+        element.classList.add('is-unavailable');
+        element.textContent = '지도를 표시할 수 없어요. 목록에서 장소를 선택해 주세요.';
         status.textContent = '지도를 불러오지 못했습니다. 목록에서 장소를 선택할 수 있습니다. 브라우저 지도 키와 등록 도메인을 확인해 주세요.';
         return false;
       }
@@ -208,7 +212,7 @@
         const selected = store.selected().attractions;
         if (selected.some(place => place.kakaoPlaceId === id)) { store.unselect(generation, role, id); draft.delete(id); }
         else if (selected.length >= days() * 5) { status('#place-status', `관광지는 ${days()}일 여행에서 최대 ${days() * 5}곳까지 선택할 수 있습니다.`, true); return; }
-        else if (store.select(generation, role, id)) draft.set(id, {name: '', stayMinutes: results[role].find(place => place.kakaoPlaceId === id).suggestedStayMinutes});
+        else if (store.select(generation, role, id)) draft.set(id, {clientPlaceId: window.crypto.randomUUID(), name: '', stayMinutes: results[role].find(place => place.kakaoPlaceId === id).suggestedStayMinutes});
       } else {
         store.selectBoundary(generation, boundarySlot, id);
       }
@@ -377,6 +381,12 @@
     }
     function nextStep(step) { return step === 2 && days() === 1 ? 4 : step + 1; }
     function summary() { return {days: days(), travelMode: document.querySelector('input[name="travel-mode"]:checked')?.value || 'CAR', attractionCount: store.selected().attractions.length}; }
+    function attractionContexts() {
+      return store.selected().attractions.map(place => {
+        const values = draft.get(place.kakaoPlaceId);
+        return {clientPlaceId: values.clientPlaceId, displayName: values.name.trim()};
+      });
+    }
 
     $('#trip-days').addEventListener('change', () => { if (days() === 1) store.unselect(generation, ROLES.HOTEL, store.selected().hotel?.kakaoPlaceId); renderAll(); onSummary?.(); });
     document.querySelectorAll('input[name="travel-mode"]').forEach(input => input.addEventListener('change', () => onSummary?.()));
@@ -389,6 +399,15 @@
       $('#boundary-selected').hidden = role !== ROLES.TRAVEL_BOUNDARY;
       status('#place-status', ''); renderAll();
     }));
+    for (const [workspaceSelector, mapView] of [['#attractions-workspace', map], ['#hotel-workspace', hotelMap]]) {
+      const workspace = $(workspaceSelector);
+      workspace.querySelectorAll('[data-place-view]').forEach(button => button.addEventListener('click', () => {
+        const view = button.dataset.placeView;
+        workspace.querySelector('.place-layout').dataset.mobileView = view;
+        workspace.querySelectorAll('[data-place-view]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+        if (view === 'map') mapView.ensure().then(ok => { if (ok) renderAll(); });
+      }));
+    }
     $('#district-form').addEventListener('submit', findDistrict);
     $('#attraction-search-form').addEventListener('submit', event => { event.preventDefault(); send(ROLES.ATTRACTION); });
     $('#boundary-search-form').addEventListener('submit', event => { event.preventDefault(); send(ROLES.TRAVEL_BOUNDARY); });
@@ -400,7 +419,7 @@
     }
     window.addEventListener('pagehide', () => reset());
     renderAll();
-    return {setRegion, showStep, canLeave, nextStep, summary, reset, cancelRequest, selected: () => store.selected()};
+    return {setRegion, showStep, canLeave, nextStep, summary, attractionContexts, reset, cancelRequest, selected: () => store.selected()};
   }
 
   return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, mount});

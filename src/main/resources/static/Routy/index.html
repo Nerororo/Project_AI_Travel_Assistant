@@ -11,6 +11,7 @@
   <script src="js/auth.js" defer></script>
   <script src="js/place-selection-state.js" defer></script>
   <script src="js/place-workspace.js" defer></script>
+  <script src="js/menu-workspace.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -171,7 +172,7 @@
         <section class="work-canvas" aria-labelledby="step-title">
           <div class="canvas-heading">
             <div><span class="step-count" id="step-count">STEP 01 / 08</span><h2 id="step-title" tabindex="-1">어디로 떠나고 싶나요?</h2><p id="step-description">직접 검색하거나 세 곳을 추천받는 화면이 이 영역에 연결됩니다.</p></div>
-            <span class="skeleton-badge" id="step-badge">W1-01B · CONNECTED</span>
+            <span class="skeleton-badge" id="step-badge">지역 선택</span>
           </div>
 
           <div class="region-workspace" id="region-workspace">
@@ -221,7 +222,8 @@
             </div>
             <form id="boundary-search-form" class="place-search-form" novalidate hidden><label for="boundary-query">시작·종료 장소 검색어</label><div class="place-input-row"><input id="boundary-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div></form>
             <div id="place-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div class="place-layout"><div><ul id="place-results" class="place-results" aria-label="장소 검색 결과"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
+            <div class="mobile-place-view" role="group" aria-label="관광지 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
+            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="place-results" class="place-results" aria-label="장소 검색 결과"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
             <div id="attraction-selected" class="selected-places" aria-label="선택한 관광지"></div>
             <div id="boundary-selected" class="selected-places" aria-label="선택한 시작·종료 장소" hidden></div>
           </section>
@@ -229,8 +231,28 @@
           <section class="place-workspace" id="hotel-workspace" aria-label="숙소 선택" hidden>
             <form id="hotel-search-form" class="place-search-form" novalidate><label for="hotel-mode">숙소 탐색 기준</label><div class="place-input-row"><select id="hotel-mode"><option value="GEOMETRIC_MEDIAN">관광지 중심 · 5km</option><option value="GEOMETRIC_MEDIAN_10">관광지 중심 · 10km</option><option value="MEDOID">관광지 중간 장소 · 5km</option><option value="MAP_BOUNDS">현재 지도 영역</option></select><button type="submit" class="button button-primary">숙소 찾기</button></div></form>
             <p class="field-help">검색 순서에 거리 점수나 추천 순위는 적용하지 않습니다. 숙소를 직접 선택해 주세요.</p><div id="hotel-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div class="place-layout"><div><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
+            <div class="mobile-place-view" role="group" aria-label="숙소 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
+            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
             <div id="hotel-selected" class="selected-places" aria-label="선택한 숙소"></div>
+          </section>
+
+          <section class="menu-workspace" id="menu-workspace" aria-label="메뉴 분석과 선택" hidden>
+            <form id="menu-analysis-form" class="place-search-form" novalidate>
+              <label for="menu-request">먹고 싶은 음식이나 여행 분위기</label>
+              <textarea id="menu-request" rows="3" maxlength="200" placeholder="예: 바다를 본 뒤 매콤한 지역 음식을 먹고 싶어요" aria-describedby="menu-request-help"></textarea>
+              <p id="menu-request-help" class="field-help">선택한 지역과 사용자 이름을 붙인 관광지 맥락으로 메뉴를 분석합니다. 식당은 아직 선택하지 않습니다.</p>
+              <button id="menu-submit" class="button button-primary" type="submit">AI로 메뉴 분석하기</button>
+            </form>
+            <div id="menu-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div class="menu-heading"><h3>검토할 메뉴</h3><p>이름·검색어·이유와 기준 관광지를 수정하거나 메뉴를 삭제할 수 있어요.</p></div>
+            <ul id="menu-draft" class="menu-list" aria-label="검토할 메뉴"></ul>
+            <form id="menu-direct-form" class="place-search-form" novalidate>
+              <h3>메뉴 직접 추가</h3>
+              <div class="menu-direct-fields"><label for="menu-direct-name">메뉴 이름<input id="menu-direct-name" type="text" maxlength="50" placeholder="예: 돼지국밥"></label><label for="menu-direct-query">카카오 검색어<input id="menu-direct-query" type="text" placeholder="예: 부산 돼지국밥"></label></div>
+              <label for="menu-direct-target">기준 관광지<select id="menu-direct-target"><option value="">대상 관광지 없음</option></select></label>
+              <button class="button button-ghost" type="submit">메뉴 추가</button>
+            </form>
+            <div class="menu-confirmation"><p id="menu-confirmed-status" role="status" aria-live="polite"></p><button id="menu-confirm" class="button button-dark" type="button">메뉴 확정</button></div>
           </section>
 
           <div class="state-preview" id="future-step-preview" aria-label="후속 UI 상태 골격 미리보기" hidden>
@@ -248,14 +270,14 @@
 
           <footer class="canvas-actions">
             <button class="button button-ghost" id="previous-step" type="button">← 이전</button>
-            <span>API 연결 없이 화면 구조만 이동합니다.</span>
-            <button class="button button-primary" id="next-step" type="button">다음 구조 보기 →</button>
+            <span id="step-action-note">선택한 장소는 이 작성 흐름에서만 유지됩니다.</span>
+            <button class="button button-primary" id="next-step" type="button">다음 단계 →</button>
           </footer>
         </section>
 
         <aside class="journey-summary" aria-labelledby="summary-title">
           <div class="summary-heading"><p class="eyebrow dark">LIVE SUMMARY</p><h2 id="summary-title">현재 선택</h2></div>
-          <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>아직 선택한 내용이 없어요</strong><p>실제 연결 뒤 확정된 선택만 이곳에 표시합니다.</p></div>
+          <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>아직 선택한 지역이 없어요</strong><p>여행 지역을 고르면 현재 선택을 이곳에서 확인할 수 있어요.</p></div>
           <dl class="summary-list">
             <div><dt>지역</dt><dd id="summary-region">선택 전</dd></div>
             <div><dt>기간</dt><dd id="summary-days">1일</dd></div>
@@ -311,7 +333,7 @@
   <footer class="site-footer">
     <a class="brand footer-brand" href="#/"><span>routy</span><i>.</i></a>
     <p>좋아하는 장소가 하루의 좋은 흐름이 되도록.</p>
-    <span>W1-00 · UI FOUNDATION</span>
+    <span>ROUTY · DOMESTIC TRAVEL</span>
   </footer>
 
   <nav class="mobile-nav" aria-label="모바일 주요 탐색">
@@ -324,7 +346,7 @@
     <form method="dialog" class="confirm-dialog">
       <p class="eyebrow dark">LEAVE WORKSPACE?</p>
       <h2 id="cancel-title">작성을 그만둘까요?</h2>
-      <p>현재 화면은 골격 미리보기이며 저장된 내용은 없습니다.</p>
+      <p>현재 입력과 선택한 장소는 저장되지 않고 사라집니다.</p>
       <div><button class="button button-ghost" value="stay">계속 둘러보기</button><button class="button button-dark" value="leave">나가기</button></div>
     </form>
   </dialog>

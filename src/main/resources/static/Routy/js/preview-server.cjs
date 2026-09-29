@@ -4,11 +4,23 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
-const files = new Map([['/', 'index.html'],['/index.html','index.html'],['/css/style.css','css/style.css'],['/js/preview.js','js/preview.js'],['/js/auth.js','js/auth.js'],['/img/mark.svg','img/mark.svg']]);
-const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml'};
+const files = new Map([
+  ['/', 'index.html'], ['/index.html', 'index.html'], ['/css/style.css', 'css/style.css'],
+  ['/js/preview.js', 'js/preview.js'], ['/js/auth.js', 'js/auth.js'],
+  ['/js/place-selection-state.js', 'js/place-selection-state.js'],
+  ['/js/place-workspace.js', 'js/place-workspace.js'],
+  ['/js/menu-workspace.js', 'js/menu-workspace.js'],
+  ['/js/map-config.json', 'js/map-config.json'],
+  ['/img/mark.svg', 'img/mark.svg'], ['/img/hero-busan.png', 'img/hero-busan.png'],
+  ['/img/hero-seoul.png', 'img/hero-seoul.png']
+]);
+const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
+  '.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8',
+  '.svg':'image/svg+xml','.png':'image/png'};
 http.createServer((req,res)=>{
   const file=files.get(new URL(req.url,'http://localhost').pathname);
   if(!file || !['GET','HEAD'].includes(req.method)){res.writeHead(404);res.end();return;}
+  if (!fs.existsSync(path.join(root, file))) {res.writeHead(404);res.end();return;}
   res.writeHead(200,{'Content-Type':types[path.extname(file)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   if(req.method==='HEAD'){res.end();return;}
   fs.createReadStream(path.join(root,file)).pipe(res);
