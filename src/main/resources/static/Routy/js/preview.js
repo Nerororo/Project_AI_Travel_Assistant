@@ -125,6 +125,7 @@
     let selectedRegion = null;
     let regionVersion = 0;
     let regionPending = null;
+    let placeController;
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
       resetJourney();
       cancelForm();
@@ -181,6 +182,7 @@
     }
     function resetJourney() {
       cancelRegionRequest();
+      placeController?.reset();
       selectedRegion = null;
       currentStep = 0;
       currentState = 'initial';
@@ -215,6 +217,7 @@
     }
     function selectRegion(region, source) {
       selectedRegion = Object.freeze({regionId: region.regionId, name: region.name, provinceName: region.provinceName || ''});
+      placeController.setRegion(selectedRegion);
       document.querySelectorAll('[data-region-id]').forEach(button => {
         const selected = button.dataset.regionId === selectedRegion.regionId;
         button.textContent = selected ? '선택됨' : '이 지역 선택';
@@ -363,8 +366,9 @@
       previousStep.disabled = currentStep === 0;
       nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 구조로 돌아가기 ↺' : '다음 구조 보기 →';
       regionWorkspace.hidden = currentStep !== 0;
-      futureStepPreview.hidden = currentStep === 0;
-      document.querySelector('#step-badge').textContent = currentStep === 0 ? 'W1-01B · CONNECTED' : 'W1 · STRUCTURE';
+      placeController?.showStep(currentStep);
+      futureStepPreview.hidden = currentStep < 4;
+      document.querySelector('#step-badge').textContent = currentStep === 0 ? 'W1-01B · CONNECTED' : currentStep <= 3 ? 'W1-02 · CONNECTED' : 'W1 · STRUCTURE';
       if (focusHeading) stepTitle.focus({preventScroll: true});
     }
 
@@ -415,8 +419,10 @@
       }
       const stepButton = event.target.closest('[data-step]');
       if (stepButton) {
+        const target = clampStep(stepButton.dataset.step);
+        if (target > currentStep && !advanceAllowed(target)) return;
         cancelRegionRequest();
-        currentStep = clampStep(stepButton.dataset.step);
+        currentStep = target;
         renderStep(true);
         return;
       }
@@ -435,12 +441,28 @@
       if (event.target.closest('[data-action="cancel"]')) cancelDialog.showModal();
     });
 
-    previousStep.addEventListener('click', () => { cancelRegionRequest(); currentStep = nextStep(currentStep, -1); renderStep(true); });
+    previousStep.addEventListener('click', () => { cancelRegionRequest(); currentStep = currentStep === 4 && placeController.summary().days === 1 ? 2 : nextStep(currentStep, -1); renderStep(true); });
     nextStepButton.addEventListener('click', () => {
+      if (!advanceAllowed(currentStep < 4 ? placeController.nextStep(currentStep) : currentStep + 1)) return;
       cancelRegionRequest();
-      currentStep = currentStep === STEPS.length - 1 ? 0 : nextStep(currentStep, 1);
+      currentStep = currentStep === STEPS.length - 1 ? 0 : currentStep < 4 ? placeController.nextStep(currentStep) : nextStep(currentStep, 1);
       renderStep(true);
     });
+
+    function advanceAllowed(target) {
+      if (target <= currentStep) return true;
+      if (currentStep === 0 && !selectedRegion) { setRegionStatus('search', '먼저 여행 지역을 선택해 주세요.', true); return false; }
+      if (currentStep <= 2 && target > 2) {
+        const message = placeController.canLeave(2);
+        if (message) { currentStep = 2; renderStep(true); document.querySelector('[data-place-role="ATTRACTION"]').click(); document.querySelector('#place-status').textContent = message; document.querySelector('#place-status').focus({preventScroll: true}); return false; }
+      }
+      if (currentStep === 3 && target > 3) {
+        const message = placeController.canLeave(3);
+        if (message) { document.querySelector('#hotel-status').textContent = message; document.querySelector('#hotel-status').focus({preventScroll: true}); return false; }
+      }
+      if (target === 3 && placeController.summary().days === 1) return false;
+      return true;
+    }
 
     document.querySelector('#region-search-form').addEventListener('submit', event => {
       event.preventDefault();
@@ -457,7 +479,7 @@
     document.querySelector('#region-request').addEventListener('input', event => { document.querySelector('#region-request-count').textContent = String(Array.from(event.target.value).length); });
 
     cancelDialog.addEventListener('close', () => {
-      if (cancelDialog.returnValue === 'leave') window.location.hash = '#/';
+      if (cancelDialog.returnValue === 'leave') { resetJourney(); window.location.hash = '#/'; }
     });
 
     const motionToggle = document.querySelector('.motion-toggle');
@@ -486,6 +508,13 @@
     });
 
     window.addEventListener('hashchange', () => showRoute(true));
+    placeController = window.RoutyPlaceWorkspace.mount(document, window, client, () => {
+      const summary = placeController?.summary();
+      if (!summary) return;
+      document.querySelector('#summary-days').textContent = `${summary.days}일`;
+      document.querySelector('#summary-mode').textContent = summary.travelMode === 'CAR' ? '자동차' : '대중교통';
+      document.querySelector('#summary-places').textContent = `${summary.attractionCount}곳`;
+    });
     renderStep(false);
     renderState();
     showRoute(false);

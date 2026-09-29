@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -134,6 +135,36 @@ class TravelPlanEstimateServiceTest {
 					assertThat(details.exceededMinutes()).isPositive();
 					assertThat(details.toString()).doesNotContain(A.toString());
 				});
+	}
+
+	@Test
+	void automaticAssignmentRejectsOverrunWithoutRemovingOrShorteningVisits() {
+		List<EstimateVisit> selected = List.of(
+				visit(A, CENTER, 180, null, null),
+				visit(B, CENTER, 180, null, null));
+		EstimateCommand tight = command(1, selected, LocalTime.of(9, 0),
+				LocalTime.of(14, 0), null);
+
+		assertThatThrownBy(() -> service.estimate(tight))
+				.isInstanceOfSatisfying(ApiException.class, exception -> {
+					assertThat(exception.errorCode()).isEqualTo(ErrorCode.PLAN_CAPACITY_EXCEEDED);
+					PlanCapacityDetails details = (PlanCapacityDetails) exception.details();
+					assertThat(details.date()).isEqualTo(FIRST);
+					assertThat(details.allowedEndTime()).isEqualTo(LocalTime.of(14, 0));
+					assertThat(details.plannedEndTime()).isAfter(details.allowedEndTime());
+					assertThat(details.exceededMinutes()).isPositive();
+					assertThat(details.toString()).doesNotContain(A.toString(), B.toString());
+				});
+
+		EstimateResult relaxed = service.estimate(command(1, selected,
+				LocalTime.of(9, 0), LocalTime.of(17, 0), null));
+		assertThat(relaxed.days().getFirst().items().stream()
+				.filter(item -> item.type() == EstimatedItem.Type.VISIT))
+				.extracting(EstimatedItem::clientPlaceId).containsExactlyInAnyOrder(A, B);
+		assertThat(relaxed.days().getFirst().items().stream()
+				.filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.map(item -> Duration.between(item.startTime(), item.endTime()).toMinutes()))
+				.containsExactlyInAnyOrder(180L, 180L);
 	}
 
 	@Test

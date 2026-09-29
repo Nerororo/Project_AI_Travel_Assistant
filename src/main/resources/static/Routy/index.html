@@ -9,6 +9,8 @@
   <link rel="icon" href="img/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/auth.js" defer></script>
+  <script src="js/place-selection-state.js" defer></script>
+  <script src="js/place-workspace.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -202,6 +204,35 @@
             </section>
           </div>
 
+          <section class="place-workspace" id="conditions-workspace" aria-label="여행 조건" hidden>
+            <div class="condition-grid">
+              <label>여행 기간 <select id="trip-days"><option value="1">1일 · 당일치기</option><option value="2">2일</option><option value="3">3일</option><option value="4">4일</option><option value="5">5일</option><option value="6">6일</option><option value="7">7일</option></select></label>
+              <fieldset><legend>이동수단</legend><label><input type="radio" name="travel-mode" value="CAR" checked> 자동차</label><label><input type="radio" name="travel-mode" value="PUBLIC_TRANSIT"> 대중교통</label></fieldset>
+            </div>
+            <p class="field-help">하나의 여행에는 이동수단 하나를 사용합니다. 당일치기에는 숙소를 선택하지 않습니다.</p>
+          </section>
+
+          <section class="place-workspace" id="attractions-workspace" aria-label="관광지와 여행 경계" hidden>
+            <div class="place-tabs" role="group" aria-label="장소 종류"><button type="button" data-place-role="ATTRACTION" aria-pressed="true">관광지</button><button type="button" data-place-role="TRAVEL_BOUNDARY" aria-pressed="false">시작·종료 장소</button></div>
+            <div id="attraction-controls">
+              <form id="district-form" class="place-search-form" novalidate><label for="district-query">구·군 필터 찾기 <span class="field-help">특별시·광역시만</span></label><div class="place-input-row"><input id="district-query" type="search" autocomplete="off"><button type="submit" class="button button-ghost">구·군 찾기</button></div></form>
+              <div id="district-status" role="status" aria-live="polite"></div><ul id="district-results" class="place-results" aria-label="구·군 검색 결과"></ul><div id="district-current" class="selected-place"></div>
+              <form id="attraction-search-form" class="place-search-form" novalidate><label for="attraction-query">관광지 검색어</label><div class="place-input-row"><input id="attraction-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div><label><input id="attraction-whole-region" type="checkbox"> 지역 전체에서 검색</label></form>
+            </div>
+            <form id="boundary-search-form" class="place-search-form" novalidate hidden><label for="boundary-query">시작·종료 장소 검색어</label><div class="place-input-row"><input id="boundary-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div></form>
+            <div id="place-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div class="place-layout"><div><ul id="place-results" class="place-results" aria-label="장소 검색 결과"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
+            <div id="attraction-selected" class="selected-places" aria-label="선택한 관광지"></div>
+            <div id="boundary-selected" class="selected-places" aria-label="선택한 시작·종료 장소" hidden></div>
+          </section>
+
+          <section class="place-workspace" id="hotel-workspace" aria-label="숙소 선택" hidden>
+            <form id="hotel-search-form" class="place-search-form" novalidate><label for="hotel-mode">숙소 탐색 기준</label><div class="place-input-row"><select id="hotel-mode"><option value="GEOMETRIC_MEDIAN">관광지 중심 · 5km</option><option value="GEOMETRIC_MEDIAN_10">관광지 중심 · 10km</option><option value="MEDOID">관광지 중간 장소 · 5km</option><option value="MAP_BOUNDS">현재 지도 영역</option></select><button type="submit" class="button button-primary">숙소 찾기</button></div></form>
+            <p class="field-help">검색 순서에 거리 점수나 추천 순위는 적용하지 않습니다. 숙소를 직접 선택해 주세요.</p><div id="hotel-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div class="place-layout"><div><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
+            <div id="hotel-selected" class="selected-places" aria-label="선택한 숙소"></div>
+          </section>
+
           <div class="state-preview" id="future-step-preview" aria-label="후속 UI 상태 골격 미리보기" hidden>
             <div class="state-toolbar">
               <span>STATE PREVIEW</span>
@@ -227,9 +258,9 @@
           <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>아직 선택한 내용이 없어요</strong><p>실제 연결 뒤 확정된 선택만 이곳에 표시합니다.</p></div>
           <dl class="summary-list">
             <div><dt>지역</dt><dd id="summary-region">선택 전</dd></div>
-            <div><dt>기간</dt><dd>선택 전</dd></div>
-            <div><dt>이동</dt><dd>선택 전</dd></div>
-            <div><dt>장소</dt><dd>0곳</dd></div>
+            <div><dt>기간</dt><dd id="summary-days">1일</dd></div>
+            <div><dt>이동</dt><dd id="summary-mode">자동차</dd></div>
+            <div><dt>장소</dt><dd id="summary-places">0곳</dd></div>
           </dl>
           <p class="summary-policy">거리·순서·시간표는 화면이 계산하지 않습니다.</p>
         </aside>

@@ -284,6 +284,41 @@
   .region-result.is-selected { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
   .region-filter-badge { display: inline-flex; margin-top: .45rem; padding: .2rem .5rem; border-radius: 999px; background: #eef0eb; color: var(--ink-soft); font-size: .65rem; font-weight: 800; }
 
+  .place-workspace { display: grid; gap: 1rem; min-width: 0; }
+  .condition-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .condition-grid > label, .condition-grid fieldset { display: grid; gap: .65rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-strong); font-size: var(--text-sm); font-weight: 700; }
+  .condition-grid fieldset { align-content: start; }.condition-grid fieldset label { font-weight: 500; }
+  .condition-grid select, .place-search-form input[type="search"], .place-search-form select, .selected-place input { width: 100%; min-height: 2.8rem; padding: .65rem .8rem; border: 1px solid #b8bbb4; border-radius: .65rem; background: white; color: var(--ink); font: inherit; }
+  .place-tabs { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .place-tabs button { min-height: 2.75rem; padding: .55rem 1rem; border: 1px solid var(--line); border-radius: 999px; background: white; color: var(--ink); font: inherit; cursor: pointer; }
+  .place-tabs button[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: white; }
+  .place-search-form { display: grid; gap: .65rem; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-strong); }
+  .place-search-form > label:first-child { font-weight: 750; }
+  .place-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .65rem; }
+  #attraction-controls { display: grid; gap: .75rem; }
+  #place-status, #hotel-status, #district-status { min-height: 1.4rem; color: var(--ink-soft); font-size: var(--text-sm); }
+  #place-status[data-error="true"], #hotel-status[data-error="true"], #district-status[data-error="true"] { color: var(--danger); font-weight: 700; }
+  .place-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 1fr); gap: 1rem; min-width: 0; }
+  .place-layout > div { min-width: 0; }
+  .place-results { display: grid; gap: .65rem; padding: 0; list-style: none; }
+  .place-result, .selected-place { display: grid; gap: .45rem; padding: .9rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-strong); overflow-wrap: anywhere; }
+  .place-result span, .place-result a { color: var(--ink-soft); font-size: var(--text-xs); }
+  .place-result .button, .selected-place button { justify-self: start; min-height: 2.65rem; }
+  .place-pagination { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .75rem; }
+  .place-map { width: 100%; height: clamp(17rem, 35vw, 27rem); border: 1px solid var(--line); border-radius: var(--radius-md); background: #e9eee9; }
+  .selected-places { display: grid; gap: .65rem; }
+  .selected-places h3 { font-size: 1rem; }
+  .selected-place label { display: grid; gap: .35rem; font-size: var(--text-xs); font-weight: 700; }
+  .selected-place fieldset { display: flex; flex-wrap: wrap; gap: .8rem; border: 0; }
+  .selected-place legend { margin-bottom: .5rem; font-weight: 700; }
+  .selected-place button { padding: .45rem .75rem; border: 1px solid var(--line); border-radius: .6rem; background: white; color: var(--ink); font: inherit; cursor: pointer; }
+  @media (max-width: 44rem) {
+    .condition-grid, .place-layout { grid-template-columns: minmax(0, 1fr); }
+    .place-input-row { grid-template-columns: minmax(0, 1fr); }
+    .place-input-row .button { width: 100%; }
+    .place-map { height: 19rem; }
+  }
+
   .collection-page, .document-page, .shared-page { padding: clamp(2rem, 6vw, 6rem) var(--gutter) var(--section-space); }
   .page-hero { display: flex; align-items: end; justify-content: space-between; gap: 2rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--line); }
   .page-hero h1, .document-header h1, .shared-intro h1 { margin-top: .7rem; font-size: var(--text-h2); }

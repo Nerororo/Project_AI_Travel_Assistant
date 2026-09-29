@@ -13,7 +13,7 @@ const {setTimeout: delay} = require('node:timers/promises');
 
 test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
-  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
+  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
   const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
   const account = {email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')};
   const token = Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.');
@@ -24,6 +24,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   let regionSearchCalls = 0;
   let regionRecommendationCalls = 0;
   let recommendationHeaders;
+  const placeRequests = [];
   const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && ['/api/users', '/api/auth/login'].includes(req.url)) {
       for await (const _ of req) { /* Discard request data immediately. */ }
@@ -43,6 +44,13 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     if (req.method === 'GET' && req.url.startsWith('/api/regions?')) {
       regionSearchCalls++;
       res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
+      if (req.url.includes('%EB%B6%80%EC%82%B0')) {
+        res.end(JSON.stringify({regions: [
+          {regionId: 'opaque-metro', name: '부산광역시', provinceName: '', parentRegionId: null, type: 'METROPOLITAN_CITY', selectable: true, placeSearchFilterable: false},
+          {regionId: 'opaque-filter', name: '해운대구', provinceName: '부산광역시', parentRegionId: 'opaque-metro', type: 'DISTRICT_FILTER', selectable: false, placeSearchFilterable: true}
+        ]}));
+        return;
+      }
       res.end(JSON.stringify({regions: [
         {regionId: 'opaque-city', name: '강릉시', shortName: '강릉', provinceName: '강원특별자치도', parentRegionId: 'opaque-province', type: 'CITY', selectable: true, placeSearchFilterable: false},
         {regionId: 'opaque-filter', name: '해운대구', shortName: '해운대', provinceName: '부산광역시', parentRegionId: 'opaque-metro', type: 'DISTRICT_FILTER', selectable: false, placeSearchFilterable: true}
@@ -59,6 +67,20 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
         {regionId: 'opaque-b', name: '속초시', provinceName: '강원특별자치도', reason: '조용한 바닷가를 둘러볼 수 있어요.'},
         {regionId: 'opaque-c', name: '여수시', provinceName: '전라남도', reason: '섬과 해안 풍경이 이어져요.'}
       ]}));
+      return;
+    }
+    if (req.method === 'POST' && ['/api/places/search', '/api/places/travel-boundaries/search', '/api/places/hotels/search'].includes(req.url)) {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const body = JSON.parse(raw);
+      placeRequests.push({path: req.url, body, headers: req.headers});
+      const hotel = req.url.includes('/hotels/');
+      const boundary = req.url.includes('/travel-boundaries/');
+      const id = hotel ? 'hotel-1' : boundary ? 'boundary-1' : 'attraction-1';
+      res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
+      res.end(JSON.stringify({places: [{kakaoPlaceId: id, placeUrl: `https://place.map.kakao.com/${id}`,
+        providerDisplayName: hotel ? '가상 숙소' : boundary ? '가상 역' : '가상 해변', address: '가상 주소',
+        latitude: 37.5, longitude: 127.0, ...(hotel || boundary ? {} : {suggestedStayMinutes: 90}), selectionToken: `fake-${id}-token`}], page: body.page, hasNext: false}));
       return;
     }
     const file = files.get(req.url.split('?')[0]);
@@ -236,6 +258,78 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`(()=>{const r=document.querySelector('#region-ai-submit').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth})()`), true);
     await screenshot('w1-01b-region-mobile.png');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+  });
+  await t.test('W1-02 keeps place selections in memory and uses dedicated place APIs', async () => {
+    await navigate('/workspace');
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="1"]').getAttribute('aria-current')`), 'step');
+    await evaluate(`document.querySelector('#trip-days').value='2';document.querySelector('#trip-days').dispatchEvent(new Event('change'))`);
+    await click('#next-step');
+    await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
+    const attractionRequest = placeRequests.at(-1);
+    assert.equal(attractionRequest.path, '/api/places/search');
+    assert.equal(attractionRequest.body.placeRole, 'ATTRACTION');
+    assert.equal(attractionRequest.body.radiusMeters, 20000);
+    assert.match(attractionRequest.headers['idempotency-key'], /^[0-9a-f-]{36}$/);
+    await click('#place-results .place-result button');
+    assert.equal(await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value`), '');
+    assert.equal(await evaluate(`document.querySelector('#attraction-selected input[type="text"]').placeholder.includes('가상 해변')`), false);
+    await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value='내 바닷가';document.querySelector('#attraction-selected input[type="text"]').dispatchEvent(new Event('input'))`);
+    await click('[data-place-role="TRAVEL_BOUNDARY"]');
+    await evaluate(`document.querySelector('#boundary-query').value='역';document.querySelector('#boundary-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
+    assert.equal(placeRequests.at(-1).path, '/api/places/travel-boundaries/search');
+    await click('#place-results .place-result button');
+    await click('input[name="boundary-slot"][value="END"]');
+    await click('#place-results .place-result button');
+    assert.equal(await evaluate(`document.querySelector('#boundary-selected').textContent.includes('시작: 가상 역') && document.querySelector('#boundary-selected').textContent.includes('종료: 가상 역')`), true);
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="3"]').getAttribute('aria-current')`), 'step');
+    await evaluate(`document.querySelector('#hotel-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#hotel-results .place-result').length === 1`);
+    assert.equal(placeRequests.at(-1).path, '/api/places/hotels/search');
+    assert.deepEqual(placeRequests.at(-1).body.attractionSelectionTokens, ['fake-attraction-1-token']);
+    await click('#hotel-results .place-result button');
+    assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '1곳');
+    await screenshot('w1-02-hotel-desktop.png');
+    assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
+    assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    await click('[data-step="2"]');
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    await screenshot('w1-02-attractions-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await click('[data-step="1"]');
+    await evaluate(`document.querySelector('#trip-days').value='1';document.querySelector('#trip-days').dispatchEvent(new Event('change'))`);
+    await click('#next-step');
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('#hotel-selected').textContent.includes('선택한 숙소 없음')`), true);
+    await click('#previous-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="2"]').getAttribute('aria-current')`), 'step');
+  });
+  await t.test('W1-02 district filter is explicit and a new region discards prior place selections', async () => {
+    await click('[data-step="0"]');
+    await evaluate(`document.querySelector('#region-query').value='부산';document.querySelector('#region-search-form').requestSubmit()`);
+    await until(`document.querySelector('#region-search-results [data-region-id="opaque-metro"]') !== null`);
+    await click('#region-search-results [data-region-id="opaque-metro"]');
+    assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '0곳');
+    await click('#next-step'); await click('#next-step');
+    await evaluate(`document.querySelector('#district-query').value='해운대';document.querySelector('#district-form').requestSubmit()`);
+    await until(`document.querySelector('#district-results button') !== null`);
+    await click('#district-results button');
+    await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
+    await until(`document.querySelector('#place-status').textContent.includes('1곳을 찾았습니다')`);
+    assert.equal(placeRequests.at(-1).body.districtFilterId, 'opaque-filter');
+    await click('#district-current button');
+    const before = placeRequests.length;
+    await evaluate(`document.querySelector('#attraction-search-form').requestSubmit()`);
+    for (let i = 0; i < 100 && placeRequests.length === before; i++) await delay(30);
+    assert.equal(placeRequests.length, before + 1);
+    assert.equal(Object.hasOwn(placeRequests.at(-1).body, 'districtFilterId'), false);
   });
   await t.test('logout discards current step and prevents back navigation from opening protected content', async () => {
     await navigate('/workspace');

@@ -45,6 +45,7 @@ out/
 !.env.*.example
 .envrc
 .direnv/
+src/main/resources/static/Routy/js/map-config.json
 secrets/
 src/main/resources/application-secret*.yml
 src/main/resources/application-secret*.yaml

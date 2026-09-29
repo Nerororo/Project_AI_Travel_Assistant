@@ -7,13 +7,19 @@ $ErrorActionPreference = 'Stop'
 
 $projectRoot = $PSScriptRoot
 $environmentFile = Join-Path $projectRoot '.env.local'
-$allowedKeys = @(
+$requiredKeys = @(
     'DB_PASSWORD',
     'DB_ROOT_PASSWORD',
     'JWT_ACTIVE_KEY_ID',
     'ROUTY_JWT_KEYS_0_ID',
     'ROUTY_JWT_KEYS_0_SECRET'
 )
+$allowedKeys = $requiredKeys + @(
+    'KAKAO_LOCAL_API_KEY',
+    'KAKAO_MOBILITY_API_KEY',
+    'KAKAO_MAP_JAVASCRIPT_KEY'
+)
+$mapConfigFile = Join-Path $projectRoot 'src/main/resources/static/Routy/js/map-config.json'
 
 function New-RandomBytes([int]$byteLength) {
     $bytes = [byte[]]::new($byteLength)
@@ -104,6 +110,7 @@ function Sync-ExistingMysqlPasswords {
 }
 
 function Import-LocalEnvironmentFile {
+    $script:importedKeys = @()
     foreach ($line in [IO.File]::ReadAllLines($environmentFile)) {
         $trimmed = $line.Trim()
         if (-not $trimmed -or $trimmed.StartsWith('#')) {
@@ -124,14 +131,29 @@ function Import-LocalEnvironmentFile {
             throw "Missing value for .env.local key: $key"
         }
         Set-Item -LiteralPath "Env:$key" -Value $value
+        $script:importedKeys += $key
     }
 
-    foreach ($key in $allowedKeys) {
+    foreach ($key in $requiredKeys) {
         if (-not (Test-Path -LiteralPath "Env:$key")) {
             throw "Missing required .env.local key: $key"
         }
     }
     $env:SPRING_PROFILES_ACTIVE = 'local'
+}
+
+function Write-LocalMapConfig {
+    if ('KAKAO_MAP_JAVASCRIPT_KEY' -notin $script:importedKeys) {
+        [IO.File]::WriteAllText($mapConfigFile, '{}', [Text.UTF8Encoding]::new($false))
+        return
+    }
+    $javascriptKey = (Get-Item -LiteralPath Env:KAKAO_MAP_JAVASCRIPT_KEY).Value
+    if ($javascriptKey -notmatch '^[a-zA-Z0-9]+$') {
+        throw 'KAKAO_MAP_JAVASCRIPT_KEY must contain only letters and numbers.'
+    }
+    $content = @{ javascriptKey = $javascriptKey } | ConvertTo-Json -Compress
+    [IO.File]::WriteAllText($mapConfigFile, $content, [Text.UTF8Encoding]::new($false))
+    Write-Host 'Prepared ignored browser map configuration.'
 }
 
 function Invoke-NativeCommand([string]$command, [string[]]$arguments) {
@@ -181,6 +203,7 @@ if (-not (Test-Path -LiteralPath $environmentFile)) {
 }
 Sync-ExistingMysqlPasswords
 Import-LocalEnvironmentFile
+Write-LocalMapConfig
 
 if ($InitializeOnly) {
     Write-Host 'Local environment is ready.'
