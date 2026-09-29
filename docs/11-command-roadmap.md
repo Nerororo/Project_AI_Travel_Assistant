@@ -247,4 +247,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`S1-03`: P1-07C의 공개 경계 검증 Service·최소 DTO를 사용해 Haversine 기반 추정 일정 Service를 구현한다.
+`S1-04`: S1-03의 추정 일정 Service를 `POST /api/travel-plans/estimate`에 연결하고 입력 validation·422 오류 DTO를 검증한다. 관광지·숙소 token의 공개 검증 통로와 무효 여행 경계 token의 HTTP 오류 변환을 먼저 확인한다. place 소유 계약 수정이 필요하면 별도 P1 Task와 Change Envelope로 분리한다.
