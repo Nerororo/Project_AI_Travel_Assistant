@@ -3,7 +3,6 @@ package com.example.travel.travelplan.service;
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.place.dto.TravelBoundarySelection;
-import com.example.travel.place.service.SelectionTokenService.InvalidSelectionTokenException;
 import com.example.travel.place.service.TravelBoundarySelectionService;
 import com.example.travel.route.algorithm.Coordinate;
 import com.example.travel.route.algorithm.TravelMode;
@@ -170,12 +169,14 @@ class TravelPlanEstimateServiceTest {
 
 	@Test
 	void invalidBoundaryTokenStopsEstimation() {
-		when(boundaries.verify("start", 7, "KR-30")).thenThrow(new InvalidSelectionTokenException());
+		when(boundaries.verify("start", 7, "KR-30"))
+				.thenThrow(new ApiException(ErrorCode.VALIDATION_FAILED));
 		EstimateCommand command = command(1, List.of(), LocalTime.of(9, 0),
 				LocalTime.of(20, 0), null);
 
 		assertThatThrownBy(() -> service.estimate(command))
-				.isInstanceOf(InvalidSelectionTokenException.class);
+				.isInstanceOfSatisfying(ApiException.class,
+						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED));
 	}
 
 	private static EstimateCommand command(int days, List<EstimateVisit> visits,

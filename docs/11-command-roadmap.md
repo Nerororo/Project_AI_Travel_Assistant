@@ -142,6 +142,7 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 | P1-07A | P1 계약 보정 | 명시적 지역 전체 검색, 일반 검색 관광지 전용, 제공자 ID·URL·좌표 검증, deadline 전 재시도 차감 방지 |
 | P1-07B | 여행 시작·종료 경계 검색·token 계약 | `TRAVEL_BOUNDARY` 전용 검색, 사용자·지역·역할 검증, estimate·create 요청 한정 수명과 저장 금지 |
 | P1-07C | 여행 경계 계약 정합성 보완 | 초기·지도 이동 20km 계약, 경계 전용 공개 token 검증 Service·최소 DTO, 한도·장애 회귀와 완료 범위 정정 |
+| P1-07D | 일정 계산용 장소 token 공개 검증 계약 | 관광지·숙소 역할 고정 검증과 최소 DTO, 무효 token의 안전한 400 변환 |
 
 ## 10. R2 — 독립 경로 기반
 
@@ -247,4 +248,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`S1-04`: S1-03의 추정 일정 Service를 `POST /api/travel-plans/estimate`에 연결하고 입력 validation·422 오류 DTO를 검증한다. 관광지·숙소 token의 공개 검증 통로와 무효 여행 경계 token의 HTTP 오류 변환을 먼저 확인한다. place 소유 계약 수정이 필요하면 별도 P1 Task와 Change Envelope로 분리한다.
+`S1-05`: 기하 중앙값 5·10km, 메도이드와 현재 지도 영역을 사용하는 숙소 후보 탐색 중심을 구현한다. 숙소 거리 점수나 자동 추천 순위는 부여하지 않고 사용자가 지도에서 직접 선택하는 계약을 유지한다. P1-07D의 숙소 token 공개 검증과 S1-04의 estimate HTTP 연결은 구현·검증됐지만 숙소 후보 검색 자체는 아직 구현되지 않았다.

@@ -81,6 +81,8 @@ AiService → AiClient → OpenAiClient / FakeAiClient
 
 다른 도메인이 여행 경계 token을 사용할 때는 place의 공개 `TravelBoundarySelectionService`로 사용자·지역·`TRAVEL_BOUNDARY` 역할을 검증하고, 제공자 표시명·주소·카테고리가 없는 최소 `TravelBoundarySelection` DTO만 전달받는다. 다른 도메인은 검색 Response나 범용 token 내부 DTO에 직접 의존하지 않는다.
 
+관광지·숙소 token은 공개 `PlanningPlaceSelectionService`의 역할 고정 메서드로 검증하고, 카카오 장소 ID·URL·좌표만 가진 요청 범위 `PlanningPlaceSelection`을 전달한다. 무효 token은 역할·만료·사용자 불일치의 세부 원인을 노출하지 않는 `VALIDATION_FAILED`로 변환한다. 숙소 검색과 token 발급의 사용자 흐름은 S1-05 책임이다.
+
 장소 유형·카테고리는 노출하거나 저장하지 않는다. 카카오 장소명은 검색 결과에만 표시하고 일정 표시 이름 입력란은 비워 둔다. 완료 일정에는 카카오 장소 ID·URL과 사용자가 작성한 이름·메모·체류 시간만 저장한다.
 
 ```text

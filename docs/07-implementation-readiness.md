@@ -37,15 +37,15 @@
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B에서 완료했고 메뉴 분석 연결은 W1-02A 후속 작업 |
-| Place | P1 범위와 P1-07B~C 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계 검색 Service·API, 지역·주소 검증, 체류시간 정책, 역할별 `selectionToken`과 경계 전용 공개 검증 Service·최소 DTO를 구현했다. 관광지·숙소 선택 메모리 상태는 구현됐지만 여행 경계의 브라우저 연결은 W1, estimate·create 요청 수명은 S1·T1 후속 작업이다. |
+| Place | P1 범위와 P1-07B~D 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계 검색 Service·API, 지역·주소 검증, 체류시간 정책, 역할별 `selectionToken`과 경계·관광지·숙소의 공개 검증 Service·최소 DTO를 구현했다. 무효 token은 안전한 400으로 변환한다. 관광지·숙소 선택 메모리 상태는 구현됐지만 여행 경계의 브라우저 연결은 W1, 숙소 후보 검색은 S1-05, create 요청 수명은 T1 후속 작업이다. |
 | Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
 | Recommendation | 하네스만 존재 | Service·정책 코드 없음 |
-| TravelPlan | S1-01 입력 정책·S1-02 배치 설계·S1-03 추정 Service 검증 | 공개 여행 경계 검증 Service와 요청 범위의 검증된 관광지·숙소 좌표로 자동·사용자 배치, Haversine 시간표, 식사 예산과 초과 거절을 구현했다. estimate HTTP 연결은 S1-04 책임이다. |
+| TravelPlan | S1-01~04 구현·검증 완료 | 공개 place 검증 Service가 요청 범위에서 token을 좌표로 바꾸고, `POST /api/travel-plans/estimate`가 자동·사용자 배치, Haversine 시간표, 식사 예산과 초과 거절을 응답한다. 인증·validation·422를 검증했으며 DB와 실제 Route Client는 호출하지 않는다. create와 숙소 후보 검색은 후속 작업이다. |
 | DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약을 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | S1-03까지 415개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 추정 Service의 결정적 배치·7일 경계·식사 중복 방지·시간 초과를 함께 검증했다. |
+| 자동 테스트 | S1-04까지 427개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 공개 token 검증, estimate HTTP의 인증·입력·초과 응답을 함께 검증했다. 실패·오류·건너뜀은 0개다. |
 | 화면 | W1-00·W1-01A~C 구현·검증 완료 | 공통 app shell·6개 view·8단계 Workspace 골격, 회원가입·로그인 API adapter와 지역 직접 검색·정확히 3개인 AI 추천 후보 선택을 연결하고 서버 TTL 기반 메모리 인증·만료·보호 화면을 검증, 장소·일정 API 연결은 후속 범위 |
 
-현재 시작할 작업은 `S1-04`이다. S1-03의 요청 범위 추정 계산을 `POST /api/travel-plans/estimate`에 연결한다. 관광지·숙소 token의 공개 검증 통로와 무효 여행 경계 token의 안전한 HTTP 오류 변환은 연결 전에 place 소유 계약을 점검해야 한다.
+현재 시작할 백엔드 작업은 `S1-05`이다. 숙소 후보를 기하 중앙값 5·10km, 메도이드, 현재 지도 영역에서 탐색하는 전용 제작 흐름을 구현한다. S1-04의 estimate API는 선택된 숙소 token을 검증하지만 후보 검색 자체를 제공하지 않는다.
 
 F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
 
@@ -248,6 +248,8 @@ P1-07B에서 인증된 `POST /api/places/travel-boundaries/search`와 공개 요
 P1-07C에서 여행 경계의 초기 검색은 중심·반경 생략, 지도 이동 검색은 중심과 정확히 20km 반경을 함께 전달하도록 DTO·Service·API 계약을 정렬했다. place의 공개 `TravelBoundarySelectionService`는 token 검증 역할을 `TRAVEL_BOUNDARY`로 고정하고 검색 Response 대신 카카오 장소 ID·URL·좌표만 가진 최소 `TravelBoundarySelection`을 반환한다. 경계 검색의 빈 결과·중복 제거·한도 거절·제공자 장애와 lease 해제·재시도 직전 추가 차감을 직접 회귀 검증했다. Place 집중 테스트 90개와 Docker/Testcontainers MySQL을 포함한 루트 `test.ps1` 전체 407개 테스트가 통과했다. 여행 경계의 브라우저 메모리 연결과 estimate·create 요청 종료 시 좌표 폐기는 각각 W1과 S1·T1 후속 책임으로 남겼다.
 
 S1-03에서 `TravelPlanEstimateService`가 P1-07C 공개 경계 Service로 시작·종료 token을 검증하고, 호출자가 이미 검증해 전달한 관광지·숙소 좌표를 해당 요청 안에서만 사용해 Haversine 예상 이동시간과 Nearest Neighbor·2-opt 순서를 계산한다. ADR-042의 날짜·장소 후보 비교, 사용자 day·order 보존, 하루 5개, 식사 포함 시간 예산, 최초 초과 날짜의 422와 부분 일정 비반환을 구현했다. Service 결과는 `routeVerified=false`이고 DB·서버 세션·실제 Route Client를 사용하지 않는다. TravelPlan 집중 테스트 25개와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 415개 테스트가 실패·오류·건너뜀 없이 통과했다. S1-04의 HTTP 요청 변환은 관광지·숙소 token을 검증된 좌표로 바꿀 공개 place 계약과 무효 경계 token의 400 변환을 먼저 확인해야 하며, 이 계약을 위해 place 내부를 바꿔야 한다면 별도 P1 Task로 분리한다.
+
+P1-07D에서 place 소유 공개 Service가 관광지·숙소 역할을 각각 고정해 token의 서명·만료·사용자·지역을 검증하고 카카오 장소 ID·URL·좌표만 요청 범위 DTO로 전달하도록 했다. 무효 관광지·숙소·여행 경계 token은 내부 예외나 payload를 노출하지 않는 `VALIDATION_FAILED` 400으로 변환한다. S1-04에서는 인증된 estimate Controller가 요청 DTO를 검증하고 한 Service에서 token을 해석한 뒤 기존 추정 계산에 전달한다. 응답은 `routeVerified=false`와 날짜별 항목·시간만 포함하며 422 초과 시 부분 일정을 반환하지 않는다. TravelPlan 집중 테스트와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 427개 테스트가 실패·오류·건너뜀 없이 통과했다. 숙소 후보 검색·브라우저 연결·완료 생성과 좌표 수명 전체 검증은 각각 S1-05·W1·T1의 후속 범위다.
 
 ## 8. 완료 해석
 

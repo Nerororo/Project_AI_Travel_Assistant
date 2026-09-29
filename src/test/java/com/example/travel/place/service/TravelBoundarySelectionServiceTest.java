@@ -1,5 +1,7 @@
 package com.example.travel.place.service;
 
+import com.example.travel.global.exception.ApiException;
+import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.place.domain.PlaceRole;
 import com.example.travel.place.dto.SelectionTokenPlace;
 import org.junit.jupiter.api.Test;
@@ -36,11 +38,14 @@ class TravelBoundarySelectionServiceTest {
 	}
 
 	@Test
-	void preservesTheCommonInvalidTokenFailure() {
+	void convertsInvalidTokenToSafeValidationFailure() {
 		when(tokenService.verify("invalid", 7L, "KR-CITY", PlaceRole.TRAVEL_BOUNDARY))
 				.thenThrow(new SelectionTokenService.InvalidSelectionTokenException());
 
 		assertThatThrownBy(() -> service.verify("invalid", 7L, "KR-CITY"))
-				.isExactlyInstanceOf(SelectionTokenService.InvalidSelectionTokenException.class);
+				.isInstanceOfSatisfying(ApiException.class, exception -> {
+					assertThat(exception.errorCode()).isEqualTo(ErrorCode.VALIDATION_FAILED);
+					assertThat(exception.details()).isNull();
+				});
 	}
 }

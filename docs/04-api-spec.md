@@ -414,7 +414,7 @@ day와 order가 모두 null이면 서버가 날짜와 순서를 자동 추천한
 
 자동 배치는 선택 관광지를 `clientPlaceId` 안정 키로 구분해 정확히 한 번 보존한다. 각 날짜의 고정 출발·도착 경계와 활동 시간을 사용해 예상 초과가 가장 작은 날짜·장소 조합을 반복 선택하고, 같은 비용은 날짜와 안정 키 순서로 해소한다. 날짜별 장소 집합이 정해지면 Nearest Neighbor와 2-opt로 해당 날짜 순서를 확정한다. 사용자 배치는 날짜·순서를 다시 최적화하지 않는다.
 
-자동·사용자 배치 모두 Haversine 예상 이동시간, 체류시간과 식사 예산을 반영한 `plannedEndTime`이 `activityEndTime`을 넘으면 장소를 삭제·이동하거나 체류시간을 줄이지 않고 422 `PLAN_CAPACITY_EXCEEDED`를 반환한다. `details`는 최초 초과 날짜의 `date`, `plannedEndTime`, `allowedEndTime`, `overMinutes`를 포함하며 `adjustments`는 완료 생성과 같은 허용 값만 사용한다. estimate 실패 Response에는 부분 일정이나 좌표·장소 식별자를 포함하지 않는다.
+자동·사용자 배치 모두 Haversine 예상 이동시간, 체류시간과 식사 예산을 반영한 `plannedEndTime`이 `activityEndTime`을 넘으면 장소를 삭제·이동하거나 체류시간을 줄이지 않고 422 `PLAN_CAPACITY_EXCEEDED`를 반환한다. `details`는 최초 초과 날짜의 `date`, `plannedEndTime`, `allowedEndTime`, `exceededMinutes`를 포함하며 `adjustments`는 완료 생성과 같은 허용 값만 사용한다. estimate 실패 Response에는 부분 일정이나 좌표·장소 식별자를 포함하지 않는다.
 
 Response는 날짜별 순서와 추정 시각을 반환한다. `routeVerified=false`는 아직 외부 경로 제공자에게 인접 구간을 조회하지 않았다는 뜻이다. 이후 외부 경로 조회가 성공하더라도 미래 여행일의 시간표·운행 여부나 실제 소요시간이 검증됐다는 뜻은 아니다.
 

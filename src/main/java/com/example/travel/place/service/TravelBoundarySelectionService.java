@@ -1,5 +1,7 @@
 package com.example.travel.place.service;
 
+import com.example.travel.global.exception.ApiException;
+import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.place.domain.PlaceRole;
 import com.example.travel.place.dto.SelectionTokenPlace;
 import com.example.travel.place.dto.TravelBoundarySelection;
@@ -25,9 +27,13 @@ public class TravelBoundarySelectionService {
 			long authenticatedUserId,
 			String regionId
 	) {
-		SelectionTokenPlace place = selectionTokenService.verify(
-				selectionToken, authenticatedUserId, regionId, PlaceRole.TRAVEL_BOUNDARY);
-		return new TravelBoundarySelection(
-				place.kakaoPlaceId(), place.placeUrl(), place.latitude(), place.longitude());
+		try {
+			SelectionTokenPlace place = selectionTokenService.verify(
+					selectionToken, authenticatedUserId, regionId, PlaceRole.TRAVEL_BOUNDARY);
+			return new TravelBoundarySelection(
+					place.kakaoPlaceId(), place.placeUrl(), place.latitude(), place.longitude());
+		} catch (SelectionTokenService.InvalidSelectionTokenException exception) {
+			throw new ApiException(ErrorCode.VALIDATION_FAILED);
+		}
 	}
 }
