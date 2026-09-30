@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/OpenAI-API-412991?style=for-the-badge&logo=openai&logoColor=white">
   <img src="https://img.shields.io/badge/Kakao-API-FFCD00?style=for-the-badge&logo=kakao&logoColor=000000">
 </p>
-
+ 
 ---
 
 ## 🌍 프로젝트 소개
