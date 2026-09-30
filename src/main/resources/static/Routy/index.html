@@ -12,6 +12,8 @@
   <script src="js/place-selection-state.js" defer></script>
   <script src="js/place-workspace.js" defer></script>
   <script src="js/menu-workspace.js" defer></script>
+  <script src="js/estimate-workspace.js" defer></script>
+  <script src="js/restaurant-workspace.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -255,6 +257,38 @@
             <div class="menu-confirmation"><p id="menu-confirmed-status" role="status" aria-live="polite"></p><button id="menu-confirm" class="button button-dark" type="button">메뉴 확정</button></div>
           </section>
 
+          <section class="estimate-workspace" id="estimate-workspace" aria-label="추정 일정" hidden>
+            <form id="estimate-form" novalidate>
+              <label for="estimate-start-date">여행 시작 날짜</label>
+              <input id="estimate-start-date" type="date" required>
+              <p class="field-help">각 날짜의 활동 시간을 정해 주세요. 시작 시각은 종료 시각보다 빨라야 합니다.</p>
+              <div id="estimate-day-fields"></div>
+              <label><input id="estimate-manual" type="checkbox"> 관광지 날짜·방문 순서를 직접 정하기</label>
+              <div id="estimate-placement" hidden></div>
+              <button id="estimate-submit" class="button button-primary" type="submit">추정 일정 계산</button>
+            </form>
+            <p id="estimate-status" role="status" aria-live="polite" tabindex="-1"></p>
+            <div id="estimate-result" aria-label="날짜별 추정 일정"></div>
+          </section>
+
+          <section class="restaurant-workspace" id="restaurant-workspace" aria-label="음식점 선택" hidden>
+            <form id="restaurant-search-form" class="place-search-form" novalidate>
+              <label for="restaurant-slot">식사 날짜와 시간<select id="restaurant-slot"></select></label>
+              <label for="restaurant-menu">확정 메뉴<select id="restaurant-menu"></select></label>
+              <label for="restaurant-reference">기준 관광지<select id="restaurant-reference"><option value="">기준 관광지 없음</option></select></label>
+              <button id="restaurant-submit" class="button button-primary" type="submit">음식점 찾기</button>
+            </form>
+            <p class="field-help">검색 결과는 식사 전후 시각과 동선 이탈을 서버가 평가한 순서입니다. 음식점은 직접 선택하거나 미정으로 둘 수 있습니다.</p>
+            <div id="restaurant-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소"></div>
+            <div class="mobile-place-view" role="group" aria-label="음식점 검색 결과 보기"><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
+            <div class="place-layout" id="restaurant-layout" data-mobile-view="list">
+              <div class="place-list-pane"><ul id="restaurant-results" class="place-results" aria-label="음식점 검색 결과"></ul><div class="place-pagination"><button id="restaurant-prev-page" type="button" class="button button-ghost">이전</button><span id="restaurant-page">1</span><button id="restaurant-next-page" type="button" class="button button-ghost">다음</button></div></div>
+              <div class="place-map-pane"><div id="restaurant-map" class="place-map" role="img" aria-label="식사 전후 장소와 음식점 지도"></div><p id="restaurant-map-status" class="field-help"></p><button id="restaurant-search-map" type="button" class="button button-ghost">현재 지도 영역에서 다시 검색</button></div>
+            </div>
+            <div id="restaurant-selected" class="selected-places" aria-label="직접 선택한 음식점"></div>
+          </section>
+
           <div class="state-preview" id="future-step-preview" aria-label="후속 UI 상태 골격 미리보기" hidden>
             <div class="state-toolbar">
               <span>STATE PREVIEW</span>
@@ -281,6 +315,7 @@
           <dl class="summary-list">
             <div><dt>지역</dt><dd id="summary-region">선택 전</dd></div>
             <div><dt>기간</dt><dd id="summary-days">1일</dd></div>
+            <div><dt>시작 날짜</dt><dd id="summary-date">미정</dd></div>
             <div><dt>이동</dt><dd id="summary-mode">자동차</dd></div>
             <div><dt>장소</dt><dd id="summary-places">0곳</dd></div>
           </dl>

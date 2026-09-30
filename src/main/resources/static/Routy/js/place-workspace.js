@@ -387,6 +387,13 @@
         return {clientPlaceId: values.clientPlaceId, displayName: values.name.trim()};
       });
     }
+    function estimatePlaces() {
+      return store.selected().attractions.map(place => {
+        const values = draft.get(place.kakaoPlaceId);
+        return {clientPlaceId: values.clientPlaceId, selectionToken: place.selectionToken,
+          displayName: values.name.trim(), stayMinutes: values.stayMinutes, day: null, order: null};
+      });
+    }
 
     $('#trip-days').addEventListener('change', () => { if (days() === 1) store.unselect(generation, ROLES.HOTEL, store.selected().hotel?.kakaoPlaceId); renderAll(); onSummary?.(); });
     document.querySelectorAll('input[name="travel-mode"]').forEach(input => input.addEventListener('change', () => onSummary?.()));
@@ -419,8 +426,8 @@
     }
     window.addEventListener('pagehide', () => reset());
     renderAll();
-    return {setRegion, showStep, canLeave, nextStep, summary, attractionContexts, reset, cancelRequest, selected: () => store.selected()};
+    return {setRegion, showStep, canLeave, nextStep, summary, attractionContexts, estimatePlaces, reset, cancelRequest, selected: () => store.selected()};
   }
 
-  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, mount});
+  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, createMapView, mount});
 });

@@ -128,6 +128,8 @@
     let regionPending = null;
     let placeController;
     let menuController;
+    let estimateController;
+    let restaurantController;
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
       resetJourney();
       cancelForm();
@@ -186,6 +188,8 @@
       cancelRegionRequest();
       placeController?.reset();
       menuController?.reset();
+      estimateController?.reset();
+      restaurantController?.reset();
       selectedRegion = null;
       currentStep = 0;
       furthestStep = 0;
@@ -223,7 +227,7 @@
       const changed = selectedRegion?.regionId !== region.regionId;
       selectedRegion = Object.freeze({regionId: region.regionId, name: region.name, provinceName: region.provinceName || ''});
       placeController.setRegion(selectedRegion);
-      if (changed) { menuController?.reset(); furthestStep = 0; renderStep(false); }
+      if (changed) { menuController?.reset(); estimateController?.reset(); restaurantController?.reset(); furthestStep = 0; renderStep(false); }
       document.querySelectorAll('[data-region-id]').forEach(button => {
         const selected = button.dataset.regionId === selectedRegion.regionId;
         button.textContent = selected ? '선택됨' : '이 지역 선택';
@@ -386,13 +390,20 @@
       stepDescription.textContent = description;
       stepCount.textContent = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}`;
       previousStep.disabled = currentStep === 0;
-      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 단계로 돌아가기 ↺' : currentStep >= 4 ? '다음 단계 미리보기 →' : '다음 단계 →';
+      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 단계로 돌아가기 ↺'
+        : currentStep === 4 ? '다음: 추정 일정 →'
+          : currentStep === 5 ? '다음: 음식점 선택 →'
+            : currentStep === 6 ? '검토 화면 미리보기 →' : '다음 단계 →';
+      document.querySelector('.workspace-shell').dataset.activeStep = String(currentStep);
+      document.querySelector('#summary-date').textContent = document.querySelector('#estimate-start-date').value || '미정';
       regionWorkspace.hidden = currentStep !== 0;
       placeController?.showStep(currentStep);
       menuController?.showStep(currentStep, selectedRegion?.regionId, placeController?.attractionContexts() || []);
-      futureStepPreview.hidden = currentStep < 5;
-      document.querySelector('#step-badge').textContent = currentStep === 0 ? '지역 선택' : currentStep <= 3 ? '여행 장소 선택' : currentStep === 4 ? '메뉴 선택' : '기능 준비 중';
-      document.querySelector('#step-action-note').textContent = currentStep <= 4 ? '선택한 내용은 이 작성 흐름에서만 유지됩니다.' : '후속 단계는 아직 연결 중입니다.';
+      estimateController?.showStep(currentStep);
+      restaurantController?.showStep(currentStep);
+      futureStepPreview.hidden = currentStep < 7;
+      document.querySelector('#step-badge').textContent = currentStep === 0 ? '지역 선택' : currentStep <= 3 ? '여행 장소 선택' : currentStep === 4 ? '메뉴 선택' : currentStep === 5 ? '추정 일정' : currentStep === 6 ? '음식점 선택' : '기능 준비 중';
+      document.querySelector('#step-action-note').textContent = currentStep <= 6 ? '선택한 내용은 이 작성 흐름에서만 유지됩니다.' : '후속 단계는 아직 연결 중입니다.';
       const activeButton = stepList.querySelector('[aria-current="step"]');
       if (activeButton) stepList.scrollLeft = activeButton.offsetLeft - stepList.offsetLeft - (stepList.clientWidth - activeButton.offsetWidth) / 2;
       if (focusHeading) { stepTitle.scrollIntoView({block: 'start', behavior: 'instant'}); stepTitle.focus({preventScroll: true}); }
@@ -493,6 +504,9 @@
         const message = menuController.canLeave(selectedRegion.regionId, placeController.attractionContexts());
         if (message) { currentStep = 4; renderStep(true); menuController.showError(message); return false; }
       }
+      if (target > 5 && !estimateController.hasCurrentResult()) {
+        currentStep = 5; renderStep(true); document.querySelector('#estimate-status').textContent = '먼저 현재 입력으로 추정 일정을 계산해 주세요.'; return false;
+      }
       return true;
     }
 
@@ -549,6 +563,16 @@
       updateStepAvailability();
     });
     menuController = window.RoutyMenuWorkspace.mount(document, window, client);
+    estimateController = window.RoutyEstimateWorkspace.mount(document, window, client, () => ({
+      regionId: selectedRegion?.regionId, summary: placeController.summary(), selected: placeController.selected(),
+      places: placeController.estimatePlaces(), foods: menuController.confirmedMenus().map(menu => menu.name)
+    }));
+    restaurantController = window.RoutyRestaurantWorkspace.mount(document, window, client, () => ({
+      confirmed: estimateController.confirmedEstimate(), menus: menuController.confirmedMenus()
+    }));
+    document.querySelector('#estimate-start-date').addEventListener('change', event => {
+      document.querySelector('#summary-date').textContent = event.target.value || '미정';
+    });
     renderStep(false);
     renderState();
     showRoute(false);

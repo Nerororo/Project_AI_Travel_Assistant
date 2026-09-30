@@ -13,7 +13,7 @@ const {setTimeout: delay} = require('node:timers/promises');
 
 test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
-  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/menu-workspace.js', 'js/menu-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
+  const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/menu-workspace.js', 'js/menu-workspace.js'], ['/js/estimate-workspace.js', 'js/estimate-workspace.js'], ['/js/restaurant-workspace.js', 'js/restaurant-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
   const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
   const account = {email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')};
   const token = Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.');
@@ -26,6 +26,10 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   let recommendationHeaders;
   const placeRequests = [];
   const menuRequests = [];
+  const estimateRequests = [];
+  let estimateMode = 'success';
+  const restaurantRequests = [];
+  let restaurantMode = 'success';
   let menuMode = 'success';
   const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && ['/api/users', '/api/auth/login'].includes(req.url)) {
@@ -90,6 +94,46 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
           {name: '가상 전골', searchQuery: '전골', reason: '함께 먹기 좋은 메뉴', targetClientPlaceId: null}
         ]}));
       }
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/api/travel-plans/estimate') {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const body = JSON.parse(raw);
+      estimateRequests.push(body);
+      res.setHeader('Content-Type', 'application/json');
+      if (estimateMode === 'capacity') {
+        res.writeHead(422);
+        res.end(JSON.stringify({code: 'PLAN_CAPACITY_EXCEEDED', message: 'fixed', details: {date: body.startDate, plannedEndTime: '20:30', allowedEndTime: '20:00', exceededMinutes: 30}, adjustments: ['CHANGE_END_TIME']}));
+      } else {
+        res.writeHead(200);
+        res.end(JSON.stringify({routeVerified: false, days: body.days.map(day => ({date: day.date, items: [
+          ...body.places.map((place, index) => ({clientPlaceId: place.clientPlaceId, order: index + 1, type: 'VISIT', displayName: place.displayName, startTime: '10:00', endTime: '11:30', estimatedMinutes: null})),
+          {clientPlaceId: null, order: body.places.length + 1, type: 'MEAL', displayName: null, startTime: '12:00', endTime: '13:00', estimatedMinutes: null},
+          {clientPlaceId: null, order: body.places.length + 2, type: 'MEAL', displayName: null, startTime: '18:00', endTime: '19:00', estimatedMinutes: null}
+        ]}))}));
+      }
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/api/places/restaurants/search') {
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      const body = JSON.parse(raw); restaurantRequests.push({body, headers: req.headers});
+      res.setHeader('Content-Type', 'application/json');
+      if (restaurantMode === 'unavailable' || restaurantMode === 'invalid') {
+        res.writeHead(restaurantMode === 'invalid' ? 400 : 503);
+        res.end(JSON.stringify({code: restaurantMode === 'invalid' ? 'VALIDATION_FAILED' : 'PLACE_PROVIDER_UNAVAILABLE', message: 'untrusted-provider-response'})); return;
+      }
+      const ref = {kind: 'ATTRACTION', clientPlaceId: body.estimate.places[0].clientPlaceId, latitude: 36, longitude: 127};
+      const id = body.bounds ? 'restaurant-map' : `restaurant-${body.page}`;
+      res.writeHead(200);
+      res.end(JSON.stringify({mealDate: body.mealDate, mealStartTime: body.mealType === 'DINNER' ? '18:00' : '12:00', mealEndTime: body.mealType === 'DINNER' ? '19:00' : '13:00', previousPlace: ref,
+        nextPlace: {kind: 'END_BOUNDARY', clientPlaceId: null, latitude: 36.01, longitude: 127.01},
+        referenceAttraction: body.referenceAttractionClientPlaceId ? ref : null,
+        places: restaurantMode === 'empty' ? [] : [{kakaoPlaceId: id, placeUrl: `https://place.map.kakao.com/${id}`,
+          providerDisplayName: body.bounds ? '가상 음식점 지도' : `가상 음식점 ${body.page}`, address: '가상 주소', latitude: 36.005, longitude: 127.005,
+          selectionToken: `fake-${id}-token`, detourKilometers: 0.5, estimatedDetourMinutes: 10}],
+        emptyReason: restaurantMode === 'empty' ? 'NO_CANDIDATES' : null, page: body.page, hasNext: body.page === 1 && restaurantMode !== 'empty'}));
       return;
     }
     if (req.method === 'POST' && ['/api/places/search', '/api/places/travel-boundaries/search', '/api/places/hotels/search'].includes(req.url)) {
@@ -405,6 +449,112 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('#menu-confirm');
     await click('#next-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="5"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('#next-step').textContent`), '다음: 음식점 선택 →');
+      await click('#estimate-submit');
+      assert.equal(estimateRequests.length, 0);
+      await evaluate(`document.querySelector('#estimate-start-date').value='2026-10-01';document.querySelector('#estimate-start-date').dispatchEvent(new Event('change'))`);
+      assert.equal(await evaluate(`document.querySelector('#summary-date').textContent`), '2026-10-01');
+      estimateMode = 'capacity';
+      await click('#estimate-submit');
+      await until(`document.querySelector('#estimate-status').textContent.includes('30분 초과')`);
+      assert.equal(await evaluate(`document.querySelector('#estimate-start-date').value`), '2026-10-01');
+      assert.equal(await evaluate(`document.querySelector('#estimate-result').textContent`), '');
+      estimateMode = 'success';
+      await click('#estimate-submit');
+      await until(`document.querySelector('#estimate-result section') !== null`);
+      assert.equal(await evaluate(`document.activeElement === document.querySelector('#estimate-status')`), false);
+      assert.equal(estimateRequests.at(-1).days.length, 1);
+      assert.equal(estimateRequests.at(-1).places[0].selectionToken.startsWith('fake-'), true);
+      assert.equal(await evaluate(`document.querySelector('#estimate-result').textContent.includes('실제 경로 검증 전')`), true);
+      assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
+      await click('#estimate-manual');
+      assert.equal(await evaluate(`document.querySelector('#estimate-placement').hidden`), false);
+      await click('#estimate-submit');
+      await until(`document.querySelector('#estimate-result section') !== null`);
+      assert.equal(estimateRequests.at(-1).places[0].day, '2026-10-01');
+      assert.equal(estimateRequests.at(-1).places[0].order, 1);
+      await screenshot('w1-03-estimate-desktop.png');
+      await evaluate(`document.querySelector('#estimate-result').scrollIntoView({block:'start',behavior:'instant'})`);
+      await delay(150);
+      await screenshot('w1-03-result-desktop.png');
+      await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+      assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+      assert.equal(await evaluate(`getComputedStyle(document.querySelector('.journey-summary')).display`), 'block');
+      await screenshot('w1-03-estimate-mobile.png');
+      await evaluate(`document.querySelector('#estimate-result').scrollIntoView({block:'start',behavior:'instant'})`);
+      await delay(150);
+      assert.equal(await evaluate(`document.querySelector('#estimate-result li').getBoundingClientRect().bottom <= document.querySelector('.canvas-actions').getBoundingClientRect().top`), true);
+      await screenshot('w1-03-result-mobile.png');
+      await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="6"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('#next-step').textContent`), '검토 화면 미리보기 →');
+    assert.equal(await evaluate(`document.querySelector('#restaurant-slot').options.length`), 2);
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#restaurant-results .place-result').length === 1`);
+    assert.equal(restaurantRequests.at(-1).body.mealType, 'LUNCH');
+    assert.equal(restaurantRequests.at(-1).body.estimate.places[0].order, 1);
+    assert.equal(restaurantRequests.at(-1).body.estimate.places[0].day, '2026-10-01');
+    assert.equal(restaurantRequests.at(-1).body.referenceAttractionClientPlaceId, restaurantRequests.at(-1).body.estimate.places[0].clientPlaceId);
+    assert.match(restaurantRequests.at(-1).headers['idempotency-key'], /^[0-9a-f-]{36}$/);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-context').textContent.includes('직전 장소') && document.querySelector('#restaurant-context').textContent.includes('직후 장소')`), true);
+    await screenshot('w1-03a-candidates-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    await evaluate(`document.querySelector('#restaurant-results').scrollIntoView({block:'start',behavior:'instant'})`);
+    await delay(150);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result').getBoundingClientRect().bottom <= document.querySelector('.canvas-actions').getBoundingClientRect().top`), true);
+    await screenshot('w1-03a-candidates-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await click('#restaurant-results .place-result button');
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
+    await evaluate(`document.querySelector('#restaurant-slot').value='2026-10-01|DINNER';document.querySelector('#restaurant-slot').dispatchEvent(new Event('change'))`);
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelector('#restaurant-status').textContent.includes('1곳을 찾았습니다')`);
+    assert.equal(restaurantRequests.at(-1).body.mealType, 'DINNER');
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('2026-10-01 점심')`), true);
+    await evaluate(`document.querySelector('#restaurant-slot').value='2026-10-01|LUNCH';document.querySelector('#restaurant-slot').dispatchEvent(new Event('change'))`);
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#restaurant-results .place-result').length === 1`);
+    await evaluate(`window.__restaurantMarkers=[];window.kakao={maps:{
+      LatLng:class{constructor(lat,lng){this.lat=lat;this.lng=lng}getLat(){return this.lat}getLng(){return this.lng}},
+      LatLngBounds:class{constructor(){this.points=[]}extend(p){this.points.push(p)}getSouthWest(){return new window.kakao.maps.LatLng(Math.min(...this.points.map(p=>p.lat)),Math.min(...this.points.map(p=>p.lng)))}getNorthEast(){return new window.kakao.maps.LatLng(Math.max(...this.points.map(p=>p.lat)),Math.max(...this.points.map(p=>p.lng))) }},
+      Map:class{constructor(){this.area=null}relayout(){}setBounds(area){this.area=area}getBounds(){return this.area}},
+      Marker:class{constructor(options){this.map=options.map;this.title=options.title;window.__restaurantMarkers.push(this)}setMap(map){this.map=map}},
+      MarkerImage:class{},Size:class{},event:{addListener(marker,event,handler){marker.choose=handler}}
+    }}`);
+    await click('#restaurant-workspace [data-restaurant-view="map"]');
+    await until(`window.__restaurantMarkers.some(marker => marker.map && marker.title.includes('가상 음식점'))`);
+    assert.equal(await evaluate(`window.__restaurantMarkers.filter(marker => marker.map && marker.title.includes('직전 장소')).length`), 1);
+    await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result button').getAttribute('aria-pressed')`), 'false');
+    await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result button').getAttribute('aria-pressed')`), 'true');
+    await click('#restaurant-search-map');
+    await until(`document.querySelector('#restaurant-results').textContent.includes('가상 음식점 지도')`);
+    assert.equal(Boolean(restaurantRequests.at(-1).body.bounds), true);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
+    await click('#restaurant-next-page');
+    await until(`document.querySelector('#restaurant-page').textContent === '2'`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
+    restaurantMode = 'unavailable';
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelector('#restaurant-status').textContent.includes('잠시')`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
+    restaurantMode = 'empty';
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelector('#restaurant-status').textContent.includes('후보가 없습니다')`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
+    await screenshot('w1-03a-restaurant-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+    await screenshot('w1-03a-restaurant-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    restaurantMode = 'invalid';
+    await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
+    await until(`document.querySelector('#restaurant-status').textContent.includes('다시 계산')`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent`), '');
+    restaurantMode = 'success';
     await click('[data-step="4"]');
     assert.equal(await evaluate(`document.querySelector('#menu-draft .menu-card input').value`), '내 국밥');
     await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
