@@ -27,6 +27,10 @@ public class PlanningPlaceSelectionService {
 		return verify(token, userId, regionId, PlaceRole.HOTEL);
 	}
 
+	public PlanningPlaceSelection verifyRestaurant(String token, long userId, String regionId) {
+		return verify(token, userId, regionId, PlaceRole.RESTAURANT);
+	}
+
 	private PlanningPlaceSelection verify(String token, long userId, String regionId, PlaceRole role) {
 		try {
 			SelectionTokenPlace place = selectionTokenService.verify(token, userId, regionId, role);

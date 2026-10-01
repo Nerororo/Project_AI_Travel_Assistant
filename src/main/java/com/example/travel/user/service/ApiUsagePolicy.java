@@ -80,6 +80,7 @@ public class ApiUsagePolicy {
 				case PUBLIC_TRANSIT_ROUTE -> new FeatureLimits(60, 120, 900L);
 				case AI_REGION_RECOMMENDATION -> new FeatureLimits(2, 10, null);
 				case AI_MENU_ANALYSIS -> new FeatureLimits(3, 15, null);
+				case TRAVEL_PLAN_CREATE -> throw new IllegalArgumentException("Travel plan creation has no separate usage quota");
 			};
 		}
 	}

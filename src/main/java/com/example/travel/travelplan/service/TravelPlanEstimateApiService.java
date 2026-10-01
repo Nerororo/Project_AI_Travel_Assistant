@@ -49,6 +49,11 @@ public class TravelPlanEstimateApiService {
 	}
 
 	public ResolvedEstimate resolveAndEstimate(long userId, TravelPlanEstimateApiRequest request) {
+		EstimateCommand command = resolve(userId, request);
+		return new ResolvedEstimate(command, estimateService.estimate(command));
+	}
+
+	public EstimateCommand resolve(long userId, TravelPlanEstimateApiRequest request) {
 		TravelConditions conditions = validateRequest(userId, request);
 		List<EstimateVisit> visits = new ArrayList<>(request.places().size());
 		for (TravelPlanEstimateApiRequest.Place place : request.places()) {
@@ -64,7 +69,7 @@ public class TravelPlanEstimateApiService {
 		}
 		EstimateCommand command = new EstimateCommand(userId, request.regionId(), conditions,
 				request.startBoundarySelectionToken(), request.endBoundarySelectionToken(), visits, hotel);
-		return new ResolvedEstimate(command, estimateService.estimate(command));
+		return command;
 	}
 
 	private static TravelConditions validateRequest(long userId, TravelPlanEstimateApiRequest request) {

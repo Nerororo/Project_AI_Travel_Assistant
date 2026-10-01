@@ -249,4 +249,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-다음 백엔드 작업은 `T1-06` 완료 생성 API 연결이다. `T1-01`은 ADR-043과 DB·API 계약, `T1-02`는 Aggregate·V5 물리 설계, `T1-03`은 Entity·Repository·V5 migration 및 빈 DB 적용 검증, `T1-04`는 외부 경로 반영 완료 계산, `T1-05`는 계산 완료 결과의 트랜잭션 저장 Service 및 전체 테스트까지 완료했다. 현재 시작 가능한 미진행 W1 작업은 없다. `W1-03B`는 `T1-06A` 이후, `W1-04`는 T1 이후 진행한다. 구현·검증 범위와 남은 제한은 `docs/07-implementation-readiness.md`를 따른다.
+다음 백엔드 작업은 `T1-06A` 경로 없음 실패 구간 응답이다. `T1-01`~`T1-05`의 정책·Aggregate·migration·완료 계산·저장과 `T1-06`의 완료 생성 API 연결은 자동 검증까지 완료했다. 현재 시작 가능한 미진행 W1 작업은 없다. `W1-03B`는 `T1-06A` 이후, `W1-04`는 T1 이후 진행한다. 구현·검증 범위와 남은 제한은 `docs/07-implementation-readiness.md`를 따른다.
