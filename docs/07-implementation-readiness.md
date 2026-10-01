@@ -25,7 +25,7 @@
 | 부분 구현 | 일부 코드·설정만 있고 완료 기준을 충족하지 않음 |
 | 구현·검증 완료 | 코드와 적용 가능한 완료 기준을 검증함 |
 
-## 2. 코드 기준선 (2026-09-27, R2 완료)
+## 2. 현재 코드 기준선
 
 | 영역 | 상태 | 확인 근거 |
 |---|---|---|
@@ -37,7 +37,7 @@
 | 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
 | 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
 | AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B, 메뉴 분석 브라우저 연결은 W1-02A에서 검증했다. |
-| Place | P1 범위·P1-07B~D·S1-05·S1-06A 서버 범위 구현·검증 완료 | Kakao Local Client, 관광지·여행 경계·숙소 전용 검색에 음식점 전용 검색 Service를 연결했다. 음식점은 확정 일정 기준의 검색 중심에서 1·3·5km로 확대하거나 현재 지도 영역을 검색하고, 주소 검증 뒤 `RESTAURANT` token을 발급한다. 지역·역할별 token 검증과 숙소의 점수 없는 직접 선택 계약을 유지한다. 관광지·여행 경계·숙소의 브라우저 연결은 W1-02, 음식점 화면은 후속 W1, create 요청 수명은 T1 후속 작업이다. |
+| Place | P1 범위·P1-07B~D·S1-05·S1-06A 서버 범위 구현·검증 완료 | Kakao Local Client와 관광지·여행 경계·숙소·음식점 검색을 연결했다. 음식점 후보는 1·3·5km 또는 현재 지도 영역에서 찾고 주소 검증 뒤 `RESTAURANT` token을 발급한다. 숙소는 점수 없이 직접 선택한다. 관광지·경계·숙소 화면은 W1-02, 음식점 화면은 W1-03A에서 가짜 API로 검증했다. 완료 생성의 좌표 수명 검증은 T1 후속 작업이다. |
 | Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
 | Recommendation | S1-06·S1-06A 서버 범위 구현·검증 완료 | 재계산된 식사 시각과 직전·직후 장소의 가용 시각으로 후보의 시간 적합성을 검사하고 Haversine 추가 이동거리와 결정적 동률 규칙으로 정렬한다. 음식점 검색 HTTP와 연결했으며 빈 후보와 제공자 장애를 구분한다. 지도·목록 연동과 사용자 직접 선택은 W1-03A의 가짜 API 브라우저 범위에서 검증했다. |
 | TravelPlan | S1-01~04·S1-06A 구현·검증 완료 | 공개 place 검증 Service가 요청 범위에서 token을 좌표로 바꾸고, estimate가 자동·사용자 배치와 Haversine 시간표·식사 예산·초과 거절을 응답한다. 음식점 검색 조정 Service는 확정된 날짜·순서를 다시 계산해 식사 슬롯과 직전·직후 기준 장소를 확인한 뒤 place·recommendation 공개 계약을 조합한다. DB와 실제 Route Client는 호출하지 않으며 create는 후속 작업이다. |
@@ -45,237 +45,32 @@
 | 자동 테스트 | S1-07A까지 456개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 음식점 반경 확대·주소·token·중복 requestId, 일정 재계산·식사 슬롯, HTTP 입력·인증·오류 경계를 함께 검증했다. 자동 배치의 시간 초과 거절과 입력 장소·체류 보존 사례를 포함하며 실패·오류·건너뜀은 0개다. |
 | 화면 | W1-00·W1-01A~C·W1-02·W1-02A·W1-03·W1-03A 범위 구현·가짜 API 브라우저 검증 완료 | 공통 app shell·6개 view·8단계 Workspace에 인증·지역·여행 조건·관광지·여행 경계·숙소 검색과 메모리 선택, 메뉴 분석·확정, 날짜별 활동 시간·관광지 직접 배치·추정 일정과 식사 슬롯별 음식점 목록·지도 선택을 연결했다. 카카오 지도 SDK는 브라우저용 키가 있을 때 지연 로드하고 키가 없으면 목록 선택을 유지한다. 완료 화면과 실제 OpenAI·카카오 지도·장소 smoke는 후속 검증이다. |
 
-`S1-07` 점검과 후속 `S1-07A` 테스트 보강을 마쳤다. 자동·사용자 배치의 장소 보존과 사용자 순서 유지, 자동 배치의 시간 초과 거절 및 추천의 비자동 선택을 코드와 테스트로 확인했다. 다음 백엔드 로드맵 작업은 `T1-01`이다. 실제 경로 시간으로 재검증한 완료 저장은 T1에 남는다.
-
-F0-01에서 `./gradlew test --rerun-tasks`와 실제 애플리케이션 기동은 통과했다. 현재 성공은 Web 골격의 실행 가능성만 뜻한다. `application.yml`의 JPA 설정만으로 JPA나 DB 연결이 구현된 것은 아니며, 관련 dependency가 classpath에 없으므로 현재 테스트와 기동 과정에서는 datasource 설정과 `${DB_PASSWORD}`도 사용되지 않는다. local·test·prod·smoke profile 파일 역시 아직 없다.
-
-F0-03에서 Spring Boot 관리 버전의 JPA·MySQL·Flyway·Testcontainers dependency와 local·test·prod·smoke profile 기반을 적용했다. Testcontainers가 제공한 빈 MySQL 8.4에서 Flyway가 schema history를 만든 뒤 Hibernate `ddl-auto: validate`까지 통과했다. 현재 Entity와 production migration이 0개인 상태를 검증한 것이므로 업무 schema 구현 완료를 뜻하지 않는다.
-
-F0-04A에서 공통 오류 DTO의 고정 필드, validation reason, 인증·인가·not found·409·422·429·503·500 변환 계약을 확정했다. F0-04B에서 공통 DTO·오류 코드·비즈니스 예외·전역 Exception Handler를 구현하고 validation, 잘못된 JSON, 상태별 비즈니스 예외, 429 header, 안전한 500 응답을 MockMvc로 검증했다. 실제 Spring Security의 401·403 연결은 U1 구현 범위다.
-
-F0-05 회귀 점검에서 발견한 미매핑 URL·정적 리소스의 500 오분류는 F0-04C에서 보완했다. 일반 404 `RESOURCE_NOT_FOUND` 계약과 Spring MVC 예외 변환을 추가하고, 내부 요청 경로·상세를 노출하지 않는 고정 오류 DTO를 MockMvc로 검증했다. 보완 후 전체 테스트도 통과했으며 F0-05 완료 판정은 별도 점검 Task에서 수행한다.
-
-F0-05 재점검에서 MySQL 8.4 Testcontainers를 포함한 전체 21개 테스트가 실패·오류·건너뜀 없이 통과했다. 운영·smoke DB 자격 증명은 기본값 없는 환경 변수로만 주입되고, 소스·설정·fixture·문서에서 실제 비밀값과 자격 증명 패턴이 발견되지 않았으며 `git diff --check`도 통과했다. 이 판정은 F0 기반과 공통 오류 처리 범위에 한정하고, 인증·보안과 실제 외부 Client의 운영 검증은 후속 작업에서 수행한다.
-
-`AGENTS.md`는 구현 경계이며 기능 코드가 아니다. 도메인 하네스가 존재해도 해당 기능을 구현됨으로 표시하지 않는다.
-
 ## 3. 문서·하네스 정렬 결과
 
-현재 기준 문서와 하네스에는 확정된 제품 계약과 경로별 책임을 반영했다. `docs/11-command-roadmap.md`는 D0 게이트의 완료 여부만 표시하며 개별 문서 편집 이력을 관리하지 않는다. 이 정렬 상태는 기능 구현 완료를 뜻하지 않는다.
+D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확인은 좌표 기반 기능의 구현·운영 검증을 대신하지 않는다.
 
 ## 4. 제품 결정 준비도
 
-| 주제 | 설계 상태 | 구현 상태 | 근거 또는 다음 조치 |
-|---|---|---|---|
-| 국내 범위 | 확정 | 기준 데이터 구현·검증 | 서울·광역시·세종은 자체 선택, 도·특별자치도는 하위 시·군 선택, 광역자치단체의 구·군은 검색 필터, 읍·면·동·해외 제외 |
-| 지역 직접 검색·AI 추천 | 구현·검증 | 같은 `regions.json`의 최종 선택 가능 지역만 AI에 제공하고 인증·한도·requestId가 적용된 HTTP API와 직접 검색·정확히 3개인 AI 후보 선택 브라우저 연결 구현 | 실제 Spring 서버와 브라우저의 end-to-end smoke는 별도 운영 검증 |
-| 이동수단 | 확정 | 구현 전 | 일정당 CAR 또는 PUBLIC_TRANSIT 하나 |
-| 순수 경로 | 확정 | 구현·검증 완료 | WGS84 Coordinate·Haversine·Nearest Neighbor·고정 양 끝 경계 2-opt·이동수단별 10분 단위 시간 추정·기하 중앙값·메도이드를 최대 하루 입력과 7일 고정 경계 조합으로 회귀·성능 검증 |
-| 실제 경로 호출 시점 | 확정 | 구현 전 | 최종 후보의 인접 구간만 조회 |
-| 이동 시간 | 확정 | 구현 전 | 제공자 예상 초를 10분 단위로 올림 |
-| 체류 시간 | 확정 | 구현 전 | 유형 미노출, 30~480분의 10분 단위 |
-| 사용자 장소 이름 | 확정 | 구현 전 | 빈 입력에서 직접 작성, trim 후 1~50자 |
-| 시간 초과 | 확정 | 구현 전 | 저장 차단, 자동 삭제·체류 축소 없음 |
-| 완료 후 편집·조회·공유 | 확정 | 구현 전 | 제한 텍스트 편집, 외부 호출·지도 없는 조회 |
-| 인증·회원 탈퇴 | 확정 | 부분 구현 | 회원가입·1시간 access JWT 로그인·보호 API 인증 구현 완료, 탈퇴와 종속 데이터 삭제는 후속 작업 |
-| 호출 한도·저장소 | 확정 | 구현·검증 완료 | MySQL 공유 사용자·서비스 카운터와 10분 requestId PROCESSING·SUCCESS 상태, 원자 선점·중복 차단 구현 완료 |
-| 이동시간 출처 | 확정 | 구현 전 | 숫자만 저장, 생성 warning 비영속, 집계 metric |
-| 카카오 좌표 활용 계약 | 정책 확인 완료 | 구현 전 | 2026-09-11 DevTalk 답변과 ADR-028 |
-| 운영 배포 | 차단 | 구현 전 | 기능·테스트·운영 검증 필요 |
-
-카카오 답변 반영은 완료됐다. 이후 모든 좌표 기반 구현은 ADR-028의 일시 사용·즉시 폐기 조건을 따라야 한다.
+| 범위 | 현재 상태 | 남은 일 |
+|---|---|---|
+| 인증·지역·AI·장소·경로 기반 | 해당 단계 구현·자동 검증 완료 | 실제 제공자와 배포 환경의 smoke 검증 |
+| 일정 추정·음식점 추천 | S1 서버 기능과 W1-03A까지 가짜 API 브라우저 흐름 검증 | 실제 카카오 지도 SDK·Local API smoke |
+| 완료 일정·공유 | T1-01 설계 계약 완료, 기능 구현 전 | T1-02부터 Aggregate·migration·완료·조회·공유 API 구현과 검증 |
+| 운영 배포 | 구현 전 | Q1 운영·보안·배포 완료 기준 검증 |
 
 ## 5. 구현 전 확정할 세부 계약
 
-| 항목 | 로드맵 시점 | 기록 위치 |
-|---|---|---|
-| 테스트 DB 방식과 JPA·MySQL·Flyway dependency | 결정 완료 | MySQL 8.4 Testcontainers, Spring Boot 관리 버전, `docs/08` 3절과 `docs/09` 11절 |
-| JWT 만료·재발급·로그아웃, User 삭제 | 결정 완료 | ADR-037, `docs/03` User 삭제, `docs/04` 1~2절, `docs/09` 3·10절 |
-| 지역 공공데이터 출처·기준일·생성 절차 | 결정 완료 | ADR-038, `docs/09` 9절 지역 기준 데이터 갱신 |
-| CAR·PUBLIC_TRANSIT 초기 추정 계수 | 결정 완료 | ADR-040, 구현·단위 테스트는 R1-02~06 |
-| OpenAI 모델·전체 예산 | 결정 완료 | ADR-039의 `gpt-5.6-luna`, 월 USD 5 계획과 OpenAI project USD 4 hard spend limit |
-| selectionToken 서명·만료·키 교체 | 결정 완료 | ADR-041의 HS256 JWS, 30분 만료, 전용 active·이전 key 교체와 최소 payload; 구현·자동 테스트는 P1-03 |
-| 자동차 요청 단위·공식 쿼터 | 결정 완료 | R2-01의 인접 구간별 일반 자동차 길찾기, 10,000건/일·8원/초과 건, `docs/09` C1-05 자동차 재확인 기록 |
-| AI 메뉴·식사·음식점 흐름 | 확정 | 메뉴 1~5개 사용자 확정, 식사 60분·한쪽 여유 15분, estimate 후 지도 선택, 저장 후 재검색 없음 |
-| 공유 토큰 해시·만료 | T1-01 | DB·API·보안 ADR |
-
-미확정 값을 임시 상수, 넓은 nullable, 가짜 운영 데이터나 테스트 생략으로 우회하지 않는다.
+현재 T1 완료 저장·공유에 남은 제품 정책 결정은 없다. 식사 연결·계정 삭제·공유 토큰 계약은 ADR-043, DB·HTTP 계약은 각각 `docs/03-database.md`와 `docs/04-api-spec.md`를 따른다. 결정 완료는 Entity·migration·API 구현 완료를 뜻하지 않는다.
 
 ## 6. 문서 정렬 후 진행 가능한 범위
 
-카카오 답변과 무관하게 다음 순서로 진행할 수 있다.
-
-1. `F0-01`: 실제 코드·설정·dependency 실행 가능성 감사
-2. `F0-02~05`: 개발·DB·오류 처리 기반
-3. `U1`: 인증과 사용자별 한도 기반
-4. `G1`: 국내 지역 기준과 직접 검색
-5. `A1`: 지역 추천·메뉴 분석 AI
-6. `R1`: 순수 거리·방문 순서 알고리즘
-7. `C1`: Place·Route Client 인터페이스와 Fake
-
-`K0-02A`가 완료됐으므로 C1까지 마친 뒤의 백엔드 주 흐름은 `P1 → R2 → S1 → T1 → Q1` 순서를 따른다. 화면은 W1 전체를 T1 뒤로 미루지 않고 `docs/11-command-roadmap.md`의 선행 조건을 충족한 작업부터 하나씩 끼워 진행한다. `W1-06`만 모든 화면 연결 뒤, Q1 전에 수행한다.
+작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-02`다.
 
 ## 7. 현재 작업 상태
 
-F0·U1·G1·A1의 현재 범위와 W1-00·W1-01A~C가 구현·검증됐다. R1-01에서 좌표·Haversine·기하 중앙값·메도이드와 이동수단별 초기 시간 추정 계약을 ADR-040으로 확정했다. R1-02에서 WGS84 좌표 값 객체와 평균 지구 반지름 기반 Haversine 거리를 순수 Java로 구현하고 0 거리·대칭성·알려진 거리 오차·좌표 범위와 비유한 값 거절을 단위 테스트로 검증했다. R1-03에서 Nearest Neighbor의 입력·출력·시작점·열린 경로·안정 키 동률·실패 조건과 `O(n²)` 시간·`O(n)` 추가 공간 계약을 ADR-040에 확정했다. R1-04에서 안정 키·좌표 입력과 명시적 시작점을 사용하는 Nearest Neighbor 열린 경로를 순수 Java로 구현하고 빈 목록·단일 장소·전체 장소 1회 방문·시작점 보존·입력 순서와 무관한 동률 결정성·입출력 불변·잘못된 입력 거절을 단위 테스트로 검증했다. R1-05에서 고정 출발·도착 경계를 제외한 관광지 구간만 반전하는 결정적 2-opt를 구현했다. 경로 비악화, 양 끝 경계·장소 집합 보존, 개선 없음·1,000회 반복 상한, 입력·결과 불변성과 동일 호텔 좌표의 서로 다른 시작·도착 안정 키를 단위 테스트로 검증했다. R1-06에서 이동수단이 고정된 불변 정책과 Haversine 이동시간 계산기를 구현했다. 자동차는 우회계수 1.30·평균속도 60km/h, 대중교통은 1.40·50km/h를 사용하며 0km는 0분, 양의 거리는 최소 10분으로 10분 단위 올림한다. 정책 범위·비유한 값·정확한 경계·이동수단 분리를 단위 테스트로 검증했다. R1-06A에서 정렬된 입력을 지역 equirectangular km 평면으로 투영하는 modified Weiszfeld 기하 중앙값과 Haversine 거리 합이 최소인 실제 입력 메도이드를 구현했다. 빈·단일 입력, 대칭 입력, 중복 좌표, 수렴·반복 상한, 안정 키 동률과 입력 순서 독립성을 단위 테스트로 검증했다. R1-07에서는 고정 출발·도착 경계와 관광지 5개의 최대 하루 입력을 두 이동수단으로 조합해 결정성, 장소·경계 보존, 경로 비악화, 10분 단위 시간, 기하 중앙값·메도이드를 함께 회귀 검증했다. 로컬 1,000회 측정은 26,012,200ns였고 대표 입력의 2-opt 거리는 20.031509km에서 19.055881km로 4.87% 줄었다. 추가 7일 회귀에서는 첫날 역→장소→호텔, 중간 날 호텔→장소→같은 호텔, 마지막 날 호텔→장소→역 경계를 보존했고, 날짜별 장소 6개의 전수조사 결과 표본 모두 Haversine 최단거리와 일치했다. 7일 계산 1,000회는 71,500,000ns였으며 이는 날짜 배분·식사 시간표·실제 경로 최적성을 포함하지 않는다. 루트 `test.ps1` 전체 186개 테스트와 `git diff --check`가 통과해 R1 범위를 완료했다. C1-01에서 카카오 장소 검색의 요청·응답·오류 계약을 `place/client`에 추가하고, 정상 빈 결과와 timeout·연결 실패·제공자 오류·잘못된 응답을 구분했다. 제공자 표시명·주소·좌표·카테고리를 요청 범위 임시 후보에만 두어 API·저장 모델과 분리했으며, 계약 단위 테스트와 루트 `test.ps1` 전체 193개 테스트 및 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 `C1-02`다. 활성 구현 작업과 이후 실행 순서는 `docs/11-command-roadmap.md`를 따른다. `A1-08`은 발견 사항을 기록한 미실행 후속 작업이다.
-
-C1-02에서 테스트 전용 `FakeKakaoPlaceClient`와 생성자 주입 기반의 얇은 `PlaceService` 골격을 추가했다. 성공·정상 빈 결과·timeout·4xx·5xx를 재현하고 각 실패에서 암묵적 재시도 없이 한 번만 Client를 호출하는지 검증했다. 실제 `KakaoPlaceClient` Bean이 아직 없는 단계이므로 `PlaceService`의 Spring Bean 등록은 실제 Client 구성과 함께 수행하도록 유보했다. 루트 `test.ps1` 전체 202개 테스트와 `git diff --check`가 통과했으며 다음 백엔드 주 작업은 `C1-03`이다.
-
-C1-03에서 공통 `RouteClient`와 자동차·대중교통 전용 하위 인터페이스를 추가하고 요청 범위의 단일 인접 좌표 구간 계약을 정의했다. 성공은 제공자 예상 초만 가진 `Found`, 정상 경로 없음은 예외가 아닌 `NotFound`, 요청·인증·한도·timeout·연결·5xx·잘못된 응답은 외부 원문 없는 정규화 실패로 분리했다. 재시도 가능한 일시적 기술 장애도 요청·계약 실패와 구분했으며, 루트 `test.ps1` 전체 210개 테스트와 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 `C1-04`다.
-
-C1-04에서 테스트 전용 자동차·대중교통 Fake Route Client와 생성자 주입 기반의 얇은 `RouteService` 골격을 추가했다. 일정의 `TravelMode`에 따라 해당 Client 하나만 호출하고 성공·정상 경로 없음·timeout·연결 실패·5xx 정규화 결과를 재시도와 fallback 없이 그대로 전달하는 계약을 검증했다. 실제 Route Client Bean이 아직 없는 단계이므로 `RouteService`의 Spring Bean 등록은 실제 Client 구성과 함께 수행하도록 유보했다. 루트 `test.ps1` 전체 217개 테스트와 `git diff --check`가 통과했으며 다음 백엔드 주 작업은 `C1-05`다.
-
-C1-05에서 2026-09-18 카카오 공식 문서를 기준으로 Local·자동차·대중교통 endpoint, 인증, 요청·응답, 쿼터와 요금을 감사했다. 대중교통 경로 조회는 2026-07-21 카카오맵 REST API에 정식 추가되어 제품 방향과 일치하고, 1,000건/일 무료 쿼터의 90%인 900건 차단선도 일치한다. 다만 Local의 20km 밖 도시 전체 공간 검색, 자동차 `result_code`별 정규화, 대중교통 복수 후보 선택·출발시각 없는 시간 의미·상태 매핑이 확정되지 않아 실제 Client 구현 게이트는 차단 상태다. 기존 API·ADR과 코드는 수정하지 않았으며 별도 `C1-05A`에서 계약을 정렬해야 한다.
-
-C1-05A 결정 1에서 모든 최종 선택 가능 지역에 공식 WGS84 행정경계 기반 `searchBounds`를 생성하기로 확정했다. 관광지는 대표 좌표 20km로 먼저 검색하고 결과 부족 또는 사용자 요청 시 bounds를 카카오 `rect`의 `minLongitude,minLatitude,maxLongitude,maxLatitude` 순서로 전달해 공식 지역명 결합 검색을 수행하며, 주소 행정구역 검증·장소 ID 중복 제거·외부 호출별 사용량 집계를 적용한다. 기준 데이터와 Loader는 후속 `G1-06`에서 구현·검증을 완료했고, radius/rect Client DTO는 `C1-05B`, 실제 Local 호출은 `P1-04`로 분리했다.
-
-C1-05A 자동차 결정 1에서 카카오모빌리티 `result_code=1`을 `RouteResult.NotFound`로 확정했다. 재시도·Haversine fallback·자동 장소 삭제·자동 이동수단 변경 없이 422로 전체 저장을 차단하고, 브라우저 작성 상태를 유지한 채 사용자가 조정 후 전체 경로를 다시 검증한다. 실패 구간 `details`는 모든 위치 유형과 반복 방문에 공통으로 적용할 수 있도록 `date + moveOrder + travelMode`로 확정했으며 좌표·장소명·카카오 ID·제공자 원문은 포함하지 않는다. 구현은 `T1-06A`, 화면 처리는 `W1-03B`로 분리했다.
-
-C1-05A 자동차 결정 2에서 Routy 자동차 요청은 `waypoints` 없이 인접 구간의 `origin`과 `destination`만 사용한다고 고정했다. 따라서 경유지 관련 `result_code=101·107`은 정상 흐름에서 발생할 수 없는 `RouteClientFailure.INVALID_RESPONSE`로 확정했다. 재시도·fallback 없이 503으로 저장을 차단하고 사용자 장소 문제로 안내하지 않는다.
-
-C1-05A 자동차 결정 3에서 시작·도착 지점 주변 도로를 탐색할 수 없는 `result_code=102·103`을 `RouteResult.NotFound`로 확정했다. 유효한 인접 구간 요청의 정상적인 경로 없음으로 보고 재시도·fallback 없이 422로 저장을 차단하며, 실패 원인을 물리적 도로 부재나 도보·선박 필요로 단정하지 않는다.
-
-C1-05A 자동차 결정 4에서 출발지와 도착지가 5m 이내인 `result_code=104`를 `RouteResult.Found(0)`으로 확정했다. 일정 생성을 계속하고 해당 `MOVE`를 0분으로 유지하며, 10분 올림과 고정 buffer를 적용하지 않는다. 호출 전에 Haversine으로 5m를 판정해 외부 호출을 생략하지 않고 실제 104 응답에만 적용한다.
-
-C1-05A 자동차 결정 5에서 시작·도착 지점 주변 교통 장애인 `result_code=105·106`을 `RouteResult.NotFound`로 확정했다. 제공자 장애가 아닌 현재 자동차 구간의 정상적인 경로 없음으로 보고 재시도·fallback 없이 422로 저장을 차단하며 구체적인 사고·통제 원인은 사용자에게 노출하지 않는다. 이로써 자동차 `result_code=1, 101~107` 매핑은 확정됐고 대중교통 후보·시간 의미·상태 매핑만 남았다.
-
-C1-05A 대중교통 결정 1에서 `status=OK`의 첫 후보 `routes[0].properties.totalTime`만 사용하고 초 단위 시간을 10분 단위로 올리기로 확정했다. 공식 문서가 첫 후보의 추천·최단 의미를 보장하지 않는 한계를 수용하고 최소시간·환승·요금·거리 재정렬은 하지 않는다. 첫 후보가 없거나 시간이 누락·음수이면 뒤 후보를 사용하지 않고 `INVALID_RESPONSE`로 처리한다.
-
-C1-05A 대중교통 결정 2에서 `totalTime`을 API 조회 시 반환된 일정 계획용 예상 이동시간으로 확정했다. 여행 날짜·출발 시각을 요청하지 못하므로 미래 여행일의 운행 여부·배차·막차·지연·실제 소요시간을 보장하지 않고, 제작·완료·공유 화면은 모두 `예상 이동시간`으로 표시하며 완료 조회나 여행 당일 자동 재계산도 하지 않는다.
-
-C1-05A 대중교통 결정 3에서 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`는 `RouteResult.NotFound`, `EQUAL_POINTS`는 `RouteResult.Found(0)`, `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`로 확정했다. 알 수 없는·누락된 status와 손상된 `OK` 응답은 `INVALID_RESPONSE`로 처리한다. 정상 경로 없음은 422, request·response 계약 오류는 재시도·fallback 없는 503으로 저장을 차단한다. 이로써 C1-05A의 계약 설계는 완료됐으며 실제 Client·DTO 구현과 자동 검증은 후속 Task에서 수행한다.
-
-C1-05B에서 `PlaceSearchRequest`가 WGS84 중심점·반경 또는 사각형 bounds 중 정확히 하나만 받도록 확장했다. 중심점·반경의 부분 입력과 두 공간 입력의 동시 사용을 거절하고, 공식 Local 계약의 radius 0~20,000m·page 1~45·size 1~15 및 유한 좌표·최소/최대 bounds를 생성 시 검증한다. `around`·`withinBounds` 팩토리와 Fake·Service 테스트로 radius/rect 요청 객체, page와 외부 호출 1회 단위가 변형되지 않음을 고정했다. 실제 Kakao `rect` 직렬화와 HTTP 호출은 P1-04 책임이며, 루트 `test.ps1` 전체 222개 테스트가 실패·오류·건너뜀 없이 통과했다.
-
-U1-01에서 비밀번호·JWT·공개 endpoint·User 삭제 계약을 ADR-037로 확정했다. 이는 설계 완료이며 User Entity, migration, 회원가입과 Spring Security·JWT 구현은 각각 U1-02~04에서 검증해야 한다.
-
-U1-02에서 User Entity·Repository와 V1 `users` migration을 구현했다. MySQL 8.4에서 production migration 적용, Hibernate `ddl-auto: validate`, Repository 저장·조회, 이메일 대소문자 UNIQUE와 `password_hash`만 존재하는 schema를 통합 테스트로 검증했다. 회원가입 시 이메일 정규화·해시 생성·중복 오류 변환은 U1-03, 인증과 JWT는 U1-04 범위다.
-
-U1-03에서 회원가입 Service와 `POST /api/users`를 구현했다. 이메일 소문자 정규화, BCrypt strength 12 해시 저장, 선조회와 DB UNIQUE 경쟁 상황의 중복 이메일 409 변환, 비밀번호 code point·UTF-8 byte·제어 문자 validation을 Service·HTTP·MySQL 8.4 통합 테스트로 검증했다. Spring Security 필터와 JWT 로그인은 U1-04 범위다.
-
-U1-04에서 `POST /api/auth/login`과 stateless Spring Security 필터 체인을 구현했다. JWT는 환경 설정으로 주입하는 key ID별 최소 256-bit HMAC key 중 active key로만 발급하고, `sub`·`iss`·`iat`·`exp`·`jti`, HS256 allowlist, key ID, 서명과 User 존재 여부를 보호 요청마다 검증한다. 로그인 성공·동일 401 실패 응답, 1시간 수명, 만료·변조·알 수 없는 key, 공개 endpoint의 HTTP method 경계와 보호 API 차단을 단위·HTTP·MySQL 8.4 통합 테스트로 검증했으며 전체 47개 테스트가 통과했다. 회원 탈퇴, 호출 한도와 TravelPlan 소유권은 후속 작업 범위다.
-
-U1-05A에서 V2 `api_usage_counters` migration과 공개 `ApiUsageService`를 구현했다. 사용자별 분·일 창과 기능별 서비스 전체 일 창을 MySQL에서 공유하고, `Asia/Seoul` 자정 기준 창 계산, 여러 호출 수의 조건부 원자 확보, 실패 시 전체 rollback과 retryAfterSeconds 계산을 적용했다. 카카오 공식 일일 쿼터의 90%인 장소 90,000·자동차 9,000·대중교통 900 서비스 차단선을 정책 한 곳에 두었고, AI 서비스 전체 예산은 모델·가격 확정 전까지 설정하지 않았다. MySQL 8.4에서 migration·schema 저장 금지 열, 경계값, 부분 차감 방지와 병렬 다중 인스턴스 상당 경쟁을 검증했으며 전체 56개 테스트가 통과했다. requestId 실행 상태는 U1-05B 범위다.
-
-U1-05B에서 V3 `request_executions` migration과 공개 `RequestExecutionService`를 구현했다. 사용자·기능·UUID requestId별 PROCESSING·SUCCESS 상태와 10분 만료만 MySQL에 저장하며, requestId 선점을 호출량 확보보다 먼저 커밋해 처리 중·성공 중복이 외부 실행·저장·호출량 차감을 반복하지 않도록 했다. 실패 해제, 만료 재선점, 이전 lease의 새 실행 변경 차단, 제한 batch 만료 삭제와 User FK cascade를 구현했다. MySQL 8.4 병렬 경쟁에서 정확히 한 실행만 선점되고 나머지가 `REQUEST_IN_PROGRESS`로 차단되는 것을 검증했으며 전체 68개 테스트가 통과했다. 실제 기능 endpoint 연결은 각 A1·P1·R2·T1 작업 범위다.
-
-U1-06에서 인증·보안 회귀를 점검했다. `POST /api/users`, `POST /api/auth/login`, `GET /api/shared/travel-plans/{shareToken}`만 공개하고 그 밖의 `/api/**` 요청은 인증을 강제하는 HTTP method 경계, 로그인 성공·동일 401 실패, JWT 만료·변조·알 수 없는 key·삭제된 사용자 차단, 비밀값 비노출, 호출 한도와 requestId 중복 방지를 관련 47개 테스트와 전체 68개 테스트로 재검증했다. 전체 테스트는 실패·오류·skip 없이 통과했고 `git diff --check`도 통과했다. 회원 탈퇴와 TravelPlan 소유권, 실제 배포 환경의 origin·도메인 제한·health·smoke 검증은 각 후속 작업과 운영 준비 범위다.
-
-W1-00에서 `Routy/INTEGRATION.md`의 신규 화면 원칙을 공통 app shell과 page-level view 골격으로 구현했다. 랜딩·인증·Journey Workspace·내 여행·완료 일정·공유 일정의 정보 구조, 팝업이 아닌 8단계 제작 흐름, 초기·로딩·빈 결과·오류 상태를 만들었으며 실제 API·브라우저 저장소·가짜 성공 처리는 연결하지 않았다. Node 정적 검사와 7개 화면 골격 테스트, 390px 모바일 overflow 측정, 실제 Tab 포커스 순서, 데스크톱·모바일 렌더링, 전체 68개 Gradle 테스트와 `git diff --check`를 통과했다. 실제 인증·지역·장소·일정 API 연결은 W1-01A 이후 작업 범위다.
-
-W1-01A에서 회원가입·로그인 화면을 `POST /api/users`, `POST /api/auth/login` 계약에 연결했다. 서버 성공 뒤에만 회원가입 완료·보호 화면 진입을 처리하고 validation·중복 이메일·401·네트워크 실패를 안전한 문구로 표시한다. JWT는 현재 탭 메모리에만 보관하며 로그아웃·만료·pagehide 때 인증 및 작성 골격 상태를 폐기하고, 중복 제출·취소 뒤 늦은 응답·다른 세션의 오래된 401을 차단한다. Node 순수 테스트 20개와 Chromium 브라우저 테스트 9개 시나리오(상위 테스트 포함 총 Node 30개), 전체 Gradle 테스트 68개가 실패·오류·skip 없이 통과했다. 데스크톱·390px 모바일 캡처, Tab·Shift+Tab·Enter, reduced motion, DOM·console 비밀값 비노출과 브라우저 저장소 부재를 확인했고 `git diff --check`도 통과했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 수행하지 않았다. 후속 보호 API와 장소 메모리 모듈은 이 인증 수명 계약에 연결해야 한다.
-
-W1-01B에서 지역 직접 검색과 AI 지역 추천을 Journey Workspace의 첫 단계에 연결했다. 직접 검색은 서버의 `selectable`·`placeSearchFilterable`을 그대로 사용해 최종 여행 지역과 장소 검색 필터용 구·군을 구분하고, AI 추천은 Bearer 인증과 요청별 UUID `Idempotency-Key`를 전달해 중복 없는 정확히 3개 후보일 때만 선택할 수 있게 했다. 선택 지역은 현재 탭 메모리에만 유지하며 요청 중복, 단계 이동·로그아웃·인증 만료 뒤 늦은 응답, 서버 원문 노출을 차단한다. Node 순수 테스트 23개와 Chromium 브라우저 테스트 11개 시나리오가 통과했고 데스크톱·390px 모바일 렌더링, 브라우저 저장소 부재, 루트 `test.ps1`의 전체 135개 Gradle 테스트와 `git diff --check`를 확인했다. 브라우저는 격리 HTTP fake를 사용했으며 실제 Spring 서버와 브라우저를 연결한 end-to-end smoke는 별도 운영 검증으로 남는다.
-
-W1-01C에서 브라우저 로그인 성공 판정을 고정 3600초 비교에서 서버 `expiresInSeconds` 계약 기반으로 정렬했다. 유한한 양의 정수이며 안전한 절대 만료 시각으로 계산 가능한 TTL만 수용하고 요청 시작 시각을 기준으로 만료를 계산한다. 브라우저 단일 타이머 한계보다 긴 TTL은 남은 시간을 분할 예약하며 이전 세션 callback이 새 세션을 만료시키지 않는다. Node 순수 테스트 26개와 Chromium 브라우저 테스트 12개 시나리오, 루트 `test.ps1`의 전체 135개 Gradle 테스트와 `git diff --check`가 통과했다.
-
-G1-02에서 법정동 코드와 브이월드 행정구역 경계를 대조해 정적 `regions.json` 246개를 구축했다. 최종 선택 지역 161개와 장소 검색 필터 76개를 분리하고, 광주는 사용자 표시 지역과 `전남광주통합특별시` 주소 경계를 분리했으며 수원 등 도 산하 분구시는 시만 선택 가능하게 유지했다. 원천 코드 집합·역할·부모·주소 경계·좌표 범위·대표점의 경계 내부 포함을 독립 검증했고 전체 Gradle 테스트와 `git diff --check`가 통과했다. Java Loader와 애플리케이션 시작 시 검증, 검색 Service·API는 각각 G1-03·G1-04 범위다.
-
-G1-03에서 Region 불변 값 객체와 정적 데이터 Loader·메모리 Catalog를 구현했다. 애플리케이션 시작 시 schema version, 출처 참조, ID·필수값 중복과 누락, 타입별 선택·검색 필터 역할, 부모 존재·자기 참조·순환 관계, 주소 경계와 대표 좌표 범위를 검증하며 잘못된 데이터로 시작하지 않는다. `regionId`는 공공 코드에서 최초 파생됐더라도 구조를 해석하지 않는 Routy 소유의 안정적인 식별자로 취급하고 `KR-GWANGJU-URBAN` 같은 논리 ID도 허용한다. 실제 246개 적재와 오류 사례를 자동 테스트했고 격리 Testcontainers MySQL을 포함한 전체 테스트가 통과했다. 직접 검색·정렬과 지역 HTTP API는 G1-04 범위다.
-
-G1-04에서 공식 이름·짧은 이름·별칭을 정확 일치, 접두 일치, 부분 일치 순으로 검색하고 동률은 표준 이름·상위 지역 이름·regionId 순으로 고정했다. 응답은 상위 표시 이름과 `parentRegionId`, 타입, 최종 선택 가능 여부, 장소 검색 필터 가능 여부를 분리하며 결과가 없으면 빈 배열을 반환한다. 인증된 `GET /api/regions`의 성공·빈 결과·필수 query·공백 query와 무인증 401을 Service·Controller·통합 테스트로 검증했다. AI 지역 추천 연결과 지역 단계 전체 DoD 점검은 각각 A1-04와 G1-05 범위다.
-
-G1-05에서 지역 단계 DoD를 점검하고 실제 데이터의 161개 최종 선택 지역, 76개 장소 검색 필터, 9개 상위 탐색 항목을 회귀 테스트로 고정했다. 광주 5개 구의 검색 필터 역할, 세종의 1단계 전용 주소 경계, 수원 일반구의 주소 경계 전용 포함, 모든 항목의 1단계 주소 경계와 국내 범위도 함께 검증했다. Loader의 주소 경계 누락 거절 테스트를 보강했고 루트 `test.ps1`에서 Testcontainers MySQL 8.4를 포함한 전체 91개 테스트가 통과했다. 같은 허용 목록을 사용하는 AI 연결과 완료 일정의 `regionId`·표시 이름 snapshot은 각각 A1·T1 단계에서 검증한다.
-
-G1-06에서 G1-02와 동일한 해시의 브이월드 WGS84 경계 원본으로 최종 선택 지역 161개의 `searchBounds`를 생성했다. 광주는 5개 구, 수원 등 일반구가 있는 시는 모든 구성 구 경계의 합집합에서 최소·최대 좌표를 계산했고, 바깥 방향 6자리 정밀도로 1,279,873개 원천 경계점이 모두 포함됨을 독립 검증했다. Loader는 최종 지역의 bounds 누락·비유한 값·대한민국 운영 범위 이탈·최소/최대 역전·대표점 미포함과 비선택 지역의 불필요한 bounds를 시작 시 거절한다. 지역 회귀 테스트와 루트 `test.ps1` 전체 219개 테스트가 실패·오류·건너뜀 없이 통과했다.
-
-A1-01에서 지역 추천·메뉴 분석 요청·응답 DTO와 `AiClient` 계약, local·test 전용 Fake와 두 Spring Service를 구현했다. 지역 추천은 서버 허용 목록 안의 중복 없는 정확히 3개 ID와 1~200자 이유만 허용하고, 메뉴 분석은 중복 없는 1~5개 메뉴·검색어·이유와 요청에 포함된 선택적 대상 관광지만 허용한다. 계약 위반은 원문과 상세를 노출하지 않는 `AI_RESPONSE_INVALID`로 변환하며 DTO trim·validation과 Fake·Service 경계값을 자동 테스트했다. 실제 OpenAI 공식 계약 감사와 HTTP Client, 지역 Catalog·인증·한도·requestId·Controller 연결 및 메뉴 재시도는 A1-02~05 범위다.
-
-A1-02에서 공식 OpenAI 문서를 감사해 ADR-039를 확정했다. 공통 Responses API에 `gpt-5.6-luna`, reasoning effort `none`, `store: false`, strict JSON Schema, 지역 512·메뉴 768 output token 상한을 사용한다. 연결 3초·전체 15초 안에서 기술 장애만 최대 한 번 재시도하고, 월 USD 5 계획 예산에 OpenAI project USD 4 hard spend limit을 둔다. Routy에는 비용·token usage·서비스 전체 일일 카운터를 추가 저장하지 않는다. 실제 HTTP Client와 설정·응답 매핑은 A1-03, 사용자 한도·requestId·API 연결은 A1-04~05 범위다.
-
-A1-03에서 Java 21 `HttpClient`를 재사용하는 prod·smoke 전용 `OpenAiClient`를 구현했다. 지역 추천과 메뉴 분석은 공통 transport 위에서 서로 다른 instructions·strict JSON Schema·출력 token 상한과 응답 DTO 매핑을 사용한다. 요청의 Bearer 인증, `store: false`, reasoning effort `none`, 도구·metadata·conversation 미사용, refusal·incomplete·빈 output·필수 필드 누락 거절, 400·소진 quota 무재시도와 일시적 5xx 1회 재시도, 전체 timeout을 실제 OpenAI 없는 로컬 fake HTTP 테스트로 검증했다. local·test는 기존 Fake를 유지하며 전체 108개 테스트가 통과했다. 사용자 한도·requestId와 지역·메뉴 HTTP endpoint 연결, 메뉴 구조 오류 재시도는 A1-04~05 범위다.
-
-A1-04에서 인증된 `POST /api/ai/regions/recommend`와 필수 UUID `Idempotency-Key` 계약을 구현했다. Region 공개 Service는 같은 `regions.json`에서 최종 선택 가능한 국내 지역만 AI 전달 DTO로 제공하고 상위 지역 표시 이름을 결합한다. AI Service는 외부 호출 전에 `AI_REGION_RECOMMENDATION`의 사용자별 2회/분·10회/일 카운터와 10분 requestId 실행 상태를 확보하며, 처리 중·성공 중복과 한도 초과는 기존 공통 409·429 계약으로 변환한다. 성공 시 requestId를 완료하고 AI·허용 목록 처리 실패 시 처리 상태를 해제하되 이미 확보한 호출량은 복구하지 않는다. Controller·Service·Region 공개 계약 테스트와 기존 MySQL 동시성 테스트를 포함해 실제 OpenAI 없이 전체 116개 테스트가 통과했다. 메뉴 분석 HTTP API와 구조 오류 재시도 한도 연결은 A1-05 범위다.
-
-A1-05에서 인증된 `POST /api/ai/menus/analyze`와 필수 UUID `Idempotency-Key` 계약을 구현했다. 최초 AI 호출 전에 `AI_MENU_ANALYSIS`의 사용자별 3회/분·15회/일 카운터와 10분 requestId 실행 상태를 확보한다. `AI_RESPONSE_INVALID`만 최대 한 번 재시도하고 두 번째 실제 AI 호출 직전에 사용량 1회를 추가 확보하므로, 잔여 한도가 없으면 두 번째 AI 호출 없이 429와 재시도 정보를 반환한다. 두 번째 구조 오류는 안전한 503 `AI_RESPONSE_INVALID`로 끝나며 요청·응답 원문이나 기존 작성 상태를 서버에 저장하지 않아 클라이언트가 기존 입력을 유지하고 직접 메뉴 입력으로 전환할 수 있다. 성공·중복·초기 및 재시도 한도·재시도 성공·두 번째 구조 오류와 Controller validation·오류 계약을 실제 OpenAI 없이 검증했고 전체 125개 테스트가 통과했다. AI 단계 전체 DoD 점검은 A1-06 범위다.
-
-A1-06 회귀 점검에서 AI 기능·보안·외부 호출 격리와 전체 테스트는 통과했지만 메뉴 AI의 정확한 분·일 한도 경계가 자동 테스트로 고정되지 않은 점을 발견했다. 별도 A1-06A에서 지역 AI 2회/분·10회/일과 메뉴 AI 3회/분·15회/일의 마지막 허용 호출과 다음 호출 차단을 고정 시계와 MySQL 공유 저장소로 검증했다. 기존 Asia/Seoul 자정 전환 검증과 함께 실제 OpenAI 호출 없이 전체 127개 테스트, `git diff --check`를 통과해 A1 단계를 완료했다.
-
-A1-07에서 메뉴 분석 입력 경계를 보완했다. 응답의 `name`, `searchQuery`, `reason`, `targetClientPlaceId` 형식과 request의 기존 공백 거절 계약은 유지하고, regionId는 trim하지 않은 원문으로 최종 선택 가능한 국내 지역과 정확히 일치하는지 검증한다. 관광지 맥락은 0~35개이며 clientPlaceId는 보정하지 않는 공백 없는 1~100자이자 요청 안에서 중복될 수 없고, displayName은 trim 후 1~50자다. 이 입력 검증은 requestId 선점·호출량 차감·AI 호출보다 먼저 수행되어 위반 시 400 `VALIDATION_FAILED`로 끝난다. 식별자 비보정 회귀 기대값을 포함해 루트 `test.ps1`의 Testcontainers MySQL 기반 전체 132개 테스트가 실패·오류·skip 없이 통과했다.
-
-U1-07에서 회원가입 저장 중 발생한 DB 무결성 오류의 의미를 구분했다. MySQL 중복 키 오류 1062만 409 `EMAIL_ALREADY_EXISTS`로 변환하고, 다른 무결성 오류는 이메일 중복으로 오인하지 않고 원래 예외를 유지해 공통 500 처리 대상으로 남긴다. DB 오류 문구나 사용자 이메일을 검사·노출하지 않으며, 중복 키 경쟁과 다른 제약 오류 단위 테스트를 포함해 루트 `test.ps1`의 전체 133개 테스트가 실패·오류·skip 없이 통과했다.
-
-U1-08에서 호출 한도 초과의 `retryAfterSeconds`를 남은 시간의 올림값으로 계산하도록 보완했다. 정수 초 경계는 기존 값을 유지하고 소수 초가 남으면 1초를 더하며, 만료 경계에서도 최소 1초를 반환한다. 59.9초 잔여 시간이 60초로 반환되는 회귀 테스트를 포함해 루트 `test.ps1`의 전체 134개 테스트가 실패·오류·skip 없이 통과했다.
-
-F0-06에서 API 명세에 없는 개발 확인용 `GET /hello`와 `HelloController`를 제거했다. 해당 경로는 운영 애플리케이션에서 공통 404 `RESOURCE_NOT_FOUND`의 여섯 필드 오류 계약으로 처리되며, 실제 Spring Security·MVC·MySQL 구성을 사용하는 통합 회귀 테스트로 고정했다. 루트 `test.ps1`의 전체 135개 테스트가 실패·오류·skip 없이 통과했다. JWT TTL과 브라우저 판정 정렬, AI 출력 문자열 정규화는 각각 미실행 후속 작업 `W1-01C`, `A1-08`로 로드맵에만 등록했다.
-
-P1-01에서 장소 역할을 관광지·숙소·음식점으로 분리하고 역할별 반경을 관광지 20km, 숙소 5→10km, 음식점 1→3→5km의 불변 확장 순서로 구현했다. 카카오 카테고리는 요청 범위에서만 일반·자연 90분, 박물관·전시 120분, 체험 180분, 등산 240분, 테마파크 360분으로 변환하며, 불명확한 관광지는 90분, 음식점은 60분, 숙소는 관광 체류시간 없음으로 처리한다. 내부 체류 분류는 private으로 숨기고 숫자만 반환하며 관광지 조정값은 30~480분의 10분 배수만 허용한다. 역할별 반경, 분류 우선순위·기본값, 호텔 제외, 조정 경계와 유형 미노출 테스트를 포함해 루트 `test.ps1` 전체 232개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 Kakao HTTP Client와 공개 검색 API, 사용자 표시 이름 입력은 후속 P1 작업 범위다.
-
-P1-03에서 ADR-041의 HS256 compact JWS `selectionToken` 발급·검증을 구현했다. JWT와 분리된 최소 256-bit Base64 key allowlist에서 active key로만 발급하고 이전 key도 token의 30분 수명 동안 검증할 수 있으며, `alg`·`typ`·`kid` header와 정확한 최소 payload만 허용한다. 인증 사용자·최종 지역·장소 역할, 카카오 장소 ID와 canonical URL, 국내 범위 좌표를 함께 검증하고 만료·서명 변조·사용자·지역·역할·payload·key 불일치를 같은 안전한 실패로 거절한다. DB·cache·서버 session 없이 불변 key map과 요청 지역 DTO만 사용하며 신규 단위 테스트와 루트 `test.ps1` 전체 240개 테스트가 실패·오류·건너뜀 없이 통과했다. Spring Bean 등록과 공개 장소 검색 API 연결은 실제 사용 조합 단계인 P1-05 범위다.
-
-P1-03A에서 장소 검색의 최종 `regionId`와 선택적 `districtFilterId` 검증 계약을 구현했다. `place`는 `region` 내부 Catalog·도메인 객체 대신 최소 공개 Service·DTO로 선택 가능 여부, 검색 필터 가능 여부와 상위 지역만 조회한다. 구·군 필터는 관광지 검색에서만 허용하고, 최종 지역과 부모가 다른 필터·미존재 항목·선택 불가능한 최종 지역·최종 regionId의 필터 오용·빈 필터를 외부 호출 전에 공통 `VALIDATION_FAILED`로 거절한다. `selectionToken`도 regionId의 숫자 구조를 해석하지 않고 같은 Catalog 검증을 사용하므로 논리 ID `KR-GWANGJU-URBAN`은 허용하고 임의 ID와 선택 불가능한 상위 지역은 거절한다. 관련 성공·실패 단위 테스트와 루트 `test.ps1` 전체 254개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 Kakao HTTP Client는 P1-04, 공개 장소 검색 API와 호출 한도 연결은 P1-05 범위다.
-
-P1-04에서 Java 21 `HttpClient`를 재사용하는 prod·smoke 전용 Kakao Local 실제 Client를 구현했다. 키워드 검색 endpoint에 `KakaoAK` REST API 키를 환경 변수로 주입하고 중심점의 경도 `x`·위도 `y`·반경 또는 `minLongitude,minLatitude,maxLongitude,maxLatitude` 순서의 `rect` 중 하나를 직렬화한다. 연결 timeout 2초와 재시도 포함 전체 6초 예산 안에서 연결 실패·timeout·5xx만 최대 한 번 재시도하며 400·401·403·429와 손상 응답은 재시도 없이 안전한 `PlaceClientFailure`로 변환한다. 성공·빈 결과·도로명 주소 우선 후보 매핑과 인증·URL·timeout·오류 변환을 실제 카카오 호출 없는 mock HTTP 테스트로 검증했고, 루트 `test.ps1` 전체 265개 테스트가 실패·오류·건너뜀 없이 통과했다. 공개 장소 검색 API, 주소 행정구역 검증, 사용자·서비스 호출 한도와 `selectionToken` 연결은 P1-05 범위다.
-
-P1-05에서 인증된 `POST /api/places/search`를 최종 지역·관광지 구·군 필터 검증, Kakao Local Client, 체류시간 변환과 `selectionToken` 발급에 연결했다. 서버 대표 좌표와 역할별 허용 반경 검색, 관광지의 공식 지역명 결합 `searchBounds` 검색, 반환 주소의 최종 지역·선택 구·군 일치, 카카오 장소 ID 중복 제거를 적용하며 빈 결과에는 임의 후보를 만들지 않는다. requestId는 MySQL 공유 처리 상태로 중복 실행을 막고 최초 외부 호출과 실제 Client 재시도 각각에 사용자 20회/분·300회/일 및 Local 서비스 90,000회/일 한도를 사전 확보한다. local·test는 빈 결과 Fake와 프로세스 수명의 임시 token key만 사용하고 prod·smoke는 `KAKAO_LOCAL_API_KEY`와 별도 selection token 환경 변수로 실제 Bean을 구성한다. Controller·Service·Client 재시도 permit·정확한 한도와 region 공개 DTO 테스트를 포함해 루트 `test.ps1` 전체 277개 테스트가 실패·오류·건너뜀 없이 통과했다. 숙소 전용 검색 API와 음식점 검색 조정은 각각 S1-05·S1-06 범위이며 브라우저 메모리 수명은 P1-06에서 검증한다.
-
-P1-06에서 W1-02가 사용할 관광지·숙소 선택 순수 메모리 상태 모듈을 구현했다. 카카오 ID·URL, 제공자 표시 이름, 주소, 좌표, 기본 체류시간과 `selectionToken`을 외부 응답 객체와 분리해 복사·동결하고 관광지는 여러 개, 숙소는 하나만 직접 선택한다. 인증 사용자 또는 지역이 바뀌면 전체 상태와 세대를 교체해 이전 검색 응답·선택을 거절하며 완료·취소·인증 종료·`pagehide`에서 후보와 선택을 함께 폐기한다. 새 store는 항상 비어 있고 localStorage·sessionStorage·IndexedDB에 접근하지 않는다. 순수 상태 테스트 7개, 기존 정적 단위 테스트를 포함한 Node 테스트 33개, Chromium 브라우저 회귀 12개와 루트 `test.ps1` 전체 277개 테스트가 모두 통과했다. 화면·DOM·지도 연결은 추가하지 않았고 W1-02가 인증 종료 callback과 지역 변경 action에 이 모듈을 연결한다.
-
-P1-07 회귀 점검에서 현재 구현된 장소 검색·선택 범위의 저장 금지와 카카오 임시 사용 계약 위반은 발견되지 않았다. Entity·Repository·V1~V3 migration에는 카카오 좌표·주소·전화번호·카테고리·제공자 장소명·원문·token 열이 없고, 공유 저장소에는 사용자·기능·requestId·상태·호출량·만료시각만 기록한다. `place`는 Repository·트랜잭션·서버 cache·session·비동기 작업·logger에 의존하지 않으며 provider body와 후보 필드는 요청 지역 변수와 API 응답에서만 사용한다. 실행 JavaScript는 브라우저 저장소·cookie·console에 장소 상태를 기록하지 않고 메모리 상태 테스트가 완료·취소·인증 종료·pagehide·새 store 폐기를 검증한다. P1 집중 회귀, Node 33개, Chromium 12개와 루트 `test.ps1` 전체 277개 테스트가 모두 통과했다. 완료 일정 영속 DTO·Repository의 저장 금지, estimate·create 요청 종료 전 좌표 폐기와 실제 W1-02 화면 연결은 아직 구현되지 않았으므로 DoD 7·15 전체를 운영 가능으로 판정하지 않고 T1·W1의 해당 작업에서 다시 검증한다.
-
-P1-07A에서 감사 중 확인한 계약·흐름 차이를 사용자 결정에 따라 보정했다. 관광지 지역 전체 `searchBounds` 검색은 반경 결과 부족으로 자동 실행하지 않고 사용자의 명시적 요청에서만 수행하며, 일반 `POST /api/places/search`는 관광지만 허용하고 숙소·음식점은 후속 전용 제작 endpoint로 제한한다. 실제 Local Client는 HTTP 200 후보의 숫자 장소 ID, ID와 정확히 대응하는 카카오 장소 URL 및 대한민국 지원 좌표를 검증하고 하나라도 어긋나면 부분 성공 없이 `INVALID_RESPONSE`로 정규화한다. 재시도는 전체 deadline이 남았는지 먼저 확인한 뒤 추가 호출량을 확보한다. 관련 회귀를 추가한 루트 `test.ps1` 전체 283개 테스트와 정적 JavaScript 45개 테스트, `git diff --check`가 통과했다. 숙소 후보 범위 검색 자체는 S1-05에서 기하 중앙값 5km·사용자 선택 10km·메도이드·현재 지도 영역 계약으로 구현한다.
-
-R2-01에서 2026-09-21 카카오모빌리티 공식 자동차 길찾기·가격 문서를 재확인했다. Routy는 일반 `GET https://apis-navi.kakaomobility.com/v1/directions`에 REST API 키로 인증하고, 최종 후보의 인접 구간별 `origin`·`destination`만 보내며 `waypoints`는 사용하지 않는다. 요청 옵션은 `RECOMMEND`, 대안 경로 없음, 요약 응답으로 확정했다. 공식 10,000건/일 무료 쿼터와 무료 초과분 8원/건을 기준으로 Routy 서비스는 9,000건/일에서 자동차 신규 호출을 차단하고 유료 초과를 자동 허용하지 않는다. 기존 사용자 60회/분·120회/일 계약은 유지한다. 이 Task는 공식 계약 확정만 수행했으며 실제 HTTP Client·설정·Fake 기반 자동 테스트는 R2-02 범위다.
-
-R2-02에서 prod·smoke 전용 카카오모빌리티 자동차 HTTP Client와 설정을 구현했다. Client는 인접 구간의 경도·위도 순서 `origin`·`destination`과 `priority=RECOMMEND`, `alternatives=false`, `summary=true`만 보내고 `waypoints`·장소명·상세 도로 요청은 보내지 않는다. HTTP 상태와 `result_code=0, 1, 101~107`을 확정된 `RouteResult`·`RouteClientFailure`로 변환하며 성공 시 첫 경로의 `summary.duration`만 전달하고 provider 원문·좌표·상세 경로는 보관하거나 노출하지 않는다. 재시도·fallback은 R2-06, 완료 후보의 구간 수 일괄 쿼터 확보는 R2-07A 책임으로 유지했다. 기존 MySQL 공용 카운터의 `CAR_ROUTE` 사용자 60회/분·120회/일과 서비스 9,000회/일 정책을 회귀 검증하고, 사용자 요청에 따른 영속성 절편으로 허용 기능값 CHECK migration을 추가했다. 루트 `test.ps1` 전체 308개 테스트와 `git diff --check`가 통과했으며 다음 백엔드 주 작업은 R2-03이다.
-
-R2-03에서 2026-09-21 카카오맵 공식 REST 문서를 다시 확인하고 대중교통 경로 계약을 실제 HTTP 전송과 분리해 구현했다. 계약 객체는 `GET https://dapi.kakao.com/v2/routing/publictraffic`에 REST API 키 인증과 WGS84 `start_x`·`start_y`·`end_x`·`end_y`만 구성하며 장소명·경유지·여행 날짜·출발 시각은 보내지 않는다. `OK`는 제공자 배열 순서의 첫 `routes[0].properties.totalTime`만 `Found`로 변환하고, `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`는 `NotFound`, `EQUAL_POINTS`는 0초 성공, `INVALID_REQUEST`는 요청 실패로 정규화한다. 누락·알 수 없는 status와 손상된 첫 후보는 뒤 후보로 대체하지 않고 `INVALID_RESPONSE`로 처리하며 steps·path·정류장·차량·요금·landingURL은 DTO에 담지 않는다. 기존 공용 한도 정책의 `PUBLIC_TRANSIT_ROUTE` 사용자 60회/분·120회/일과 서비스 900회/일을 회귀 검증했고, prod·smoke 설정은 `KAKAO_REST_API_KEY` 환경변수만 참조한다. 실제 `HttpClient.send`와 대중교통 Bean 연결은 R2-04로 유보했으며 루트 `test.ps1` 전체 323개 테스트와 `git diff --check`가 통과했다. 다음 백엔드 주 작업은 R2-04다.
-
-R2-04에서 R2-03 계약을 사용하는 prod·smoke 전용 카카오맵 대중교통 HTTP Client와 `PublicTransitRouteClient` Bean을 구현했다. Client는 계약 객체가 만든 인접 구간 요청을 한 번 전송하고 2xx 응답만 계약 객체에 전달하며, 400·401·403·429·5xx·그 밖의 HTTP 상태와 timeout·연결·I/O·interrupt 실패를 제공자 원문 없는 공통 `RouteClientFailure`로 정규화한다. 자체 재시도·fallback·10분 단위 올림은 후속 R2-05~06 책임으로 추가하지 않았고, 기존 `CarRouteClient`·`PublicTransitRouteClient` 타입과 Fake 기반 `RouteService` 테스트가 일정의 이동수단 하나에 해당하는 Client만 호출함을 계속 보장한다. 실제 외부 호출 없는 mock HTTP 테스트와 루트 `test.ps1` 전체 334개 테스트가 실패·오류·건너뜀 없이 통과했으며 다음 백엔드 주 작업은 R2-05다.
-
-R2-05에서 `RouteService`가 정렬된 최종 후보의 인접 `RouteSegment` 목록을 입력 순서대로 이동수단별 Client 하나에만 전달하고, 성공한 제공자 예상 초를 `ceil(seconds / 600) × 10`분으로 올리는 계약을 구현했다. 0초는 0분으로 유지하고 별도 고정 buffer를 더하지 않으며, 결과에는 좌표·제공자 원문·원본 초 대신 구간 순서에 대응하는 10분 단위 `estimatedMinutes` 또는 정상 경로 없음만 남긴다. 정상 경로 없음은 fallback하지 않고 보존하며 기술 장애 재시도·일정 전체 fallback은 R2-06 책임으로 유지했다. 복수 구간 순서, CAR·PUBLIC_TRANSIT Client 분리, 0초와 1·599·600·601·1199·1200초 올림 경계, 빈 목록과 입력 검증을 Fake 기반 단위 테스트로 검증했고 루트 `test.ps1` 전체 344개 테스트가 실패·오류·건너뜀 없이 통과했다. 다음 백엔드 주 작업은 R2-06이다.
-
-R2-06에서 `RouteService`가 timeout·연결 실패·일시적 5xx로 정규화된 기술 장애만 같은 인접 구간에 한 번 재시도하고, 재시도도 같은 기술 장애이면 앞서 성공한 제공자 결과를 폐기한 뒤 일정 전체 구간을 이동수단별 Haversine 예상시간으로 다시 계산하도록 구현했다. 재시도 성공과 재시도에서 반환된 정상 경로 없음은 fallback하지 않으며, 인증·권한·잘못된 요청·rate limit·손상 응답은 재시도나 fallback 없이 기존 실패로 보존한다. 요청 범위의 `fallbackApplied`는 후속 완료 생성 응답 warning을 위한 전달 상태로만 유지하고 일정 DB에 저장하지 않는다. CAR·PUBLIC_TRANSIT의 일시 장애별 재시도, 전체 fallback과 부분 fallback 금지, 정상 경로 없음, 비일시적 실패를 Fake 기반으로 검증했고 루트 `test.ps1` 전체 353개 테스트와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. 다음 백엔드 주 작업은 R2-07A다.
-
-R2-07A에서 `RouteQuotaService`가 완료 후보의 정렬된 인접 구간 수를 제공자 요청 수로 계산하고 이동수단에 따라 `CAR_ROUTE`와 `PUBLIC_TRANSIT_ROUTE`를 분리해 user 도메인의 공개 `ApiUsageService`로 일괄 확보하도록 구현했다. 빈 후보는 카운터를 만들지 않으며, 다건 확보 중 사용자 분·일 또는 서비스 일 한도를 넘으면 같은 짧은 트랜잭션의 모든 증가가 rollback된다. CAR 다건 경계와 PUBLIC_TRANSIT 서비스 900건 경계를 격리 Testcontainers MySQL로 검증했고 확보 반환 뒤 활성 DB 트랜잭션이 없음을 확인했다. 루트 `test.ps1` 전체 358개 테스트와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. 쿼터 부족 시 외부 호출 0건·전체 Haversine fallback·warning·관측 전달은 R2-07B 책임으로 유지한다.
-
-R2-07B에서 `RouteVerificationService`가 경로 쿼터 사전 확보와 실제 경로 검증을 조합했다. 최초 확보 실패 시 자동차·대중교통 Client를 호출하지 않고 전체 구간을 Haversine 예상시간으로 계산하며 생성 응답용 warning과 `QUOTA_FALLBACK` 관측 결과를 전달하는 흐름은 Fake 기반으로 검증했고 당시 루트 `test.ps1` 363개가 통과했다. 이후 프로그램 흐름 감사에서 기술 장애 재시도 시 Client는 두 번 호출되지만 최초 인접 구간 수만 차감되어 재시도 1회분이 누락되는 계약 위반과, 관측 결과가 USER·SERVICE 차단 범위를 구분하지 못하는 공백을 발견했다. 따라서 R2-07B 구현 결과는 보존하되 R2 완료 판정을 철회하며, R2-07C에서 재시도 직전 추가 확보, R2-07D에서 차단 범위 전달, R2-08에서 전체 회귀·DoD를 확인한 뒤에만 S1-01로 이동한다. 실제 metric 등록은 여전히 Q1-04, 생성 API warning 매핑과 비영속 저장 흐름은 T1-06 책임이다.
-
-R2-07C에서 `RouteVerificationService`가 일시적 기술 장애 뒤 두 번째 Client 호출 직전에 `RouteQuotaService`로 같은 이동수단의 1회분을 추가 확보하도록 보완했다. 추가 확보가 성공한 경우에만 한 번 재시도하고, 부족하면 재시도 Client를 호출하지 않은 채 앞선 제공자 결과를 폐기해 전체 구간을 `QUOTA_UNAVAILABLE` Haversine fallback으로 반환한다. 재시도까지 기술 장애이면 최초 호출과 재시도를 모두 차감한 `TECHNICAL_FAILURE` 전체 fallback을 사용하며, 정상 경로 없음과 인증·권한·잘못된 요청·rate limit·손상 응답에는 추가 확보나 재시도가 없다. CAR·PUBLIC_TRANSIT 분리, 재시도 성공·재실패·추가 확보 거절과 비재시도 경계를 Fake 기반으로 검증했고 루트 `test.ps1` 전체 367개와 `git diff --check`가 실패·오류·건너뜀 없이 통과했다. USER·SERVICE 차단 범위 전달은 R2-07D, R2 전체 완료 판정은 R2-08 책임으로 유지한다.
-
-R2-07D에서 공개 `UsageReservationResult`가 한도 확보 실패의 `USER`·`SERVICE` 범위를 하나 또는 둘 모두 불변 집합으로 전달하도록 보완했다. 한 트랜잭션에서 실패한 모든 분·일 창을 검사하되 기존 최대 `retryAfterSeconds` 계산과 전체 rollback은 유지한다. 최초 일괄 확보와 기술 장애 재시도 직전 추가 확보의 차단 범위는 `RouteTravelTimeResult`를 거쳐 사용자·장소·좌표가 없는 `RouteObservationEvent`에만 전달하며, 생성 응답용 `ESTIMATED_TRAVEL_TIMES_USED` warning에는 내부 범위를 추가하지 않았다. USER 단독, SERVICE 단독, 동시 차단과 최초·재시도 fallback을 검증했고 루트 `test.ps1` 전체 369개 테스트가 실패·오류·건너뜀 없이 통과했다. 실제 지표 등록은 Q1-04, R2 전체 완료 판정은 R2-08 책임으로 유지한다.
-
-R2-08 회귀 감사에서 복수 구간을 선확보한 뒤 앞쪽 구간의 기술 재실패·비일시적 실패·재시도 한도 거절로 조기 종료하면 호출하지 않은 뒤쪽 구간까지 차감되는 결함을 발견했다. 별도 R2-08A Change Envelope로 `UsageReservationLease`가 확보 당시 창을 유지하게 하고, 조건부 감소를 사용하는 짧은 트랜잭션으로 미호출 최초 구간 몫만 반환하도록 보완했다. 이미 실행된 최초·재시도 호출은 반환하지 않으며 분 경계가 바뀌어도 원래 창만 감소한다. MySQL 통합 흐름에서 외부 Client 호출 중 트랜잭션 비활성, 2구간 선확보 후 첫 구간 재실패의 실제 2회 호출과 USER 분·일·SERVICE 일 최종 2회 차감 일치, 반환 중 한 창이 실패할 때 앞선 감소까지 rollback되는 원자성, 시간 경계를 검증했다. 전체 fallback·warning·관측 범위와 R2의 기존 성공·실패 경계까지 루트 `test.ps1` 377개 테스트와 `git diff --check`로 확인해 R2를 구현·검증 완료로 판정했다. 실제 metric 등록은 Q1-04, 생성 API 연결과 warning 비영속은 T1-06 책임으로 남는다.
-
-S1-01에서 `TravelPeriod`, `DailyActivityWindow`, `TravelConditions`로 1~7일 여행 기간과 기간 내 모든 날짜의 정확히 한 번인 활동 시간, 시작 시각이 종료 시각보다 빠른 조건과 단일 이동수단을 검증했다. 체류 시간 30~480분·10분 단위, 한쪽 식사 이동 여유 기본 15분·0~60분 경계와 점심 11:30~14:00·저녁 17:30~20:30 안의 60분 슬롯 및 12:00·18:00 우선 배치를 순수 정책으로 고정했다. 집중 테스트 17개와 루트 `test.ps1` 전체 394개 테스트, `git diff --check`가 통과했다. 첫 전체 실행에서는 기존 OpenAI 50ms timeout 테스트가 요청 기록 전 assertion에 도달해 한 번 실패했지만 단독 재실행과 전체 재실행에서 통과했으며 S1 코드와의 의존 관계는 없었다. 날짜별 배치·시간 예산은 S1-02 책임으로 남는다.
-
-A1-06 회귀 보완에서 `OpenAiClientTest`의 요청 timeout 검증이 테스트 HTTP 서버 스레드의 요청 기록보다 먼저 호출 수를 검사할 수 있던 경쟁 조건을 수정했다. 서버가 요청을 기록한 직후 `CountDownLatch` 신호를 보내고 테스트가 제한된 시간 동안 그 신호를 기다린 뒤 정확히 1회 호출을 검사한다. 운영 `OpenAiClient`는 변경하지 않았다. 해당 timeout 테스트 5회 반복, `OpenAiClientTest` 전체와 루트 `test.ps1` 전체 394개 테스트 및 `git diff --check`가 통과했으며 다음 시작 작업은 계속 S1-02다.
-
-S1-02에서 기존 요구사항의 첫날 시작·마지막 날 종료 경계를 estimate Request가 표현하지 못하는 공백을 확인했다. 사용자가 선택 지역 안의 경계를 직접 선택하고 `TRAVEL_BOUNDARY` selectionToken을 estimate·create 요청 안에서만 사용하는 계약, 모든 선택 관광지를 보존하는 결정적 greedy 날짜 배치, 식사 포함 시간 예산과 `PLAN_CAPACITY_EXCEEDED` 거절 규칙을 ADR-042로 확정했다. 구현 코드는 수정하지 않은 문서 전용 설계 작업이므로 Gradle은 생략했고 문서 계약 검색과 `git diff --check`로 정합성을 확인했다. 경계 검색·token 공개 계약은 P1-07B, 추정 계산은 그 다음 S1-03 책임이다.
-
-P1-07B에서 인증된 `POST /api/places/travel-boundaries/search`와 공개 요청·응답 DTO를 추가했다. 초기 검색은 선택 지역 대표 좌표의 20km 반경을 사용하고 지도 이동 재검색은 중심 좌표와 20km 반경을 함께 받으며, 반환 주소가 선택 지역에 속하는 후보만 남겨 사용자·지역·`TRAVEL_BOUNDARY` 역할에 묶인 30분 `selectionToken`을 발급한다. 기존 관광지 검색은 새 역할을 받지 않고, 경계 응답에는 체류시간·내부 역할·제공자 카테고리를 노출하지 않는다. 기존 requestId 처리와 Place 호출 한도를 재사용하며 Entity·Repository·migration·정적 UI·TravelPlan 계산은 변경하지 않았다. Place 집중 테스트 84개와 Docker/Testcontainers MySQL을 포함한 루트 `test.ps1` 전체 401개 테스트가 통과했다. estimate 계산과 요청 종료 시 좌표 폐기 검증은 S1-03 이후 책임이다.
-
-P1-07C에서 여행 경계의 초기 검색은 중심·반경 생략, 지도 이동 검색은 중심과 정확히 20km 반경을 함께 전달하도록 DTO·Service·API 계약을 정렬했다. place의 공개 `TravelBoundarySelectionService`는 token 검증 역할을 `TRAVEL_BOUNDARY`로 고정하고 검색 Response 대신 카카오 장소 ID·URL·좌표만 가진 최소 `TravelBoundarySelection`을 반환한다. 경계 검색의 빈 결과·중복 제거·한도 거절·제공자 장애와 lease 해제·재시도 직전 추가 차감을 직접 회귀 검증했다. Place 집중 테스트 90개와 Docker/Testcontainers MySQL을 포함한 루트 `test.ps1` 전체 407개 테스트가 통과했다. 여행 경계의 브라우저 메모리 연결과 estimate·create 요청 종료 시 좌표 폐기는 각각 W1과 S1·T1 후속 책임으로 남겼다.
-
-S1-03에서 `TravelPlanEstimateService`가 P1-07C 공개 경계 Service로 시작·종료 token을 검증하고, 호출자가 이미 검증해 전달한 관광지·숙소 좌표를 해당 요청 안에서만 사용해 Haversine 예상 이동시간과 Nearest Neighbor·2-opt 순서를 계산한다. ADR-042의 날짜·장소 후보 비교, 사용자 day·order 보존, 하루 5개, 식사 포함 시간 예산, 최초 초과 날짜의 422와 부분 일정 비반환을 구현했다. Service 결과는 `routeVerified=false`이고 DB·서버 세션·실제 Route Client를 사용하지 않는다. TravelPlan 집중 테스트 25개와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 415개 테스트가 실패·오류·건너뜀 없이 통과했다. S1-04의 HTTP 요청 변환은 관광지·숙소 token을 검증된 좌표로 바꿀 공개 place 계약과 무효 경계 token의 400 변환을 먼저 확인해야 하며, 이 계약을 위해 place 내부를 바꿔야 한다면 별도 P1 Task로 분리한다.
-
-P1-07D에서 place 소유 공개 Service가 관광지·숙소 역할을 각각 고정해 token의 서명·만료·사용자·지역을 검증하고 카카오 장소 ID·URL·좌표만 요청 범위 DTO로 전달하도록 했다. 무효 관광지·숙소·여행 경계 token은 내부 예외나 payload를 노출하지 않는 `VALIDATION_FAILED` 400으로 변환한다. S1-04에서는 인증된 estimate Controller가 요청 DTO를 검증하고 한 Service에서 token을 해석한 뒤 기존 추정 계산에 전달한다. 응답은 `routeVerified=false`와 날짜별 항목·시간만 포함하며 422 초과 시 부분 일정을 반환하지 않는다. TravelPlan 집중 테스트와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 427개 테스트가 실패·오류·건너뜀 없이 통과했다. 숙소 후보 검색·브라우저 연결·완료 생성과 좌표 수명 전체 검증은 각각 S1-05·W1·T1의 후속 범위다.
-
-S1-05에서 인증·`Idempotency-Key`가 필요한 `POST /api/places/hotels/search`를 구현했다. 현재 사용자·지역·관광지 역할로 token을 검증한 뒤, 기하 중앙값 기본 5km와 명시적 10km 확대, 실제 관광지 메도이드 5km 또는 현재 지도 사각형으로 카카오 숙소 후보를 검색한다. 선택 지역 주소 검증·중복 ID 제거 후 `HOTEL` token을 발급하며 체류시간·거리 점수·자동 순위는 응답하지 않는다. 무효 입력은 외부 호출과 호출량 차감 전에 거절하고, 기존 장소 검색의 사용자 한도·requestId·재시도 실패 계약을 재사용한다. Place 집중 테스트와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 440개 테스트가 실패·오류·건너뜀 없이 통과했다. 브라우저 지도·목록 동기화와 실제 운영 제공자 정책 검증은 이번 서버 작업의 완료 판정에 포함하지 않았다.
-
-W1-02 비시각 계약 정렬에서는 S1-05 숙소 응답에 `suggestedStayMinutes`가 없는 형태를 기존 장소 메모리 상태가 내부 `null`로 수용하도록 수정했다. 로그인 API나 JWT 내용을 바꾸지 않고 인증 Client가 로그인 성공마다 새 메모리 전용 `sessionContextId`를 제공하며, 상태 모듈은 인증 세션·지역 변경을 이전 후보와 선택의 폐기 경계로 사용한다. `TRAVEL_BOUNDARY` 후보와 독립적인 시작·종료 선택도 작성 흐름의 탭 메모리 상태에 추가하고 같은 장소의 양쪽 선택, 인증 종료·완료·취소·`pagehide` 폐기를 검증했다. W1-02 문서에는 실제 화면 구현 시 경계 선택·당일치기 숙소 건너뛰기·token 무효 시 재선택·페이지 결과와 기존 선택의 구분을 명시했고, API 명세의 3일 estimate 예시 날짜 목록을 바로잡았다. Node·Chromium 48개와 루트 `test.ps1` 440개가 실패·오류·건너뜀 없이 통과했다. `index.html`·`preview.js`·지도·API adapter는 수정하지 않았으므로 W1-02 화면 연결 완료나 카카오 데이터 수명 전체 DoD 완료로 표시하지 않는다.
-
-S1-06에서 요청 범위의 음식점 후보를 재계산된 식사 슬롯과 직전 장소 이용 가능 시각·직후 장소 도착 시각으로 평가한다. 두 이동 구간의 Haversine 예상시간으로 식사 전후 도착 가능 여부를 먼저 검사하고, 가능한 후보는 `직전→음식점→직후` 거리에서 직행 거리를 뺀 추가 이동거리 오름차순과 장소 ID로 정렬한다. 후보가 없거나 모두 시간에 맞지 않으면 `NO_CANDIDATES`, 제공자 조회 실패는 `PROVIDER_FAILURE`로 반환한다. 추천은 선택이나 일정에 반영하지 않는다. 집중 테스트 4개와 Docker/Testcontainers 기반 루트 `test.ps1` 전체 444개가 실패·오류·건너뜀 없이 통과했다. 실제 음식점 조회·HTTP 응답·지도 연결은 S1-06A·W1의 후속 범위다.
-
-S1-06A에서 인증·`Idempotency-Key`가 필요한 `POST /api/places/restaurants/search`를 연결했다. 조정 Service는 확정된 날짜·순서의 작성 입력을 다시 검증·계산하고 요청한 식사 슬롯, 직전·직후 장소와 선택적 기준 관광지를 찾아 place 공개 Service에 전달한다. place는 1·3·5km 순서 또는 현재 지도 영역에서 검색하고 주소 검증·중복 제거 뒤 `RESTAURANT` token을 발급한다. recommendation은 시간에 맞는 후보만 Haversine 추가 이동거리 순으로 정렬한다. 빈 후보는 이유가 있는 200 응답, 제공자 장애는 503이며 선택이나 일정을 자동 변경하지 않는다. 집중 테스트 10개와 인증 통합 테스트 1개를 포함한 루트 `test.ps1` 전체 455개가 실패·오류·건너뜀 없이 통과했다. 브라우저 지도·목록·직접 선택과 완료 생성의 좌표 수명 검증은 W1·T1 후속 범위다.
-
-S1-07에서 자동 배치는 모든 관광지를 남김없이 할당하고 사용자 배치는 날짜·순서를 그대로 계산하며, 최종 날짜별 시간표의 초과 여부를 같은 거절 분기에서 검사함을 확인했다. 이 분기는 부분 일정을 반환하지 않고 조정 가능한 항목만 오류에 제시하며 장소 삭제·날짜 이동·체류 축소를 실행하지 않는다. 음식점 추천은 시간 적합성 검사와 Haversine 추가 이동거리·결정적 동률 정렬 뒤 후보만 반환하며 사용자 선택을 변경하지 않는다. 관련 Service 테스트 4개 묶음과 루트 `test.ps1` 전체 455개가 통과했고 `git diff --check`도 통과했다. 다만 기존 시간 초과 실패 테스트의 방문은 사용자 날짜·순서가 지정되어 있어 자동 배치의 실패 경로를 직접 검증하지 않는다. 이를 `S1-07A`의 테스트 보강 제안으로 남기며, S1-07 점검 결과를 자동 배치 실패의 자동 검증 완료로 확대하지 않는다.
-
-S1-07A에서 자동 배치 관광지 두 곳이 14:00 종료 한도를 넘는 사례를 Service 테스트에 추가했다. `PLAN_CAPACITY_EXCEEDED`의 날짜·허용 종료·초과 시간과 부분 장소 정보 비노출을 확인하고, 같은 입력의 종료 시각만 넓히면 두 장소가 각각 원래의 180분 체류로 남는지 검증한다. 대상 Service 테스트와 루트 `test.ps1` 전체 456개가 실패·오류·건너뜀 없이 통과했고 `git diff --check`도 통과했다. 구현 코드는 변경하지 않았다.
-
-W1-02에서 기간 1~7일·이동수단 하나, 관광지 구·군 필터와 지도 이동 재검색, 관광지 이름·체류 입력, 독립적인 시작·종료 경계, 당일치기 숙소 건너뛰기와 3가지 숙소 탐색 기준의 화면을 연결했다. `P1-06` 상태 모듈을 인증 세션·지역·취소·새로고침 수명에 연결하고 외부 후보와 token은 브라우저 메모리에만 둔다. 로컬 실행 스크립트는 `.env.local`의 브라우저 지도 키를 Git 제외 설정 파일로 생성하며 REST API 키는 정적 파일에 기록하지 않는다. Node 54개와 가짜 API Chromium 흐름, 루트 `test.ps1` 전체 456개가 실패·오류·건너뜀 없이 통과했고 `git diff --check`도 통과했다. 실제 카카오 지도 SDK 로드와 Local API 결과는 검증하지 않았으며 `local` profile의 장소 Client는 Fake다.
-
-W1-02A에서 선택된 관광지의 사용자 표시 이름과 일시적 `clientPlaceId`만 메뉴 분석 요청에 전달하고, 자연어 요청 결과의 메뉴 1~5개·검색어·이유·대상 관광지를 검토·수정·삭제·확정하도록 연결했다. 직접 입력은 AI 실패 뒤에도 가능하며, 실패·늦은 응답은 기존 초안을 덮어쓰지 않고 관광지 맥락 변경 시 재확정을 요구한다. 당시 Node·가짜 API Chromium 테스트 58개와 루트 `test.ps1` 전체 Gradle 테스트, `git diff --check`가 통과했다. 실제 OpenAI 호출과 카카오 지도·장소 smoke는 수행하지 않았다.
-
-W1-03에서 시작 날짜와 모든 날짜의 활동 시각을 검증하고 브라우저 메모리의 관광지·여행 경계·숙소 token과 확정 메뉴로 `POST /api/travel-plans/estimate`를 연결했다. 서버 자동 배치와 사용자 지정 날짜·방문 순서를 구분하고 `routeVerified=false` 결과만 추정 일정으로 표시한다. 시간 초과 422에서 부분 결과를 버리고 입력을 유지하며 중복 제출과 늦은 응답을 차단한다. 데스크톱·390px 모바일 캡처 점검에서 모바일 결과 항목과 고정 단계 버튼의 겹침을 발견해 추정 단계의 버튼을 결과 아래로 배치했고, 정상 복구 뒤 오류 포커스 테두리가 남지 않도록 수정했다. 당시 Node·가짜 API Chromium 테스트 63개, Docker/Testcontainers 기반 루트 `test.ps1` 전체 456개가 실패·오류·건너뜀 없이 통과했고 `git diff --check`도 통과했다. 실제 제공자 smoke는 수행하지 않았다.
-
-W1-03A에서 추정 결과의 식사 슬롯과 관광지 확정 날짜·순서를 음식점 검색 요청에 전달하고, 서버의 직전·직후 장소·기준 관광지와 후보를 목록·지도 마커에 연결했다. 목록·마커 선택, 지도 영역 재검색·페이지 이동 뒤 선택 유지, 미선택 허용, 빈 후보·제공자 장애 구분과 token 검증 실패 시 음식점 선택 폐기를 가짜 API 브라우저에서 확인했다. 데스크톱·390px 모바일 후보 화면에 가로 넘침과 하단 버튼 겹침이 없음을 확인했다. Node·가짜 API Chromium 테스트 67개, Docker/Testcontainers 기반 루트 `test.ps1` 전체 456개가 실패·오류·건너뜀 없이 통과했고 `git diff --check`도 통과했다. 실제 카카오 지도 SDK와 Local API smoke, 완료 생성 연결은 후속 작업이다.
+`T1-01`에서 미선택 MEAL의 null 장소 참조, 선택 식당만 PlanPlace에 연결하는 규칙, User·일정 삭제와 공유 토큰 해시·만료 정책을 ADR-043 및 DB·API 문서에 확정했다. 문서 전용 작업으로 Entity·migration·완료·공유 API는 구현하지 않았다. 당시 루트 `test.ps1` 전체 456개와 `git diff --check`가 통과했다. 실제 경로 시간으로 재검증한 완료 저장과 공유 기능은 후속 T1 작업이다. 별도 보완 작업 `A1-08`은 미실행 상태다.
 
 ## 8. 완료 해석
 
-- Accepted ADR은 구현 완료가 아니다.
-- 목표 DB·API 문서가 존재해도 migration이나 endpoint가 구현됐다는 뜻은 아니다.
-- 하네스 파일과 Fake Client는 실제 도메인 기능 또는 제공자 정책 검증을 대신하지 않는다.
-- 카카오 임시 사용 조건 확인만으로 좌표 기반 제작 흐름을 완료로 표시하지 않는다. 구현과 테스트가 필요하다.
-- 구현 완료는 관련 테스트, 전체 테스트와 `docs/10-definition-of-done.md`를 확인한 뒤에만 기록한다.
-- 운영 가능은 구현 완료에 더해 비밀값, 로그, 호출 한도, health, smoke와 확정된 카카오 데이터 수명 계약을 충족해야 한다.
+- 설계·정책 확인과 Fake 기반 자동 테스트는 실제 제공자 smoke 또는 운영 가능 판정을 대신하지 않는다.
+- 기능 완료는 관련 테스트, 전체 테스트와 `docs/10-definition-of-done.md`를 확인한 뒤 기록한다.

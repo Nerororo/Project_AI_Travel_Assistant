@@ -16,13 +16,14 @@ Routy는 카카오 장소 데이터베이스를 복제하지 않는다. 카카�
 User
  └─ 1:N TravelPlan
           ├─ 1:N FoodPreference
+          ├─ 1:0..1 TravelPlanShare
           ├─ 1:N TravelPlanDay
           │        └─ 1:N TravelPlanItem
           └─ 1:N PlanPlace
 ~~~
 
 - TravelPlan이 일정 Aggregate Root다.
-- TravelPlan 삭제 시 FoodPreference, Day, Item, PlanPlace를 함께 삭제한다.
+- TravelPlan 삭제 시 FoodPreference, 공유 토큰 행, Day, Item, PlanPlace를 함께 삭제한다.
 - User는 여러 TravelPlan을 소유한다.
 - PlanPlace는 해당 일정 안에서만 쓰는 장소 참조다.
 - 다른 일정의 PlanPlace를 공유하지 않는다. 사용자 작성 표시 이름과 메모가 일정마다 다를 수 있기 때문이다.
@@ -83,6 +84,17 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 
 `(travel_plan_id, food_name)`은 UNIQUE이며 TravelPlan 삭제 시 함께 삭제한다.
 
+공유 토큰은 일정당 최대 한 행을 별도 `travel_plan_shares` 테이블에 저장한다. 공유 링크를 다시 발급하면 이전 행을 같은 트랜잭션에서 새 값으로 교체하며, 만료된 행은 조회 권한을 주지 않는다.
+
+| Column | Type 예시 | Nullable | 제약·설명 |
+|---|---|---:|---|
+| travel_plan_id | BIGINT | N | PK, TravelPlan FK |
+| token_hash | BINARY(32) | N | 32바이트 난수 토큰 원문의 SHA-256, UNIQUE |
+| created_at | DATETIME(6) | N | 발급 시각, UTC |
+| expires_at | DATETIME(6) | N | 발급 후 30일, UTC |
+
+공유 토큰 원문·완성된 URL·소유자 이메일·조회 이력은 저장하지 않는다. `expires_at > created_at`은 DB 제약으로 보장하고, 만료 경계 `now >= expires_at`은 Service에서 거절한다. 일정 또는 User 삭제 시 공유 행도 같은 트랜잭션에서 삭제한다. 세부 결정은 ADR-043을 따른다.
+
 ---
 
 ## 5. plan_places
@@ -111,7 +123,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 - HOTEL과 RESTAURANT의 stay_minutes는 null이다.
 - 카카오 카테고리와 내부 체류 유형은 저장하지 않는다.
 - 완료 후 display_name과 memo만 수정할 수 있다.
-- 같은 kakao_place_id가 역할 또는 날짜에 따라 합법적으로 다시 필요할 수 있으므로 단순 전역 UNIQUE를 두지 않는다. 일정 안의 중복 허용 규칙은 API·Service 계약에서 검증한다.
+- 같은 kakao_place_id가 역할 또는 날짜에 따라 합법적으로 다시 필요할 수 있으므로 단순 전역 UNIQUE를 두지 않는다. 같은 식당을 여러 MEAL에서 선택해도 MEAL마다 별도 RESTAURANT PlanPlace를 만들고, 나머지 중복 허용 규칙은 API·Service 계약에서 검증한다.
 
 숙소가 없는 당일치기는 HOTEL 역할 행이 없다. 1박 이상 일정에는 Service가 HOTEL 역할 한 개를 보장한다.
 
@@ -176,7 +188,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 - 하루 VISIT 수는 최대 5개다.
 - 실제 경로 원본 시간은 저장하지 않고 10분 단위로 올린 예상시간만 MOVE에 저장한다.
 
-식당을 최종 선택하지 않은 MEAL은 plan_place_id가 null일 수 있다. 저장 전에 선택한 식당만 RESTAURANT PlanPlace와 연결하며 완료 후 음식점 검색·추가·교체는 제공하지 않는다.
+식당을 최종 선택하지 않은 MEAL은 `plan_place_id`가 null이며 RESTAURANT PlanPlace를 만들지 않는다. 점심·저녁 기본 표시 이름은 저장된 MEAL 시각의 슬롯에서 만들고, 미선택 식사의 사용자 작성 이름·메모는 저장하지 않는다. 저장 전에 선택한 식당만 해당 MEAL 전용 RESTAURANT PlanPlace와 연결하며 완료 후 음식점 검색·추가·교체는 제공하지 않는다.
 
 ---
 
@@ -246,6 +258,8 @@ DB를 변경할 수 있는 완료 후 작업은 다음뿐이다.
 users(email) UNIQUE
 travel_plans(user_id, start_date)
 travel_plan_days(travel_plan_id, day_number) UNIQUE
+travel_plan_shares(travel_plan_id) PRIMARY KEY
+travel_plan_shares(token_hash) UNIQUE
 plan_places(travel_plan_id, role)
 travel_plan_items(travel_plan_day_id, item_order) UNIQUE
 ~~~
@@ -257,9 +271,9 @@ travel_plan_items(travel_plan_day_id, item_order) UNIQUE
 ## 12. 무결성과 삭제
 
 - TravelPlan 저장은 PlanPlace, Day, Item 전체가 성공하거나 전체가 rollback되어야 한다.
-- TravelPlan 삭제 시 하위 PlanPlace, Day, Item을 함께 삭제한다.
+- TravelPlan 삭제 시 공유 토큰 행, Item, Day, PlanPlace, FoodPreference, TravelPlan 순서로 함께 삭제한다. 외부 API를 호출하지 않고 실패 시 모두 rollback한다.
 - User FK와 모든 Aggregate FK를 DB 제약으로 보장한다.
-- User 삭제 시 소유 TravelPlan Aggregate, 해당 User의 `api_usage_counters`와 `request_executions`, User가 모두 삭제되거나 모두 rollback되어야 한다. 실제 FK cascade와 명시적 Repository 삭제의 조합은 새 migration과 구현에서 정하되 이 원자성과 삭제 범위를 바꾸지 않는다.
+- User 삭제 시 소유 TravelPlan Aggregate와 공유 토큰 행, 해당 User의 `api_usage_counters`와 `request_executions`, User를 하나의 짧은 트랜잭션에서 명시적으로 삭제하거나 모두 rollback한다. User 도메인은 TravelPlan의 공개 삭제 Service를 사용하며 다른 도메인 Repository를 직접 호출하지 않는다. FK는 참조 무결성을 보장하고 삭제 누락을 가리는 cascade에만 의존하지 않는다.
 - Day를 삭제하면 해당 Item을 함께 삭제한다.
 - 참조 중인 PlanPlace를 개별 삭제하는 완료 후 기능은 제공하지 않는다.
 - URL 도메인, 역할별 nullable 조합, 일정 기간, 시간표 겹침처럼 DB CHECK로 표현하기 복잡한 규칙은 Service에서 검증하고 테스트한다.
@@ -298,7 +312,7 @@ F0-02에서 DB 통합 테스트는 운영과 같은 MySQL 8.4 이미지를 사�
 
 다음은 제품 정책이 아니라 구현 전에 API·ADR·migration 단계에서 확정할 세부사항이다.
 
-- 실제 테이블·컬럼 이름과 VARCHAR 길이의 DB별 최종 값
-- 공유 토큰의 테이블 분리, 해시 방식과 만료 정책
+- T1-02에서 확정할 DB별 물리 타입·VARCHAR 길이와 FK·CHECK 이름
+- 명시적 삭제를 수행할 Repository 구현 방식
 
 미확정 사항을 임시 컬럼이나 nullable 완화로 우회하지 않는다.
