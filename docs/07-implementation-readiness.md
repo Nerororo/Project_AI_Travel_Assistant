@@ -55,7 +55,7 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 |---|---|---|
 | 인증·지역·AI·장소·경로 기반 | 해당 단계 구현·자동 검증 완료 | 실제 제공자와 배포 환경의 smoke 검증 |
 | 일정 추정·음식점 추천 | S1 서버 기능과 W1-03A까지 가짜 API 브라우저 흐름 검증 | 실제 카카오 지도 SDK·Local API smoke |
-| 완료 일정·공유 | T1-01 정책·T1-02 설계·T1-03 Entity와 V5 migration, T1-04 경로 반영 완료 계산 Service 완료 | T1-05부터 완료 저장·조회·공유 API 구현과 검증 |
+| 완료 일정·공유 | T1-01 정책·T1-02 설계·T1-03 Entity와 V5 migration, T1-04 완료 계산, T1-05 Aggregate 저장 Service 완료 | T1-06부터 생성·조회·공유 API 구현과 검증 |
 | 운영 배포 | 구현 전 | Q1 운영·보안·배포 완료 기준 검증 |
 
 ## 5. 구현 전 확정할 세부 계약
@@ -64,7 +64,7 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 
 ## 6. 문서 정렬 후 진행 가능한 범위
 
-작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-05`다.
+작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-06`이다.
 
 ## 7. 현재 작업 상태
 
@@ -75,6 +75,8 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 `T1-03`에서 여섯 Entity와 Repository, V5 migration을 구현했다. Testcontainers MySQL의 빈 DB에 Flyway V5를 적용하고 Hibernate schema validate, 저장·복원, UNIQUE·CHECK·복합 FK 제약을 검증했다. 완료 계산·저장 Service와 API는 후속 T1 작업이다.
 
 `T1-04`에서 확정한 관광지 날짜·순서를 유지하고 선택한 음식점만 최종 경유 지점에 넣어 Route 공개 Service의 구간별 예상 이동시간으로 시간표를 다시 계산하는 Service를 구현했다. 긴 체류 안의 선택 음식점 왕복과 식사 시간창·종료 시각을 검증하고 정상 경로 없음·제공자 계약 오류를 구분하며 warning은 요청 범위 결과에만 둔다. 집중 테스트 21개와 루트 `test.ps1` 전체 471개 테스트, `git diff --check`가 통과했다. DB 저장·HTTP 완료 생성 연결과 실제 제공자 smoke는 아직 수행하지 않았으며 각각 T1-05·T1-06과 별도 운영 검증 범위다.
+
+`T1-05`에서 좌표·토큰·warning을 받지 않는 저장 명령과 Aggregate 저장 Service를 구현했다. 계산을 마친 결과의 장소 snapshot, 날짜, 항목, 확정 메뉴만 짧은 DB 트랜잭션으로 저장하며 0분 MOVE는 DB의 양수 이동시간 제약에 맞춰 생략한다. Testcontainers MySQL로 전체 저장과 중간 Item 실패 시 TravelPlan·Day·Item·PlanPlace·FoodPreference rollback을 검증했고 루트 `test.ps1` 전체 테스트와 `git diff --check`가 통과했다. 완료 생성 HTTP 연결과 실제 제공자 smoke는 각각 T1-06과 별도 운영 검증 범위다.
 
 ## 8. 완료 해석
 
