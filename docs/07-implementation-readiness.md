@@ -55,7 +55,7 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 |---|---|---|
 | 인증·지역·AI·장소·경로 기반 | 해당 단계 구현·자동 검증 완료 | 실제 제공자와 배포 환경의 smoke 검증 |
 | 일정 추정·음식점 추천 | S1 서버 기능과 W1-03A까지 가짜 API 브라우저 흐름 검증 | 실제 카카오 지도 SDK·Local API smoke |
-| 완료 일정·공유 | T1-01 설계 계약 완료, 기능 구현 전 | T1-02부터 Aggregate·migration·완료·조회·공유 API 구현과 검증 |
+| 완료 일정·공유 | T1-01 정책·T1-02 설계·T1-03 Entity와 V5 migration 완료 | T1-04부터 경로 반영 계산·완료 저장·조회·공유 API 구현과 검증 |
 | 운영 배포 | 구현 전 | Q1 운영·보안·배포 완료 기준 검증 |
 
 ## 5. 구현 전 확정할 세부 계약
@@ -64,11 +64,15 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 
 ## 6. 문서 정렬 후 진행 가능한 범위
 
-작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-02`다.
+작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-04`다.
 
 ## 7. 현재 작업 상태
 
 `T1-01`에서 미선택 MEAL의 null 장소 참조, 선택 식당만 PlanPlace에 연결하는 규칙, User·일정 삭제와 공유 토큰 해시·만료 정책을 ADR-043 및 DB·API 문서에 확정했다. 문서 전용 작업으로 Entity·migration·완료·공유 API는 구현하지 않았다. 당시 루트 `test.ps1` 전체 456개와 `git diff --check`가 통과했다. 실제 경로 시간으로 재검증한 완료 저장과 공유 기능은 후속 T1 작업이다. 별도 보완 작업 `A1-08`은 미실행 상태다.
+
+`T1-02`에서 Item의 일정 소속을 검증하는 복합 FK, Aggregate의 UNIQUE·CHECK·삭제 경계와 V5 migration의 물리 계약을 `docs/03-database.md`에 확정했다. 루트 `test.ps1`과 `git diff --check`가 통과했으며 Gradle `test`는 `UP-TO-DATE`였다. Entity·migration·DB 적용 테스트는 `T1-03` 범위로 남아 있다.
+
+`T1-03`에서 여섯 Entity와 Repository, V5 migration을 구현했다. Testcontainers MySQL의 빈 DB에 Flyway V5를 적용하고 Hibernate schema validate, 저장·복원, UNIQUE·CHECK·복합 FK 제약을 검증했다. 완료 계산·저장 Service와 API는 후속 T1 작업이다.
 
 ## 8. 완료 해석
 
