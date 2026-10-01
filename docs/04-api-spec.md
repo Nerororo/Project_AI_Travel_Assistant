@@ -153,7 +153,7 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 
 ### DELETE /api/users/me
 
-인증된 현재 사용자의 계정, 소유 TravelPlan Aggregate와 사용자 범위 호출 카운터·requestId 처리 행을 한 번의 짧은 DB 트랜잭션으로 영구 삭제한다. 외부 API는 호출하지 않는다. 성공 시 204를 반환하며 복구·유예 기간은 없다. 다른 사용자를 지정하는 path 또는 request body의 userId는 받지 않는다.
+인증된 현재 사용자의 계정, 소유 TravelPlan Aggregate와 공유 토큰, 사용자 범위 호출 카운터·requestId 처리 행을 한 번의 짧은 DB 트랜잭션으로 영구 삭제한다. 외부 API는 호출하지 않는다. 성공 시 204를 반환하며 복구·유예 기간은 없다. 다른 사용자를 지정하는 path 또는 request body의 userId는 받지 않는다. 삭제된 공유 링크는 즉시 404가 되고 기존 JWT는 User 존재 검증에서 401로 거절한다.
 
 ---
 
@@ -514,8 +514,9 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 - 시작·종료 경계 token은 estimate와 동일한 사용자·regionId·TRAVEL_BOUNDARY 역할 계약을 다시 검증하고 실제 경로 계산 뒤 즉시 폐기한다. 경계 장소는 PlanPlace로 저장하지 않는다.
 - mealType은 LUNCH 또는 DINNER다.
 - 식사시간은 60분이다.
-- restaurantSelectionToken은 식당을 선택했을 때만 전달한다.
-- 표시 이름·메모는 사용자 입력이며 제공자 장소명 자동 복사값이 아니다.
+- 같은 날짜의 같은 mealType은 한 번만 요청하고, 서버가 실제 식사 슬롯·60분·시간 창을 재검증한다.
+- restaurantSelectionToken은 식당을 선택했을 때만 전달한다. null 또는 생략이면 해당 MEAL은 `planPlaceId=null`이며 RESTAURANT PlanPlace를 만들지 않는다. 이때 `displayName`은 mealType에 맞는 `점심 식사` 또는 `저녁 식사`여야 하고 `memo`는 null이어야 한다. 완료·공유 조회에서는 저장된 식사 시각의 슬롯에서 같은 기본 이름을 만든다.
+- 식당을 선택했으면 token의 현재 사용자·regionId·RESTAURANT 역할을 검증하고, trim 후 1~50자인 사용자 작성 `displayName`과 선택적 1,000자 이하 `memo`를 해당 MEAL 전용 PlanPlace에 저장한다. 같은 식당을 여러 MEAL에 선택해도 PlanPlace는 각각 만든다. 제공자 장소명을 이름의 기본값으로 사용하지 않는다.
 - 사용자는 일정 전체에서 자동차 또는 대중교통 하나만 선택한다.
 
 처리:
@@ -675,7 +676,8 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 - 카카오 장소·경로 API를 호출하지 않는다.
 - 좌표나 지도를 반환하지 않는다.
-- 저장된 사용자 작성 이름·시간표·외부 링크만 반환한다.
+- 저장된 사용자 작성 이름·시간표·외부 링크와 미선택 식사의 기본 표시 이름만 반환한다.
+- 식당 미선택 MEAL은 `planPlaceId`, `placeUrl`, `memo`가 null이고 식사 시각에 따른 기본 이름만 반환한다.
 - 다른 사용자의 일정은 403, 없는 일정은 404다.
 
 ### PATCH /api/travel-plans/{travelPlanId}
@@ -703,7 +705,7 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 ### DELETE /api/travel-plans/{travelPlanId}
 
-자신의 일정 Aggregate 전체를 삭제한다. 외부 API를 호출하지 않으며 성공 시 204다.
+자신의 일정 Aggregate와 공유 토큰을 하나의 짧은 트랜잭션에서 삭제한다. 외부 API를 호출하지 않으며 성공 시 204다. 삭제 뒤 기존 공유 링크는 404가 된다.
 
 날짜·순서·시각·체류시간·이동수단 또는 장소를 바꾸는 PUT API는 제공하지 않는다. 새 일정 생성으로 처리한다.
 
@@ -733,16 +735,27 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 
 ### POST /api/travel-plans/{travelPlanId}/shares
 
-소유자가 읽기 전용 공유 링크를 만든다. 토큰 원문 저장 여부, 해시와 만료 정책은 보안 ADR에서 확정한다.
+인증된 소유자가 읽기 전용 공유 토큰을 발급한다. 일정당 토큰은 하나이며 재발급은 이전 토큰을 같은 트랜잭션에서 즉시 무효화한다. 다른 사용자의 일정은 403, 없는 일정은 404다. 성공 시 201과 `Cache-Control: no-store`를 반환하며 원문은 이 Response에서만 제공한다.
+
+~~~json
+{
+  "shareToken": "base64url-encoded-random-token",
+  "expiresAt": "2026-10-31T00:00:00Z"
+}
+~~~
+
+서버는 암호학적으로 안전한 32바이트 난수를 패딩 없는 43자 Base64url 토큰으로 만들고, DB에는 SHA-256 해시만 저장한다. 발급부터 30일이 지나면 만료되며 원문 재조회·완성 URL 저장 API는 없다. 토큰·URL path는 로그와 metric에 기록하지 않는다. 자세한 저장·삭제 계약은 ADR-043과 `docs/03`을 따른다.
 
 ### GET /api/shared/travel-plans/{shareToken}
 
 인증 없이 저장된 완료 일정의 읽기 전용 Response를 반환한다.
 
+- 형식이 유효하고 해시가 일치하며 만료 전인 토큰만 허용한다. 조회는 만료 시각을 연장하지 않는다.
 - 카카오 API를 호출하지 않는다.
 - 지도와 좌표를 반환하지 않는다.
 - 수정·삭제 권한을 부여하지 않는다.
-- 무효·만료 토큰은 404로 처리해 자원 존재 여부를 구분하지 않는다.
+- 무효·만료·폐기된 토큰과 삭제된 일정은 같은 404 `TRAVEL_PLAN_NOT_FOUND`로 처리해 자원 존재 여부를 구분하지 않는다.
+- Response는 소유자 ID·이메일·인증 정보와 생성 시점 `warnings`를 포함하지 않으며, `Cache-Control: no-store`와 `Referrer-Policy: no-referrer`를 적용한다. 공유 링크 화면도 referrer로 토큰을 전송하지 않는다.
 
 ---
 
