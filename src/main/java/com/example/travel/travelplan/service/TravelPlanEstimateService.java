@@ -50,7 +50,23 @@ public class TravelPlanEstimateService {
 	}
 
 	public EstimateResult estimate(EstimateCommand command) {
+		return calculate(command, Map.of(), true);
+	}
+
+	EstimateResult completionCandidate(EstimateCommand command,
+			Map<LocalDate, Map<MealType, Coordinate>> selectedMeals) {
 		Objects.requireNonNull(command, "command must not be null");
+		if (command.visits().stream().anyMatch(visit -> visit.day() == null)) {
+			throw validationFailed();
+		}
+		return calculate(command, selectedMeals, false);
+	}
+
+	private EstimateResult calculate(EstimateCommand command,
+			Map<LocalDate, Map<MealType, Coordinate>> selectedMeals,
+			boolean enforceCapacity) {
+		Objects.requireNonNull(command, "command must not be null");
+		Objects.requireNonNull(selectedMeals, "selectedMeals must not be null");
 		validateAssignment(command);
 		TravelBoundarySelection start = boundarySelectionService.verify(
 				command.startBoundarySelectionToken(), command.userId(), command.regionId());
@@ -85,9 +101,10 @@ public class TravelPlanEstimateService {
 			DayPlan day = calculateDay(window, visits,
 					startFor(index, windows.size(), startCoordinate, command.hotelCoordinate()),
 					endFor(index, windows.size(), endCoordinate, command.hotelCoordinate()),
-					estimator, command.conditions().mealTravelBufferMinutes());
+					estimator, command.conditions().mealTravelBufferMinutes(),
+					selectedMeals.getOrDefault(window.date(), Map.of()));
 			LocalDateTime limit = window.date().atTime(window.endTime());
-			if (!day.mealFeasible() || day.day().plannedEndTime().isAfter(limit)) {
+			if (enforceCapacity && (!day.mealFeasible() || day.day().plannedEndTime().isAfter(limit))) {
 				throw new ApiException(ErrorCode.PLAN_CAPACITY_EXCEEDED,
 						new PlanCapacityDetails(window.date(), day.day().plannedEndTime().toLocalTime(),
 								window.endTime(), Duration.between(limit, day.day().plannedEndTime()).toMinutes()),
@@ -145,7 +162,7 @@ public class TravelPlanEstimateService {
 					List<EstimateVisit> trial = new ArrayList<>(selected);
 					trial.add(visit);
 					DayPlan plan = calculateDay(window, optimizedVisits(trial, dayStart, dayEnd),
-							dayStart, dayEnd, estimator, command.conditions().mealTravelBufferMinutes());
+						dayStart, dayEnd, estimator, command.conditions().mealTravelBufferMinutes(), Map.of());
 					Candidate candidate = new Candidate(window.date(), visit, plan,
 							Math.max(0, Duration.between(window.date().atTime(window.endTime()),
 									plan.day().plannedEndTime()).toMinutes()),
@@ -187,19 +204,22 @@ public class TravelPlanEstimateService {
 	}
 
 	private static DayPlan calculateDay(DailyActivityWindow window, List<EstimateVisit> visits,
-			Coordinate start, Coordinate end, HaversineTravelTimeEstimator estimator, int buffer) {
+			Coordinate start, Coordinate end, HaversineTravelTimeEstimator estimator, int buffer,
+			Map<MealType, Coordinate> selectedMeals) {
 		EnumMap<MealType, Placement> placements = new EnumMap<>(MealType.class);
 		for (MealType mealType : MealType.values()) {
 			if (MealSlotPolicy.createSlot(window, mealType).isEmpty()) {
 				continue;
 			}
-			Placement best = chooseMeal(window, visits, start, end, estimator, buffer, placements, mealType);
+			Placement best = chooseMeal(window, visits, start, end, estimator, buffer, placements,
+					mealType, selectedMeals);
 			if (best == null) {
 				DayPlan bare = Objects.requireNonNull(render(window, visits, start, end,
-						estimator, buffer, placements));
+						estimator, buffer, placements, selectedMeals));
+				int mealBuffer = selectedMeals.containsKey(mealType) ? 0 : buffer;
 				LocalDateTime earliestMealEnd = later(window.date().atTime(mealType.allowedStart()),
-						window.date().atTime(window.startTime()).plusMinutes(buffer))
-						.plusMinutes(60L + buffer);
+						window.date().atTime(window.startTime()).plusMinutes(mealBuffer))
+						.plusMinutes(60L + mealBuffer);
 				LocalDateTime projectedEnd = later(bare.day().plannedEndTime(), earliestMealEnd);
 				projectedEnd = later(projectedEnd, window.date().atTime(window.endTime()).plusMinutes(1));
 				return new DayPlan(new EstimatedDay(window.date(), projectedEnd, bare.day().items()),
@@ -207,24 +227,48 @@ public class TravelPlanEstimateService {
 			}
 			placements.put(mealType, best);
 		}
-		return Objects.requireNonNull(render(window, visits, start, end, estimator, buffer, placements));
+		return Objects.requireNonNull(render(window, visits, start, end, estimator, buffer,
+				placements, selectedMeals));
 	}
 
 	private static Placement chooseMeal(DailyActivityWindow window, List<EstimateVisit> visits,
 			Coordinate start, Coordinate end, HaversineTravelTimeEstimator estimator, int buffer,
-			EnumMap<MealType, Placement> selected, MealType mealType) {
+			EnumMap<MealType, Placement> selected, MealType mealType,
+			Map<MealType, Coordinate> selectedMeals) {
 		Placement best = null;
 		long bestOverMinutes = Long.MAX_VALUE;
 		long bestDifference = Long.MAX_VALUE;
 		for (boolean included : List.of(true, false)) {
 			int limit = included ? visits.size() : visits.size() + 1;
 			for (int index = 0; index < limit; index++) {
+				if (included && selectedMeals.containsKey(mealType)) {
+					Coordinate visit = visits.get(index).coordinate();
+					Coordinate restaurant = selectedMeals.get(mealType);
+					int roundTrip = estimator.estimateMinutes(visit, restaurant)
+							+ estimator.estimateMinutes(restaurant, visit);
+					if (visits.get(index).stayMinutes() < 60 + roundTrip) continue;
+				}
 				Placement candidate = new Placement(included, index);
 				EnumMap<MealType, Placement> trial = new EnumMap<>(selected);
 				trial.put(mealType, candidate);
-				DayPlan rendered = render(window, visits, start, end, estimator, buffer, trial);
+				DayPlan rendered = render(window, visits, start, end, estimator, buffer, trial,
+						selectedMeals);
 				if (rendered == null) {
 					continue;
+				}
+				if (included && selectedMeals.containsKey(mealType)) {
+					EstimateVisit visit = visits.get(index);
+					EstimatedItem visitItem = rendered.day().items().stream()
+							.filter(item -> visit.clientPlaceId().equals(item.clientPlaceId()))
+							.findFirst().orElseThrow();
+					Coordinate restaurant = selectedMeals.get(mealType);
+					LocalDateTime earliest = later(visitItem.startTime().plusMinutes(
+							estimator.estimateMinutes(visit.coordinate(), restaurant)),
+							window.date().atTime(mealType.allowedStart()));
+					LocalDateTime latest = earlier(visitItem.endTime().minusMinutes(60L
+							+ estimator.estimateMinutes(restaurant, visit.coordinate())),
+							window.date().atTime(mealType.allowedEnd()).minusMinutes(60));
+					if (earliest.isAfter(latest)) continue;
 				}
 				EstimatedItem meal = rendered.day().items().stream()
 						.filter(item -> item.type() == EstimatedItem.Type.MEAL && item.mealType() == mealType)
@@ -249,7 +293,7 @@ public class TravelPlanEstimateService {
 
 	private static DayPlan render(DailyActivityWindow window, List<EstimateVisit> visits,
 			Coordinate start, Coordinate end, HaversineTravelTimeEstimator estimator, int buffer,
-			Map<MealType, Placement> placements) {
+			Map<MealType, Placement> placements, Map<MealType, Coordinate> selectedMeals) {
 		LocalDateTime cursor = window.date().atTime(window.startTime());
 		Coordinate previous = start;
 		List<EstimatedItem> items = new ArrayList<>();
@@ -258,14 +302,15 @@ public class TravelPlanEstimateService {
 			for (MealType mealType : MealType.values()) {
 				Placement placement = placements.get(mealType);
 				if (placement != null && !placement.included() && placement.index() == index) {
-					LocalDateTime mealStart = regularMealStart(window, mealType, cursor, buffer);
+					int mealBuffer = selectedMeals.containsKey(mealType) ? 0 : buffer;
+					LocalDateTime mealStart = regularMealStart(window, mealType, cursor, mealBuffer);
 					if (mealStart == null) {
 						return null;
 					}
 					LocalDateTime mealEnd = mealStart.plusMinutes(60);
 					items.add(new EstimatedItem(0, EstimatedItem.Type.MEAL, null, null,
 							mealType, mealStart, mealEnd, null));
-					cursor = mealEnd.plusMinutes(buffer);
+					cursor = mealEnd.plusMinutes(mealBuffer);
 				}
 			}
 			Coordinate next = index == visits.size() ? end : visits.get(index).coordinate();
