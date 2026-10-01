@@ -108,7 +108,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 | kakao_place_id | VARCHAR(255) | N | 카카오 장소 ID |
 | place_url | VARCHAR(1000) | N | 허용된 카카오맵 URL |
 | role | VARCHAR(20) | N | ATTRACTION, HOTEL, RESTAURANT |
-| display_name | VARCHAR(50) | N | 사용자가 빈 입력창에 직접 작성한 이름 |
+| display_name | VARCHAR(50) | N | 사용자 작성 이름. HOTEL은 기본 `숙소` 또는 사용자가 바꾼 이름 |
 | memo | VARCHAR(1000) | Y | 사용자 메모 |
 | stay_minutes | INT | Y | 관광지 확정 체류시간 |
 | created_at | DATETIME | N | 생성 시각 |
@@ -117,6 +117,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 규칙:
 
 - display_name은 카카오 장소명의 복사 컬럼이 아니다.
+- HOTEL의 이름을 지정하지 않으면 `숙소`를 저장하며, 지정한 이름은 사용자 작성 값으로 저장한다. 완료 후 두 경우 모두 표시 이름만 변경할 수 있다.
 - display_name은 trim 후 1~50자다.
 - place_url은 허용 도메인과 형식을 Service에서 검증한다.
 - stay_minutes는 ATTRACTION에서만 필수이며 30~480, 10의 배수다.

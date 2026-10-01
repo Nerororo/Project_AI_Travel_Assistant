@@ -498,6 +498,7 @@ Request는 estimate 입력에 다음 필드를 추가한다.
   "days": [],
   "places": [],
   "hotelSelectionToken": "signed-token",
+  "hotelDisplayName": "숙소",
   "meals": [
     {
       "date": "2026-10-01",
@@ -512,6 +513,7 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 
 - title은 trim 후 1~100자다.
 - 시작·종료 경계 token은 estimate와 동일한 사용자·regionId·TRAVEL_BOUNDARY 역할 계약을 다시 검증하고 실제 경로 계산 뒤 즉시 폐기한다. 경계 장소는 PlanPlace로 저장하지 않는다.
+- 1박 이상 일정의 `hotelDisplayName`은 선택 입력이다. 생략하면 `숙소`를 저장하고, 보내면 trim 후 1~50자인 사용자 작성 이름만 허용한다. 빈 문자열은 거절하며 카카오 장소명을 기본값이나 placeholder로 사용하지 않는다. 당일치기에는 이 필드를 보내지 않는다.
 - mealType은 LUNCH 또는 DINNER다.
 - 식사시간은 60분이다.
 - 같은 날짜의 같은 mealType은 한 번만 요청하고, 서버가 실제 식사 슬롯·60분·시간 창을 재검증한다.
@@ -698,6 +700,7 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 ~~~
 
 - title, displayName, memo만 허용한다.
+- HOTEL PlanPlace의 기본 이름 `숙소`도 다른 저장 장소와 동일한 `placeEdits`의 `displayName`으로 변경할 수 있다.
 - 날짜·순서·시각·체류시간·이동수단·장소 ID·URL을 받지 않는다.
 - 외부 API나 경로 계산을 실행하지 않는다.
 - 일부 필드만 보내는 부분 수정이다.
