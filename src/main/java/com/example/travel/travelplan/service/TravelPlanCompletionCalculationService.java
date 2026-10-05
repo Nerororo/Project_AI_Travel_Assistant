@@ -20,6 +20,7 @@ import com.example.travel.travelplan.dto.EstimateVisit;
 import com.example.travel.travelplan.dto.EstimatedDay;
 import com.example.travel.travelplan.dto.EstimatedItem;
 import com.example.travel.travelplan.dto.PlanCapacityDetails;
+import com.example.travel.travelplan.dto.RouteNotFoundDetails;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -39,6 +40,8 @@ public class TravelPlanCompletionCalculationService {
 
 	private static final List<String> CAPACITY_ADJUSTMENTS = List.of(
 			"CHANGE_END_TIME", "CHANGE_STAY_MINUTES", "REMOVE_PLACE", "EXCLUDE_MEAL", "CHANGE_ORDER");
+	private static final List<String> ROUTE_ADJUSTMENTS = List.of(
+			"CHANGE_ORDER", "REMOVE_PLACE", "CHANGE_TRAVEL_MODE");
 
 	private final TravelPlanEstimateService estimateService;
 	private final TravelBoundarySelectionService boundarySelectionService;
@@ -75,6 +78,7 @@ public class TravelPlanCompletionCalculationService {
 				.sorted(Comparator.comparing(DailyActivityWindow::date)).toList();
 		List<DayRoute> dayRoutes = new ArrayList<>();
 		List<RouteSegment> segments = new ArrayList<>();
+		List<RouteNotFoundDetails> segmentDetails = new ArrayList<>();
 		for (int index = 0; index < windows.size(); index++) {
 			DailyActivityWindow window = windows.get(index);
 			Map<MealType, Coordinate> meals = selectedRestaurants.getOrDefault(window.date(), Map.of());
@@ -92,17 +96,28 @@ public class TravelPlanCompletionCalculationService {
 			Coordinate dayEnd = index == windows.size() - 1 ? endCoordinate : command.hotelCoordinate();
 			Coordinate previous = dayStart;
 			int firstSegment = segments.size();
+			int itemOrder = 0;
 			for (Event event : events) {
 				if (event.coordinate() != null) {
 					segments.add(segment(previous, event.coordinate()));
+					segmentDetails.add(new RouteNotFoundDetails(window.date(), ++itemOrder,
+							command.conditions().travelMode()));
 					if (event.included()) {
 						segments.add(segment(event.coordinate(), previous));
+						itemOrder++; // The selected meal is between the outward and return MOVE.
+						segmentDetails.add(new RouteNotFoundDetails(window.date(), ++itemOrder,
+								command.conditions().travelMode()));
 					} else {
+						itemOrder++; // The visit or meal follows its incoming MOVE.
 						previous = event.coordinate();
 					}
+				} else {
+					itemOrder++; // An unselected meal has no provider segment.
 				}
 			}
 			segments.add(segment(previous, dayEnd));
+			segmentDetails.add(new RouteNotFoundDetails(window.date(), ++itemOrder,
+					command.conditions().travelMode()));
 			dayRoutes.add(new DayRoute(window, events, firstSegment, segments.size()));
 		}
 		if (selectedRestaurants.keySet().stream().anyMatch(date -> windows.stream()
@@ -117,6 +132,13 @@ public class TravelPlanCompletionCalculationService {
 			throw new ApiException(ErrorCode.ROUTE_PROVIDER_UNAVAILABLE);
 		}
 		List<RouteSegmentTravelTime> times = verified.travelTimes().segmentTravelTimes();
+		if (times.size() > segments.size()) throw new IllegalStateException("route segment count changed");
+		for (int index = 0; index < times.size(); index++) {
+			if (times.get(index) instanceof RouteSegmentTravelTime.NotFound) {
+				throw new ApiException(ErrorCode.ROUTE_NOT_FOUND, segmentDetails.get(index),
+						ROUTE_ADJUSTMENTS, null);
+			}
+		}
 		if (times.size() != segments.size()) throw new IllegalStateException("route segment count changed");
 		List<EstimatedDay> days = new ArrayList<>();
 		for (DayRoute route : dayRoutes) {
@@ -225,7 +247,7 @@ public class TravelPlanCompletionCalculationService {
 	private static int minutes(RouteSegmentTravelTime time) {
 		return switch (time) {
 			case RouteSegmentTravelTime.Found found -> found.estimatedMinutes();
-			case RouteSegmentTravelTime.NotFound ignored -> throw new ApiException(ErrorCode.ROUTE_NOT_FOUND);
+			case RouteSegmentTravelTime.NotFound ignored -> throw new IllegalStateException("route was not prechecked");
 		};
 	}
 

@@ -222,6 +222,32 @@ class RouteServiceTest {
 		assertThat(carClient.callCount()).isEqualTo(1);
 	}
 
+	@Test
+	void earlyRouteAbsenceStopsBeforeLaterTechnicalFailureAndReleasesUnusedQuota() {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		RouteSegment third = segment(2.0, 2.0, 3.0, 3.0);
+		AtomicLong released = new AtomicLong();
+		AtomicInteger retryReservations = new AtomicInteger();
+		carClient.willReturnThenFail(RouteResult.notFound(), RouteClientFailure.TIMEOUT);
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(first, second, third),
+				() -> {
+					retryReservations.incrementAndGet();
+					return UsageReservationResult.success();
+				},
+				released::addAndGet
+		);
+
+		assertThat(result.segmentTravelTimes()).containsExactly(RouteSegmentTravelTime.notFound());
+		assertThat(result.fallbackApplied()).isFalse();
+		assertThat(carClient.receivedSegments()).containsExactly(first);
+		assertThat(retryReservations).hasValue(0);
+		assertThat(released).hasValue(2L);
+	}
+
 	@ParameterizedTest
 	@EnumSource(value = RouteClientFailure.class, names = {
 			"TIMEOUT", "CONNECTION_FAILED", "PROVIDER_UNAVAILABLE"

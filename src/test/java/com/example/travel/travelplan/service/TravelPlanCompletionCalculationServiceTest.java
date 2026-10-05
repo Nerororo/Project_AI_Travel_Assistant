@@ -6,9 +6,12 @@ import com.example.travel.place.dto.TravelBoundarySelection;
 import com.example.travel.place.service.TravelBoundarySelectionService;
 import com.example.travel.route.algorithm.Coordinate;
 import com.example.travel.route.algorithm.TravelMode;
+import com.example.travel.route.client.FakeCarRouteClient;
+import com.example.travel.route.client.FakePublicTransitRouteClient;
 import com.example.travel.route.client.RouteSegment;
 import com.example.travel.route.client.RouteClientException;
 import com.example.travel.route.client.RouteClientFailure;
+import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.service.RouteObservationEvent;
 import com.example.travel.route.service.RouteObservationOutcome;
 import com.example.travel.route.service.RouteFallbackReason;
@@ -16,7 +19,10 @@ import com.example.travel.route.service.RouteSegmentTravelTime;
 import com.example.travel.route.service.RouteTravelTimeResult;
 import com.example.travel.route.service.RouteVerificationResult;
 import com.example.travel.route.service.RouteVerificationService;
+import com.example.travel.route.service.RouteQuotaService;
+import com.example.travel.route.service.RouteService;
 import com.example.travel.route.service.RouteWarning;
+import com.example.travel.user.dto.UsageReservationLease;
 import com.example.travel.travelplan.domain.DailyActivityWindow;
 import com.example.travel.travelplan.domain.MealType;
 import com.example.travel.travelplan.domain.TravelPeriod;
@@ -24,12 +30,14 @@ import com.example.travel.travelplan.dto.EstimateCommand;
 import com.example.travel.travelplan.dto.EstimateVisit;
 import com.example.travel.travelplan.dto.EstimatedItem;
 import com.example.travel.travelplan.dto.PlanCapacityDetails;
+import com.example.travel.travelplan.dto.RouteNotFoundDetails;
 import com.example.travel.travelplan.dto.TravelConditions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -139,13 +147,96 @@ class TravelPlanCompletionCalculationServiceTest {
 				List.of(visit(A, FIRST, 1)));
 		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList()))
 				.thenReturn(new RouteVerificationResult(RouteTravelTimeResult.verified(List.of(
-					RouteSegmentTravelTime.notFound(), RouteSegmentTravelTime.found(10))),
+					RouteSegmentTravelTime.notFound())),
 					List.of(), new RouteObservationEvent(TravelMode.CAR,
-							RouteObservationOutcome.PROVIDER_VERIFIED, Set.of())));
+						RouteObservationOutcome.PROVIDER_VERIFIED, Set.of())));
+
+		assertMissingRoute(command, Map.of(), DATE, 1, TravelMode.CAR);
+	}
+
+	@Test
+	void realRouteVerificationStopsAtFirstMissingMoveAndReturnsItsQuota() {
+		EstimateCommand command = command(LocalTime.of(9, 0), LocalTime.of(12, 0),
+				List.of(visit(A, FIRST, 1)));
+		FakeCarRouteClient carClient = new FakeCarRouteClient();
+		carClient.willReturnThenFail(RouteResult.notFound(), RouteClientFailure.TIMEOUT);
+		RouteQuotaService quota = mock(RouteQuotaService.class);
+		UsageReservationLease lease = UsageReservationLease.acquired(Instant.EPOCH);
+		when(quota.reserve(eq(7L), eq(TravelMode.CAR), anyList())).thenReturn(lease);
+		service = new TravelPlanCompletionCalculationService(new TravelPlanEstimateService(boundaries),
+				boundaries, new RouteVerificationService(quota,
+					new RouteService(carClient, new FakePublicTransitRouteClient())));
+
+		assertMissingRoute(command, Map.of(), DATE, 1, TravelMode.CAR);
+		assertThat(carClient.callCount()).isEqualTo(1);
+		verify(quota).release(7L, TravelMode.CAR, lease, 1L);
+	}
+
+	@Test
+	void truncatedVerifiedResultWithoutMissingRouteIsRejected() {
+		EstimateCommand command = command(LocalTime.of(9, 0), LocalTime.of(12, 0),
+				List.of(visit(A, FIRST, 1)));
+		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList()))
+				.thenReturn(verified(10));
 
 		assertThatThrownBy(() -> service.calculate(command, Map.of()))
-				.isInstanceOfSatisfying(ApiException.class,
-						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.ROUTE_NOT_FOUND));
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("route segment count changed");
+	}
+
+	@Test
+	void identifiesMiddleAndFinalMovesByFinalItemOrder() {
+		EstimateCommand command = command(LocalTime.of(9, 0), LocalTime.of(12, 0), List.of(
+				visit(A, FIRST, 1), visit(B, SECOND, 2)));
+		for (int index = 1; index <= 2; index++) {
+			when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList()))
+					.thenReturn(missing(TravelMode.CAR, 3, index));
+			assertMissingRoute(command, Map.of(), DATE, index == 1 ? 3 : 5, TravelMode.CAR);
+		}
+	}
+
+	@Test
+	void identifiesSelectedMealDetourMovesAroundTheMeal() {
+		Coordinate restaurant = new Coordinate(36.01, 127.01);
+		EstimateCommand command = command(LocalTime.of(11, 0), LocalTime.of(16, 0),
+				List.of(new EstimateVisit(A, FIRST, "사용자 이름", 180, DATE, 1)));
+		for (int index = 1; index <= 2; index++) {
+			when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList()))
+					.thenReturn(missing(TravelMode.CAR, 4, index));
+			assertMissingRoute(command, Map.of(DATE, Map.of(MealType.LUNCH, restaurant)),
+					DATE, index == 1 ? 3 : 5, TravelMode.CAR);
+		}
+	}
+
+	@Test
+	void identifiesSecondDayHotelBoundaryWithoutPlaceIdentity() {
+		Coordinate hotel = new Coordinate(36.01, 127.01);
+		TravelPeriod period = new TravelPeriod(DATE, DATE.plusDays(1));
+		TravelConditions conditions = TravelConditions.withDefaultMealTravelBuffer(period,
+				TravelMode.PUBLIC_TRANSIT, period.dates().stream()
+						.map(date -> new DailyActivityWindow(date, LocalTime.of(9, 0), LocalTime.of(11, 0)))
+						.toList());
+		EstimateCommand command = new EstimateCommand(7, "KR-30", conditions, "start", "end",
+				List.of(visit(A, FIRST, 1), new EstimateVisit(B, SECOND, "사용자 이름", 30,
+						DATE.plusDays(1), 1)), hotel);
+		when(routes.verify(eq(7L), eq(TravelMode.PUBLIC_TRANSIT), anyList()))
+				.thenReturn(missing(TravelMode.PUBLIC_TRANSIT, 4, 2));
+		assertMissingRoute(command, Map.of(), DATE.plusDays(1), 1, TravelMode.PUBLIC_TRANSIT);
+	}
+
+	@Test
+	void identifiesRepeatedHotelVisitAsItsOwnMove() {
+		Coordinate hotel = new Coordinate(36.01, 127.01);
+		TravelPeriod period = new TravelPeriod(DATE, DATE.plusDays(2));
+		TravelConditions conditions = TravelConditions.withDefaultMealTravelBuffer(period,
+				TravelMode.CAR, period.dates().stream()
+						.map(date -> new DailyActivityWindow(date, LocalTime.of(9, 0), LocalTime.of(10, 0)))
+						.toList());
+		EstimateCommand command = new EstimateCommand(7, "KR-30", conditions, "start", "end",
+				List.of(), hotel);
+		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList()))
+				.thenReturn(missing(TravelMode.CAR, 3, 1));
+		assertMissingRoute(command, Map.of(), DATE.plusDays(1), 1, TravelMode.CAR);
 	}
 
 	@Test
@@ -305,5 +396,30 @@ class TravelPlanCompletionCalculationServiceTest {
 		return new RouteVerificationResult(RouteTravelTimeResult.verified(times), List.of(),
 				new RouteObservationEvent(TravelMode.CAR,
 						RouteObservationOutcome.PROVIDER_VERIFIED, Set.of()));
+	}
+
+	private static RouteVerificationResult missing(TravelMode mode, int count, int missingIndex) {
+		if (missingIndex < 0 || missingIndex >= count) {
+			throw new IllegalArgumentException("missingIndex must identify a requested segment");
+		}
+		List<RouteSegmentTravelTime> times = new java.util.ArrayList<>();
+		for (int index = 0; index <= missingIndex; index++) {
+			times.add(index == missingIndex ? RouteSegmentTravelTime.notFound()
+					: RouteSegmentTravelTime.found(10));
+		}
+		return new RouteVerificationResult(RouteTravelTimeResult.verified(times), List.of(),
+				new RouteObservationEvent(mode, RouteObservationOutcome.PROVIDER_VERIFIED, Set.of()));
+	}
+
+	private void assertMissingRoute(EstimateCommand command,
+			Map<LocalDate, Map<MealType, Coordinate>> restaurants,
+			LocalDate date, int moveOrder, TravelMode mode) {
+		assertThatThrownBy(() -> service.calculate(command, restaurants))
+				.isInstanceOfSatisfying(ApiException.class, exception -> {
+					assertThat(exception.errorCode()).isEqualTo(ErrorCode.ROUTE_NOT_FOUND);
+					assertThat(exception.details()).isEqualTo(new RouteNotFoundDetails(date, moveOrder, mode));
+					assertThat(exception.adjustments()).containsExactly(
+							"CHANGE_ORDER", "REMOVE_PLACE", "CHANGE_TRAVEL_MODE");
+				});
 	}
 }
