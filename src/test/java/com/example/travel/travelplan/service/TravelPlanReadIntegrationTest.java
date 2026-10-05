@@ -1,0 +1,237 @@
+package com.example.travel.travelplan.service;
+
+import com.example.travel.global.security.JwtService;
+import com.example.travel.route.algorithm.TravelMode;
+import com.example.travel.travelplan.domain.PlanPlace;
+import com.example.travel.travelplan.domain.FoodPreference;
+import com.example.travel.travelplan.domain.TravelPlan;
+import com.example.travel.travelplan.domain.TravelPlanDay;
+import com.example.travel.travelplan.domain.TravelPlanItem;
+import com.example.travel.travelplan.domain.TravelPlanShare;
+import com.example.travel.travelplan.repository.FoodPreferenceRepository;
+import com.example.travel.travelplan.repository.PlanPlaceRepository;
+import com.example.travel.travelplan.repository.TravelPlanDayRepository;
+import com.example.travel.travelplan.repository.TravelPlanItemRepository;
+import com.example.travel.travelplan.repository.TravelPlanRepository;
+import com.example.travel.travelplan.repository.TravelPlanShareRepository;
+import com.example.travel.user.domain.User;
+import com.example.travel.user.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Base64;
+import java.util.UUID;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@Testcontainers
+@ActiveProfiles("test")
+@SpringBootTest
+@AutoConfigureMockMvc
+class TravelPlanReadIntegrationTest {
+    private static final String JWT_SECRET = randomSecret();
+    private static final LocalDate DATE = LocalDate.of(2026, 10, 1);
+
+    @Container @ServiceConnection
+    static final MySQLContainer mysql = new MySQLContainer(DockerImageName.parse("mysql:8.4"));
+
+    @DynamicPropertySource
+    static void jwtProperties(DynamicPropertyRegistry registry) {
+        registry.add("routy.jwt.active-key-id", () -> "test-active");
+        registry.add("routy.jwt.keys[0].id", () -> "test-active");
+        registry.add("routy.jwt.keys[0].secret", () -> JWT_SECRET);
+    }
+
+    @Autowired MockMvc mvc;
+    @Autowired JwtService jwt;
+    @Autowired UserRepository users;
+    @Autowired TravelPlanRepository plans;
+    @Autowired TravelPlanDayRepository days;
+    @Autowired TravelPlanItemRepository items;
+    @Autowired PlanPlaceRepository places;
+    @Autowired FoodPreferenceRepository foods;
+    @Autowired TravelPlanShareRepository shares;
+    @Autowired TravelPlanMutationService mutations;
+    @Autowired TransactionTemplate transactions;
+
+    @Test
+    void listsOnlyOwnedPlansAndReadsStoredDetailWithoutTransientFields() throws Exception {
+        long owner = user();
+        long other = user();
+        long first = plan(owner, "First");
+        long latest = plan(owner, "Latest");
+        long foreign = plan(other, "Foreign");
+        PlanPlace place = places.saveAndFlush(new PlanPlace(latest, "100", "https://place.map.kakao.com/100",
+                PlanPlace.Role.ATTRACTION, "My place", "My note", 60));
+        TravelPlanDay day = days.saveAndFlush(new TravelPlanDay(latest, 1, DATE,
+                LocalTime.of(9, 0), LocalTime.of(18, 0)));
+        items.saveAndFlush(new TravelPlanItem(day.id(), latest, 1, TravelPlanItem.Type.VISIT,
+                place.id(), LocalTime.of(9, 0), LocalTime.of(10, 0), null));
+        items.saveAndFlush(new TravelPlanItem(day.id(), latest, 2, TravelPlanItem.Type.MEAL,
+                null, LocalTime.of(12, 0), LocalTime.of(13, 0), null));
+        items.saveAndFlush(new TravelPlanItem(day.id(), latest, 3, TravelPlanItem.Type.MOVE,
+                null, LocalTime.of(13, 0), LocalTime.of(13, 20), 20));
+
+        mvc.perform(get("/api/travel-plans")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/travel-plans").header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].travelPlanId").value(latest))
+                .andExpect(jsonPath("$[1].travelPlanId").value(first))
+                .andExpect(jsonPath("$[2]").doesNotExist())
+                .andExpect(jsonPath("$[0].days").doesNotExist());
+        mvc.perform(get("/api/travel-plans/{id}", latest).header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.region.displayName").value("Region snapshot"))
+                .andExpect(jsonPath("$.days[0].items[0].displayName").value("My place"))
+                .andExpect(jsonPath("$.days[0].items[0].memo").value("My note"))
+                .andExpect(jsonPath("$.days[0].items[1].displayName").value("점심 식사"))
+                .andExpect(jsonPath("$.days[0].items[1].planPlaceId").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.days[0].items[2].estimatedMinutes").value(20))
+                .andExpect(jsonPath("$.warnings").doesNotExist())
+                .andExpect(jsonPath("$.coordinate").doesNotExist())
+                .andExpect(jsonPath("$.days[0].items[0].kakaoPlaceId").doesNotExist());
+        mvc.perform(get("/api/travel-plans/{id}", foreign).header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+        mvc.perform(get("/api/travel-plans/{id}", Long.MAX_VALUE)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TRAVEL_PLAN_NOT_FOUND"));
+    }
+
+    @Test
+    void patchAllowsOnlyOwnedTextAndRejectsStructuralChanges() throws Exception {
+        long owner = user();
+        long other = user();
+        long planId = plan(owner, "Original");
+        long foreignId = plan(other, "Foreign");
+        PlanPlace place = places.saveAndFlush(new PlanPlace(planId, "100", "https://place.map.kakao.com/100",
+                PlanPlace.Role.HOTEL, "숙소", "Original note", null));
+        PlanPlace foreign = places.saveAndFlush(new PlanPlace(foreignId, "200", "https://place.map.kakao.com/200",
+                PlanPlace.Role.HOTEL, "Other hotel", null, null));
+
+        mvc.perform(patch("/api/travel-plans/{id}", planId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Ignored\"}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(patch("/api/travel-plans/{id}", planId).header(HttpHeaders.AUTHORIZATION, bearer(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"  Updated  \",\"placeEdits\":[{\"planPlaceId\":"
+                                + place.id() + ",\"displayName\":\"My hotel\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated"));
+        mvc.perform(patch("/api/travel-plans/{id}", planId).header(HttpHeaders.AUTHORIZATION, bearer(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"placeEdits\":[{\"planPlaceId\":" + place.id()
+                                + ",\"memo\":null}]}"))
+                .andExpect(status().isOk());
+        org.assertj.core.api.Assertions.assertThat(places.findById(place.id())).get().satisfies(saved -> {
+            org.assertj.core.api.Assertions.assertThat(saved.displayName()).isEqualTo("My hotel");
+            org.assertj.core.api.Assertions.assertThat(saved.memo()).isNull();
+            org.assertj.core.api.Assertions.assertThat(saved.placeUrl()).isEqualTo("https://place.map.kakao.com/100");
+        });
+        for (String body : new String[] {
+                "{\"travelMode\":\"PUBLIC_TRANSIT\"}",
+                "{\"title\":\"Bad\",\"startDate\":\"2026-10-02\"}",
+                "{\"placeEdits\":[{\"planPlaceId\":" + place.id() + ",\"stayMinutes\":60}]}",
+                "{\"placeEdits\":[{\"planPlaceId\":" + place.id() + ",\"placeUrl\":\"changed\"}]}",
+                "{\"placeEdits\":[{\"planPlaceId\":" + foreign.id() + ",\"memo\":\"No\"}]}",
+                "{\"placeEdits\":[{\"planPlaceId\":" + place.id() + ",\"memo\":\"A\"},"
+                        + "{\"planPlaceId\":" + place.id() + ",\"memo\":\"B\"}]}"
+        }) {
+            mvc.perform(patch("/api/travel-plans/{id}", planId)
+                            .header(HttpHeaders.AUTHORIZATION, bearer(owner))
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        org.assertj.core.api.Assertions.assertThat(plans.findById(planId)).get()
+                .extracting(TravelPlan::title).isEqualTo("Updated");
+        mvc.perform(patch("/api/travel-plans/{id}", foreignId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"No\"}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(patch("/api/travel-plans/{id}", Long.MAX_VALUE)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"No\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteRemovesWholeAggregateAndRollsBackWhenTransactionFails() throws Exception {
+        long owner = user();
+        long other = user();
+        long planId = plan(owner, "Delete me");
+        PlanPlace place = places.saveAndFlush(new PlanPlace(planId, "100", "https://place.map.kakao.com/100",
+                PlanPlace.Role.ATTRACTION, "My place", null, 60));
+        TravelPlanDay day = days.saveAndFlush(new TravelPlanDay(planId, 1, DATE,
+                LocalTime.of(9, 0), LocalTime.of(18, 0)));
+        items.saveAndFlush(new TravelPlanItem(day.id(), planId, 1, TravelPlanItem.Type.VISIT,
+                place.id(), LocalTime.of(9, 0), LocalTime.of(10, 0), null));
+        foods.saveAndFlush(new FoodPreference(planId, "noodles"));
+        shares.saveAndFlush(new TravelPlanShare(planId, new byte[32],
+                Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-31T00:00:00Z")));
+
+        mvc.perform(delete("/api/travel-plans/{id}", planId)).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/api/travel-plans/{id}", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isForbidden());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> transactions.execute(status -> {
+            mutations.delete(owner, planId);
+            throw new IllegalStateException("rollback test");
+        })).isInstanceOf(IllegalStateException.class);
+        org.assertj.core.api.Assertions.assertThat(plans.existsById(planId)).isTrue();
+        org.assertj.core.api.Assertions.assertThat(items.findByTravelPlanDayIdOrderByItemOrder(day.id())).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(shares.existsById(planId)).isTrue();
+
+        mvc.perform(delete("/api/travel-plans/{id}", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isNoContent());
+        org.assertj.core.api.Assertions.assertThat(plans.existsById(planId)).isFalse();
+        org.assertj.core.api.Assertions.assertThat(days.findByTravelPlanIdOrderByDayNumber(planId)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(items.findByTravelPlanDayIdOrderByItemOrder(day.id())).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(places.findByTravelPlanId(planId)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(foods.findByTravelPlanId(planId)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(shares.existsById(planId)).isFalse();
+        mvc.perform(delete("/api/travel-plans/{id}", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isNotFound());
+    }
+
+    private long user() {
+        return users.saveAndFlush(new User(UUID.randomUUID() + "@example.test", "encoded")).id();
+    }
+
+    private long plan(long userId, String title) {
+        return plans.saveAndFlush(new TravelPlan(userId, title, "KR-30", "Region snapshot",
+                DATE, DATE, TravelMode.CAR, 15)).id();
+    }
+
+    private String bearer(long userId) { return "Bearer " + jwt.issue(userId); }
+
+    private static String randomSecret() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getEncoder().encodeToString(bytes);
+    }
+}

@@ -6,6 +6,7 @@ import com.example.travel.global.exception.GlobalExceptionHandler;
 import com.example.travel.global.security.AuthenticatedUser;
 import com.example.travel.route.algorithm.TravelMode;
 import com.example.travel.travelplan.dto.TravelPlanCreateApiResponse;
+import com.example.travel.travelplan.dto.RouteNotFoundDetails;
 import com.example.travel.travelplan.service.TravelPlanCreateApiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,29 @@ class TravelPlanCreateControllerTest {
                     .andExpect(status().is(code.equals("PLAN_CAPACITY_EXCEEDED") ? 422 : 503))
                     .andExpect(jsonPath("$.code").value(code));
         }
+    }
+
+    @Test
+    void mapsMissingRouteToSanitizedMoveDetails() throws Exception {
+        when(service.create(eq(7L), eq(KEY), any())).thenThrow(new ApiException(
+                ErrorCode.ROUTE_NOT_FOUND,
+                new RouteNotFoundDetails(LocalDate.of(2026, 10, 1), 4, TravelMode.CAR),
+                List.of("CHANGE_ORDER", "REMOVE_PLACE", "CHANGE_TRAVEL_MODE"), null));
+
+        mvc.perform(post("/api/travel-plans").header("Idempotency-Key", KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(body()))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("ROUTE_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("이동 경로를 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.details.date").value("2026-10-01"))
+                .andExpect(jsonPath("$.details.moveOrder").value(4))
+                .andExpect(jsonPath("$.details.travelMode").value("CAR"))
+                .andExpect(jsonPath("$.details.coordinate").doesNotExist())
+                .andExpect(jsonPath("$.details.placeId").doesNotExist())
+                .andExpect(jsonPath("$.details.providerMessage").doesNotExist())
+                .andExpect(jsonPath("$.adjustments[0]").value("CHANGE_ORDER"))
+                .andExpect(jsonPath("$.adjustments[1]").value("REMOVE_PLACE"))
+                .andExpect(jsonPath("$.adjustments[2]").value("CHANGE_TRAVEL_MODE"));
     }
 
     @Test
