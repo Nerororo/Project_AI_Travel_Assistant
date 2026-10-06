@@ -87,9 +87,9 @@ public class MenuAnalysisService {
 
 		List<MenuAnalysisResponse.Menu> menus = result.menus().stream()
 				.map(menu -> new MenuAnalysisResponse.Menu(
-						menu.name(),
-						menu.searchQuery(),
-						menu.reason(),
+						menu.name().trim(),
+						menu.searchQuery().trim(),
+						menu.reason().trim(),
 						menu.targetClientPlaceId()
 				))
 				.toList();

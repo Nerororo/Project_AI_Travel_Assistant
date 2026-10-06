@@ -7,8 +7,9 @@ import java.util.List;
 
 public record TravelPlanCreateApiResponse(long travelPlanId, String title, Region region,
         TravelMode travelMode, LocalDate startDate, LocalDate endDate,
-        List<String> warnings, List<Day> days) {
+        List<String> warnings, Hotel hotel, List<Day> days) {
     public record Region(String regionId, String displayName) { }
+    public record Hotel(long planPlaceId, String displayName, String memo, String placeUrl) { }
     public record Day(long day, LocalDate date, String activityStartTime,
             String activityEndTime, List<Item> items) { }
     public record Item(long itemId, int order, String type, Long planPlaceId,

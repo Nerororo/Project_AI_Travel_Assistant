@@ -2,12 +2,12 @@
 
 ## 현재 기준
 
-Routy는 서울특별시·광역시·세종특별자치시 또는 도·특별자치도 아래 시·군 하나를 최종 여행 지역으로 고르고, 자동차 또는 대중교통 일정 하나를 만드는 Spring Boot 백엔드 프로젝트다.
+Routy는 서울특별시·광역시·세종특별자치시·광주 여행 지역 또는 도·특별자치도·전남 상위 항목 아래 시·군 하나를 최종 여행 지역으로 고르고, 자동차 또는 대중교통 일정 하나를 만드는 Spring Boot 백엔드 프로젝트다.
 
 - Java 21, Spring Boot 4.1.1, Gradle
 - 목표 DB: MySQL 8.4, Spring Data JPA, Flyway
 - 현재 구현 범위: `07-implementation-readiness.md` 참조
-- 지금 시작할 작업: `T1-02` 완료 일정 Aggregate와 migration 설계
+- 지금 시작할 작업: `11-command-roadmap.md` 16절 참조
 - AI: 허용 지역 후보와 음식 검색어 구조화
 - 장소: 카카오 Local
 - 경로: 카카오모빌리티 자동차, 카카오맵 대중교통

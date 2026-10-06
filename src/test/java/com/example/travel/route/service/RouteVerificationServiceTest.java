@@ -6,6 +6,7 @@ import com.example.travel.route.algorithm.TravelMode;
 import com.example.travel.route.algorithm.TravelTimePolicy;
 import com.example.travel.route.client.FakeCarRouteClient;
 import com.example.travel.route.client.FakePublicTransitRouteClient;
+import com.example.travel.route.client.RouteClientException;
 import com.example.travel.route.client.RouteClientFailure;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
@@ -22,6 +23,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -198,6 +200,25 @@ class RouteVerificationServiceTest {
 		verify(quotaService).reserve(11L, TravelMode.PUBLIC_TRANSIT, segments);
 		verify(quotaService).reserve(11L, TravelMode.PUBLIC_TRANSIT, 1L);
 		verify(quotaService).release(11L, TravelMode.PUBLIC_TRANSIT, acquired(), 1L);
+	}
+
+	@Test
+	void oversizedDurationReleasesUnusedOriginalReservation() {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		List<RouteSegment> segments = List.of(first, second);
+		UsageReservationLease reservation = acquired();
+		when(quotaService.reserve(11L, TravelMode.CAR, segments)).thenReturn(reservation);
+		carClient.willReturn(RouteResult.found(Long.MAX_VALUE));
+
+		assertThatThrownBy(() -> service.verify(11L, TravelMode.CAR, segments))
+				.isInstanceOfSatisfying(RouteClientException.class,
+						exception -> assertThat(exception.failure())
+								.isEqualTo(RouteClientFailure.INVALID_RESPONSE));
+		assertThat(carClient.receivedSegments()).containsExactly(first);
+		verify(quotaService).reserve(11L, TravelMode.CAR, segments);
+		verify(quotaService).release(11L, TravelMode.CAR, reservation, 1L);
+		verifyNoMoreInteractions(quotaService);
 	}
 
 	@Test

@@ -71,7 +71,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 자동차 `result_code=102·103` fixture는 모두 `RouteResult.NotFound`로 변환하고 `result_code=1`과 같은 422 흐름을 적용하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장·자동 장소 삭제·자동 이동수단 변경은 모두 0회여야 하며, 실패 구간은 `date + moveOrder + travelMode`만으로 식별해야 한다.
 
-자동차 `result_code=104` fixture는 `RouteResult.Found(0)`으로 변환하고 일정 생성을 차단하지 않는지 검증한다. 외부 호출은 1회이며 재시도·fallback은 0회, `MOVE.estimatedMinutes`는 0이고 10분 올림·고정 buffer가 추가되지 않아야 한다. Haversine 거리가 5m 이하라는 이유만으로 실제 Client 호출을 생략하는 테스트나 구현을 두지 않는다.
+자동차 `result_code=104` fixture는 `RouteResult.Found(0)`으로 변환하고 일정 생성을 차단하지 않는지 검증한다. 외부 호출은 1회이며 재시도·fallback은 0회, 계산 후보의 `MOVE.estimatedMinutes`는 0이고 10분 올림·고정 buffer가 추가되지 않아야 한다. 완료 생성 통합 테스트는 0분 MOVE가 DB와 생성·상세 응답에서 생략되고 남은 Item의 순서가 연속인지 검증한다. Haversine 거리가 5m 이하라는 이유만으로 실제 Client 호출을 생략하는 테스트나 구현을 두지 않는다.
 
 자동차 `result_code=105·106` fixture는 모두 `RouteResult.NotFound`로 변환하고 422 `ROUTE_NOT_FOUND`로 저장을 차단하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장은 0회여야 한다. 503 제공자 장애로 변환하거나 제공자 원문의 사고·통제 정보와 좌표를 오류 응답·로그에 노출해서는 안 된다.
 
@@ -79,7 +79,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 대중교통 제작·완료·공유 UI 테스트는 모든 이동시간을 `예상 이동시간`으로 표시하고 `실제 이동시간`, `확정 시간`, 미래 시간표·운행 검증 완료처럼 표현하지 않는지 확인한다. 완료·공유 조회와 여행 당일에 외부 경로 API를 다시 호출하거나 자동 재계산하지 않는지도 검증한다. `routeVerified`는 외부 제공자 조회 수행 여부만 뜻하고 미래 여행일의 시간표·실제 소요시간 보장으로 해석하지 않는다.
 
-대중교통 status fixture는 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 각각 `RouteResult.NotFound`와 422 `ROUTE_NOT_FOUND`로 변환하고, 재시도·fallback·Aggregate 저장이 모두 0회인지 검증한다. `EQUAL_POINTS`는 `RouteResult.Found(0)`과 0분 `MOVE` 성공으로 변환하며 10분 올림·고정 buffer가 없어야 한다. `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`, 알 수 없는·누락된 status와 빈 routes·손상된 첫 후보를 포함한 `OK` 응답은 `RouteClientFailure.INVALID_RESPONSE`으로 변환하고, 모두 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`과 저장 0회인지 검증한다. 제공자 원문·좌표·payload는 오류 응답·로그·fixture에 포함하지 않는다.
+대중교통 status fixture는 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 각각 `RouteResult.NotFound`와 422 `ROUTE_NOT_FOUND`로 변환하고, 재시도·fallback·Aggregate 저장이 모두 0회인지 검증한다. `EQUAL_POINTS`는 `RouteResult.Found(0)`과 계산 후보의 0분 `MOVE` 성공으로 변환하며 10분 올림·고정 buffer가 없어야 한다. 저장·응답에서는 0분 MOVE를 생략한다. `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`, 알 수 없는·누락된 status와 빈 routes·손상된 첫 후보를 포함한 `OK` 응답은 `RouteClientFailure.INVALID_RESPONSE`으로 변환하고, 모두 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`과 저장 0회인지 검증한다. 제공자 원문·좌표·payload는 오류 응답·로그·fixture에 포함하지 않는다.
 
 ## 5. Fixture 규칙
 
@@ -130,6 +130,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 - 사용자가 입력하지 않은 메뉴를 임의로 확정하지 않는지
 - 최종 선택 가능한 국내 regionId만 허용하고 미존재·상위 도·검색 필터용 구·군은 외부 호출과 차감 전에 거절하는지
 - 관광지 맥락 0·35개를 허용하고 36개, clientPlaceId 중복·공백·길이 초과와 displayName 길이 초과를 거절하는지
+- AI 메뉴 이름·검색어·이유의 앞뒤 공백을 제거한 값이 Response에 반환되는지, 공백만 남는 값은 `AI_RESPONSE_INVALID`인지, 메뉴 이름은 같은 공백 제거와 대소문자 무시 기준으로 중복을 거절하는지
 - 잘못된 구조 응답을 최대 한 번 재시도하고 다시 실패하면 오류로 끝나는지
 
 공통:

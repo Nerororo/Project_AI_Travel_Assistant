@@ -162,7 +162,7 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 | travel_plan_day_id | BIGINT | N | Day FK |
 | travel_plan_id | BIGINT | N | 소속 일정 FK 검증용. Day·PlanPlace와 같은 일정이어야 함 |
 | item_order | INT | N | 화면 표시 및 실행 순서 |
-| item_type | VARCHAR(20) | N | VISIT, STAY, MEAL, MOVE |
+| item_type | VARCHAR(20) | N | VISIT, MEAL, MOVE |
 | plan_place_id | BIGINT | Y | 장소가 있는 행의 PlanPlace FK |
 | start_time | TIME | N | 예상 시작 시각 |
 | end_time | TIME | N | 예상 종료 시각 |
@@ -173,15 +173,17 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 | item_type | plan_place_id | estimated_minutes | 의미 |
 |---|---:|---:|---|
 | VISIT | 필수, ATTRACTION | null | 관광지 체류 |
-| STAY | 필수, HOTEL | null | 숙소 출발·도착 표시 |
 | MEAL | 선택, RESTAURANT | null | 식사 60분. 식당 미선택 상태도 가능 |
 | MOVE | null | 필수 | 인접 항목 사이 예상 이동 |
+
+숙소는 HOTEL PlanPlace와 날짜별 출발·도착 경계로 표현하며 STAY Item은 만들지 않는다. V6는 과거 V5에서 허용했던 STAY 신규 행을 금지한다. 기존 STAY 행이 있다면 migration 적용이 실패하며 자동 삭제·변환하지 않는다.
 
 공통 제약:
 
 - (travel_plan_day_id, item_order) UNIQUE
 - start_time < end_time
 - MOVE의 estimated_minutes는 양수이며 10의 배수다.
+- 계산 후보에 유효한 0분 이동이 있어도 MOVE 행으로 저장하지 않는다. 남은 Item의 item_order를 연속으로 다시 매긴다.
 - MOVE는 end_time - start_time과 estimated_minutes가 일치해야 한다.
 - MOVE에는 API 결과와 Haversine fallback을 구분하는 출처 enum이나 상태 컬럼을 두지 않는다. 생성 당시 warning도 영속 저장하지 않는다.
 - MEAL은 60분이며 점심 11:30~14:00, 저녁 17:30~20:30과 하루 활동 범위를 Service에서 검증한다.
@@ -311,20 +313,20 @@ F0-02에서 DB 통합 테스트는 운영과 같은 MySQL 8.4 이미지를 사�
 
 ---
 
-## 15. 미확정 구현 세부사항
+## 15. T1-02 물리 계약과 적용 이력
 
-T1-02에서 Aggregate 관계와 MySQL 8.4 migration의 물리 계약을 다음과 같이 확정한다. 이 절은 설계이며 migration 적용 결과가 아니다.
+T1-02에서 Aggregate 관계와 MySQL 8.4 migration의 물리 계약을 다음과 같이 확정했다. 아래는 당시 설계 기록이며 현재 적용 상태는 `docs/07-implementation-readiness.md`를 따른다.
 
-- 새 테이블은 `travel_plans`, `food_preferences`, `travel_plan_shares`, `plan_places`, `travel_plan_days`, `travel_plan_items`다. 기존 최신 migration은 V4이므로 T1-03에서 V5를 새로 추가한다. 기존 V1~V4는 수정하지 않는다.
+- T1-03에서 V5를 새로 추가해 `travel_plans`, `food_preferences`, `travel_plan_shares`, `plan_places`, `travel_plan_days`, `travel_plan_items`를 생성했다. 기존 V1~V4는 수정하지 않았다.
 - 모든 새 테이블은 InnoDB, `utf8mb4`, `utf8mb4_0900_ai_ci`를 쓰고, `id` PK는 `BIGINT NOT NULL AUTO_INCREMENT`로 둔다. `travel_plan_shares`만 `travel_plan_id BIGINT`를 PK로 쓴다. 위 표의 문자열 길이와 `DATE`·`TIME`·`INT`·`BINARY(32)` 타입을 그대로 쓰며 모든 생성·수정 시각은 기존 스키마와 같은 `DATETIME(6)`이다. 표의 Nullable N/Y는 각각 `NOT NULL`/`NULL`이다.
 - `travel_plan_items.travel_plan_id`는 `NOT NULL`이다. `travel_plan_days`와 `plan_places`에 각각 `UNIQUE (id, travel_plan_id)`를 두고, Item은 `(travel_plan_day_id, travel_plan_id)`와 `(plan_place_id, travel_plan_id)` 복합 FK로 같은 일정만 참조한다. nullable `plan_place_id`는 미선택 MEAL 및 MOVE에서 허용하며, Day 복합 FK는 항상 적용된다.
 - `travel_plans.user_id`는 `users.id`를 참조한다. FoodPreference·Share·Day·PlanPlace의 `travel_plan_id`는 `travel_plans.id`를 참조한다. Item의 두 복합 FK 외에 불필요한 단일 Day·PlanPlace FK를 중복 생성하지 않는다. 새 FK는 모두 기본 `RESTRICT` 삭제 동작을 사용한다. 삭제 순서는 12절의 명시적 트랜잭션을 따른다.
 - UNIQUE는 `food_preferences(travel_plan_id, food_name)`, `travel_plan_shares(token_hash)`, `travel_plan_days(travel_plan_id, day_number)`, `travel_plan_days(travel_plan_id, travel_date)`, `travel_plan_items(travel_plan_day_id, item_order)`다. Share의 `travel_plan_id`는 PK로 일정당 한 행을 보장한다. 11절의 목록 조회용 인덱스 `travel_plans(user_id, start_date)`와 역할 조회용 `plan_places(travel_plan_id, role)`도 둔다.
-- CHECK는 `travel_plans`의 `start_date <= end_date`, `travel_mode IN ('CAR', 'PUBLIC_TRANSIT')`, `meal_travel_buffer_minutes BETWEEN 0 AND 60`; `travel_plan_shares`의 `expires_at > created_at`; `plan_places`의 `role IN ('ATTRACTION', 'HOTEL', 'RESTAURANT')` 및 `ATTRACTION`일 때만 `stay_minutes BETWEEN 30 AND 480`이고 10의 배수, 다른 역할이면 null; `travel_plan_days`의 `day_number BETWEEN 1 AND 7` 및 `activity_start_time < activity_end_time`; `travel_plan_items`의 `item_order >= 1`, `start_time < end_time`, `item_type IN ('VISIT', 'STAY', 'MEAL', 'MOVE')`와 아래 nullable 조합이다.
-- Item nullable 조합 CHECK는 `MOVE`에서 `plan_place_id IS NULL`, `estimated_minutes > 0` 및 10의 배수를 요구하고, `VISIT`·`STAY`에서 `plan_place_id IS NOT NULL`, `estimated_minutes IS NULL`, `MEAL`에서 `estimated_minutes IS NULL`을 요구한다. 역할과 Item 유형의 일치, MOVE 길이와 두 시각의 일치, MEAL 60분·시간 창, 날짜·순서 연속성, 일정 기간 1~7일, 하루 VISIT 5개 이하는 Service에서 검증한다.
+- CHECK는 `travel_plans`의 `start_date <= end_date`, `travel_mode IN ('CAR', 'PUBLIC_TRANSIT')`, `meal_travel_buffer_minutes BETWEEN 0 AND 60`; `travel_plan_shares`의 `expires_at > created_at`; `plan_places`의 `role IN ('ATTRACTION', 'HOTEL', 'RESTAURANT')` 및 `ATTRACTION`일 때만 `stay_minutes BETWEEN 30 AND 480`이고 10의 배수, 다른 역할이면 null; `travel_plan_days`의 `day_number BETWEEN 1 AND 7` 및 `activity_start_time < activity_end_time`; `travel_plan_items`의 `item_order >= 1`, `start_time < end_time`, V5의 item shape와 V6의 `item_type <> 'STAY'`를 함께 적용해 현재 유형을 `VISIT`, `MEAL`, `MOVE`로 제한한다.
+- Item nullable 조합 CHECK는 `MOVE`에서 `plan_place_id IS NULL`, `estimated_minutes > 0` 및 10의 배수를 요구하고, `VISIT`에서 `plan_place_id IS NOT NULL`, `estimated_minutes IS NULL`, `MEAL`에서 `estimated_minutes IS NULL`을 요구한다. 역할과 Item 유형의 일치, MOVE 길이와 두 시각의 일치, MEAL 60분·시간 창, 날짜·순서 연속성, 일정 기간 1~7일, 하루 VISIT 5개 이하는 Service에서 검증한다.
 - FK 이름은 `fk_travel_plans_user`, `fk_food_preferences_plan`, `fk_travel_plan_shares_plan`, `fk_plan_places_plan`, `fk_travel_plan_days_plan`, `fk_travel_plan_items_day_plan`, `fk_travel_plan_items_place_plan`으로 고정한다. Item의 FK용 인덱스는 각각 `ix_travel_plan_items_day_plan`, `ix_travel_plan_items_place_plan`이다.
-- UNIQUE 이름은 `uk_food_preferences_plan_name`, `uk_travel_plan_shares_token_hash`, `uk_travel_plan_days_plan_number`, `uk_travel_plan_days_plan_date`, `uk_travel_plan_days_id_plan`, `uk_plan_places_id_plan`, `uk_travel_plan_items_day_order`다. CHECK 이름은 `ck_travel_plans_dates`, `ck_travel_plans_mode`, `ck_travel_plans_meal_buffer`, `ck_travel_plan_shares_expiry`, `ck_plan_places_role`, `ck_plan_places_stay`, `ck_travel_plan_days_number`, `ck_travel_plan_days_times`, `ck_travel_plan_items_order`, `ck_travel_plan_items_times`, `ck_travel_plan_items_shape`다. PK 이름은 `pk_<table>`이며 일반 인덱스는 `ix_travel_plans_user_start_date`, `ix_plan_places_plan_role`이다. DB 제약 실패 시 저장 트랜잭션 전체를 rollback한다.
+- UNIQUE 이름은 `uk_food_preferences_plan_name`, `uk_travel_plan_shares_token_hash`, `uk_travel_plan_days_plan_number`, `uk_travel_plan_days_plan_date`, `uk_travel_plan_days_id_plan`, `uk_plan_places_id_plan`, `uk_travel_plan_items_day_order`다. CHECK 이름은 `ck_travel_plans_dates`, `ck_travel_plans_mode`, `ck_travel_plans_meal_buffer`, `ck_travel_plan_shares_expiry`, `ck_plan_places_role`, `ck_plan_places_stay`, `ck_travel_plan_days_number`, `ck_travel_plan_days_times`, `ck_travel_plan_items_order`, `ck_travel_plan_items_times`, `ck_travel_plan_items_shape`, V6의 `ck_travel_plan_items_no_stay`다. PK 이름은 `pk_<table>`이며 일반 인덱스는 `ix_travel_plans_user_start_date`, `ix_plan_places_plan_role`이다. DB 제약 실패 시 저장 트랜잭션 전체를 rollback한다.
 
-남은 구현 선택은 명시적 삭제를 수행할 Repository 메서드와 JPA 관계 방향이다. DB 제약이나 공개 API 계약을 바꾸지 않는 범위에서 T1-03이 결정한다.
+명시적 삭제를 수행할 Repository 메서드와 JPA 관계 방향은 T1-03 구현에서 확정했다.
 
 미확정 사항을 임시 컬럼이나 nullable 완화로 우회하지 않는다.

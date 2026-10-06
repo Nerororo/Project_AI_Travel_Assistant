@@ -56,7 +56,10 @@ public class TravelPlanReadService {
         List<TravelPlanCreateApiResponse.Day> savedDays = days.findByTravelPlanIdOrderByDayNumber(travelPlanId)
                 .stream().map(day -> day(day, savedPlaces)).toList();
         return new TravelPlanDetailResponse(plan.id(), plan.title(), region(plan), plan.travelMode(),
-                plan.startDate(), plan.endDate(), savedDays);
+                plan.startDate(), plan.endDate(),
+                savedPlaces.values().stream().filter(place -> place.role() == PlanPlace.Role.HOTEL)
+                        .findFirst().map(place -> new TravelPlanCreateApiResponse.Hotel(place.id(),
+                                place.displayName(), place.memo(), place.placeUrl())).orElse(null), savedDays);
     }
 
     private TravelPlanCreateApiResponse.Day day(TravelPlanDay day, Map<Long, PlanPlace> savedPlaces) {

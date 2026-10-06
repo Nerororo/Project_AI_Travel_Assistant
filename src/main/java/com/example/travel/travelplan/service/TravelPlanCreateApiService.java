@@ -149,7 +149,10 @@ public class TravelPlanCreateApiService {
         }
         return new TravelPlanCreateApiResponse(id, plan.title(),
                 new TravelPlanCreateApiResponse.Region(plan.regionId(), plan.regionDisplayName()),
-                plan.travelMode(), plan.startDate(), plan.endDate(), warnings, savedDays);
+                plan.travelMode(), plan.startDate(), plan.endDate(), warnings,
+                savedPlaces.values().stream().filter(place -> place.role() == PlanPlace.Role.HOTEL)
+                        .findFirst().map(place -> new TravelPlanCreateApiResponse.Hotel(place.id(),
+                                place.displayName(), place.memo(), place.placeUrl())).orElse(null), savedDays);
     }
 
     private static TravelPlanCreateApiResponse.Item itemResponse(TravelPlanItem item,

@@ -4,6 +4,7 @@ import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.travelplan.domain.PlanPlace;
 import com.example.travel.travelplan.domain.TravelPlan;
+import com.example.travel.travelplan.dto.TravelPlanDetailResponse;
 import com.example.travel.travelplan.dto.TravelPlanPatchRequest;
 import com.example.travel.travelplan.repository.FoodPreferenceRepository;
 import com.example.travel.travelplan.repository.PlanPlaceRepository;
@@ -26,20 +27,22 @@ public class TravelPlanMutationService {
     private final TravelPlanDayRepository days;
     private final PlanPlaceRepository places;
     private final FoodPreferenceRepository foods;
+    private final TravelPlanReadService reads;
 
     public TravelPlanMutationService(TravelPlanRepository plans, TravelPlanShareRepository shares,
             TravelPlanItemRepository items, TravelPlanDayRepository days,
-            PlanPlaceRepository places, FoodPreferenceRepository foods) {
+            PlanPlaceRepository places, FoodPreferenceRepository foods, TravelPlanReadService reads) {
         this.plans = plans;
         this.shares = shares;
         this.items = items;
         this.days = days;
         this.places = places;
         this.foods = foods;
+        this.reads = reads;
     }
 
     @Transactional
-    public void patch(long userId, long travelPlanId, TravelPlanPatchRequest request) {
+    public TravelPlanDetailResponse patch(long userId, long travelPlanId, TravelPlanPatchRequest request) {
         TravelPlan plan = owned(userId, travelPlanId);
         if (request == null) throw invalid();
         Map<Long, PlanPlace> savedPlaces = places.findByTravelPlanId(travelPlanId).stream()
@@ -54,6 +57,7 @@ public class TravelPlanMutationService {
             place.edit(edit.changeName() ? edit.displayName() : place.displayName(),
                     edit.changeMemo() ? edit.memo() : place.memo());
         }
+        return reads.detail(userId, travelPlanId);
     }
 
     @Transactional
@@ -74,7 +78,7 @@ public class TravelPlanMutationService {
     }
 
     private TravelPlan owned(long userId, long travelPlanId) {
-        return plans.findByIdAndUserId(travelPlanId, userId).orElseGet(() -> {
+        return plans.findOwnedForUpdate(travelPlanId, userId).orElseGet(() -> {
             throw new ApiException(plans.existsById(travelPlanId)
                     ? ErrorCode.ACCESS_DENIED : ErrorCode.TRAVEL_PLAN_NOT_FOUND);
         });
