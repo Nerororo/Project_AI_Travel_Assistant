@@ -36,6 +36,8 @@ import org.testcontainers.utility.DockerImageName;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.security.SecureRandom;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -57,6 +59,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,6 +92,7 @@ class TravelPlanReadIntegrationTest {
     @Autowired FoodPreferenceRepository foods;
     @Autowired TravelPlanShareRepository shares;
     @Autowired TravelPlanMutationService mutations;
+    @Autowired TravelPlanShareService shareService;
     @Autowired TransactionTemplate transactions;
 
     @Test
@@ -313,6 +318,117 @@ class TravelPlanReadIntegrationTest {
             deletion.get().get(5, TimeUnit.SECONDS);
             assertThat(plans.existsById(planId)).isFalse();
         }
+    }
+
+    @Test
+    void shareIssueRotateAndPublicReadUseStoredFieldsOnly() throws Exception {
+        long owner = user();
+        long other = user();
+        long planId = plan(owner, "Shared trip");
+        PlanPlace place = places.saveAndFlush(new PlanPlace(planId, "100",
+                "https://place.map.kakao.com/100", PlanPlace.Role.ATTRACTION, "My place", "Private note", 60));
+        TravelPlanDay day = days.saveAndFlush(new TravelPlanDay(planId, 1, DATE,
+                LocalTime.of(9, 0), LocalTime.of(18, 0)));
+        items.saveAndFlush(new TravelPlanItem(day.id(), planId, 1, TravelPlanItem.Type.VISIT,
+                place.id(), LocalTime.of(9, 0), LocalTime.of(10, 0), null));
+
+        mvc.perform(post("/api/travel-plans/{id}/shares", planId))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/travel-plans/{id}/shares", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/travel-plans/{id}/shares", Long.MAX_VALUE)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isNotFound());
+        String first = issue(owner, planId);
+        assertThat(first.length()).isEqualTo(43);
+        byte[] expectedHash = MessageDigest.getInstance("SHA-256")
+                .digest(first.getBytes(StandardCharsets.US_ASCII));
+        assertThat(shares.findById(planId)).get().satisfies(saved -> {
+            assertThat(saved.tokenHash()).hasSize(32);
+            assertThat(saved.tokenHash()).containsExactly(expectedHash);
+            assertThat(saved.expiresAt()).isAfter(saved.createdAt());
+        });
+        mvc.perform(get("/api/shared/travel-plans/{token}", first))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(jsonPath("$.title").value("Shared trip"))
+                .andExpect(jsonPath("$.days[0].items[0].displayName").value("My place"))
+                .andExpect(jsonPath("$.days[0].items[0].memo").value("Private note"))
+                .andExpect(jsonPath("$.days[0].items[0].placeUrl").value("https://place.map.kakao.com/100"))
+                .andExpect(jsonPath("$.userId").doesNotExist())
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.warnings").doesNotExist())
+                .andExpect(jsonPath("$.days[0].items[0].kakaoPlaceId").doesNotExist())
+                .andExpect(jsonPath("$.days[0].items[0].coordinate").doesNotExist());
+
+        String second = issue(owner, planId);
+        assertThat(second.equals(first)).isFalse();
+        missingShare(first);
+        mvc.perform(get("/api/shared/travel-plans/{token}", second))
+                .andExpect(status().isOk());
+        mvc.perform(delete("/api/travel-plans/{id}", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isNoContent());
+        missingShare(second);
+    }
+
+    @Test
+    void sharedReadRejectsMalformedTamperedAndExpiredTokens() throws Exception {
+        long owner = user();
+        long planId = plan(owner, "Expiry");
+        String token = issue(owner, planId);
+        missingShare(token.substring(1));
+        char replacement = token.charAt(0) == 'A' ? 'B' : 'A';
+        missingShare(replacement + token.substring(1));
+        shares.deleteById(planId);
+        shares.flush();
+        shares.saveAndFlush(new TravelPlanShare(planId, MessageDigest.getInstance("SHA-256")
+                .digest(token.getBytes(StandardCharsets.US_ASCII)),
+                Instant.now().minusSeconds(60), Instant.now().minusSeconds(1)));
+        missingShare(token);
+    }
+
+    @Test
+    void shareIssueWaitsForAggregateMutationLock() throws Exception {
+        long owner = user();
+        long planId = plan(owner, "Original");
+        CountDownLatch started = new CountDownLatch(1);
+        AtomicReference<Future<?>> issuance = new AtomicReference<>();
+        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+            transactions.execute(status -> {
+                mutations.patch(owner, planId, TravelPlanPatchRequest.from(Map.of("title", "Updated")));
+                issuance.set(executor.submit(() -> {
+                    started.countDown();
+                    return shareService.issue(owner, planId);
+                }));
+                await(started);
+                assertThatThrownBy(() -> issuance.get().get(300, TimeUnit.MILLISECONDS))
+                        .isInstanceOf(TimeoutException.class);
+                return null;
+            });
+            issuance.get().get(5, TimeUnit.SECONDS);
+            assertThat(shares.existsById(planId)).isTrue();
+        }
+    }
+
+    private String issue(long owner, long planId) throws Exception {
+        String response = mvc.perform(post("/api/travel-plans/{id}/shares", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.expiresAt").exists())
+                .andReturn().getResponse().getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(response, "$.shareToken");
+    }
+
+    private void missingShare(String token) throws Exception {
+        mvc.perform(get("/api/shared/travel-plans/{token}", token))
+                .andExpect(status().isNotFound())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(jsonPath("$.code").value("TRAVEL_PLAN_NOT_FOUND"));
     }
 
     private static TravelPlanPatchRequest edit(long placeId, String name, String memo) {

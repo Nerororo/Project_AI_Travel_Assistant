@@ -51,6 +51,18 @@ public class TravelPlanReadService {
             throw new ApiException(plans.existsById(travelPlanId)
                     ? ErrorCode.ACCESS_DENIED : ErrorCode.TRAVEL_PLAN_NOT_FOUND);
         });
+        return savedDetail(plan);
+    }
+
+    @Transactional(readOnly = true)
+    public TravelPlanDetailResponse sharedDetail(long travelPlanId) {
+        TravelPlan plan = plans.findById(travelPlanId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TRAVEL_PLAN_NOT_FOUND));
+        return savedDetail(plan);
+    }
+
+    private TravelPlanDetailResponse savedDetail(TravelPlan plan) {
+        long travelPlanId = plan.id();
         Map<Long, PlanPlace> savedPlaces = places.findByTravelPlanId(travelPlanId).stream()
                 .collect(Collectors.toMap(PlanPlace::id, place -> place));
         List<TravelPlanCreateApiResponse.Day> savedDays = days.findByTravelPlanIdOrderByDayNumber(travelPlanId)
