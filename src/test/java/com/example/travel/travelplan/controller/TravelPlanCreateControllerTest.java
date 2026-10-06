@@ -58,7 +58,7 @@ class TravelPlanCreateControllerTest {
         when(service.create(eq(7L), eq(KEY), any())).thenReturn(new TravelPlanCreateApiResponse(
                 42, "Trip", new TravelPlanCreateApiResponse.Region("KR-30", "대전광역시"),
                 TravelMode.CAR, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 1),
-                List.of("ESTIMATED_TRAVEL_TIMES_USED"), List.of()));
+                List.of("ESTIMATED_TRAVEL_TIMES_USED"), null, List.of()));
 
         mvc.perform(post("/api/travel-plans").header("Idempotency-Key", KEY)
                         .contentType(MediaType.APPLICATION_JSON).content(body()))

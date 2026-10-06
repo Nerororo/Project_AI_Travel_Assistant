@@ -7,6 +7,7 @@ import com.example.travel.route.algorithm.TravelTimePolicy;
 import com.example.travel.route.client.CarRouteClient;
 import com.example.travel.route.client.PublicTransitRouteClient;
 import com.example.travel.route.client.RouteClientException;
+import com.example.travel.route.client.RouteClientFailure;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
 import com.example.travel.user.dto.UsageDenialScope;
@@ -125,7 +126,12 @@ public class RouteService {
 						attempt.quotaDeniedScopes()
 				);
 			}
-			providerTravelTimes.add(toTravelTime(attempt.result()));
+			try {
+				providerTravelTimes.add(toTravelTime(attempt.result()));
+			} catch (ArithmeticException exception) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+				throw new RouteClientException(RouteClientFailure.INVALID_RESPONSE);
+			}
 			if (attempt.result() instanceof RouteResult.NotFound) {
 				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
 				return RouteTravelTimeResult.verified(providerTravelTimes);

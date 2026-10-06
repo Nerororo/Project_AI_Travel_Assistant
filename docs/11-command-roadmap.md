@@ -192,11 +192,13 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 | T1-01 | Meal 연결·User 삭제·공유 토큰 ADR | 미선택 MEAL null, 저장 전 선택 식당만 연결, 나머지 DB·API 계약 확정 |
 | T1-02 | TravelPlan Aggregate와 migration 설계 | TravelPlan·Day·Item·PlanPlace 관계와 제약 |
 | T1-03 | Entity·Repository·migration 구현 | UNIQUE·CHECK·FK와 빈 DB 적용 테스트 |
+| T1-03A | STAY Item 제거 보완 | 새 migration에서 STAY 허용을 제거하고 Entity·DB 계약·회귀 테스트를 정렬한다. 기존 STAY 행이 있으면 데이터를 임의 삭제하지 않고 적용을 중단한다 |
 | T1-04 | 외부 경로 반영 완료 계산 | 사용자 날짜·순서 보존, 인접 구간 예상 이동시간과 종료 시각 재검증 |
 | T1-05 | 계산 완료 결과 저장 Service | 외부 호출 후 짧은 트랜잭션, 전체 rollback |
 | T1-06 | `POST /api/travel-plans` 연결 | 서버 재계산·201·422·503·warning |
 | T1-06A | `ROUTE_NOT_FOUND` 실패 구간 응답 구현 | `date + moveOrder + travelMode` DTO·전역 예외 매핑, 위치 유형·반복 방문 공통 식별, 제공자 정보 비노출 테스트 |
 | T1-06B | 경로 없음 종료형 결과 연결 | 첫 경로 없음에서 짧게 끝난 검증 결과를 정확한 422 실패 구간으로 변환하고 저장 차단 검증 |
+| T1-06C | 0분 MOVE 완료 생성 회귀 검증 | 제공자 0분 성공에서 저장·생성·상세 응답은 MOVE 행을 생략하고 남은 Item 순서를 연속으로 반환하는지 통합 검증 |
 | T1-07 | 목록·상세 API와 소유권 | 저장 DTO만 조회, 외부 Client 미호출 |
 | T1-07A | 완료 일정 숙소 응답 보완 | 여러 날 일정의 저장된 숙소를 생성·상세 응답의 nullable `hotel`로 노출해 `planPlaceId`·사용자 표시 이름·메모·카카오 링크를 전달한다. STAY Item을 만들지 않고 당일치기는 null로 반환하며 API 계약·회귀 테스트를 갱신 |
 | T1-08 | 제한된 PATCH와 DELETE | 제목·사용자 이름·메모만 수정, Aggregate 삭제 |
@@ -254,4 +256,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-다음 백엔드 작업 순서는 `T1-07A` 숙소 응답 → `T1-08A` 동시 수정·삭제 보호 → `R2-09A` 경로 응답 시간 변환 실패의 예약 반환 → `T1-09` 공유 토큰과 읽기 전용 API다. 세 보완은 각각 별도 Task와 Change Envelope로 진행하며, 기존 `T1-01`~`T1-08` 및 `R2-09`의 자동 테스트 통과 기록이 보완 완료를 뜻하지는 않는다. 현재 시작 가능한 미진행 화면 작업은 `W1-03B`이며, `W1-04`는 T1 이후 진행한다. 구현·검증 범위와 남은 제한은 `docs/07-implementation-readiness.md`를 따른다.
+다음 백엔드 작업은 `T1-09` 공유 토큰과 읽기 전용 API다. 화면 작업은 `W1-03B`를 시작할 수 있으며 `W1-04`는 T1 이후 진행한다. 현재 구현·검증 상태와 남은 제한은 `docs/07-implementation-readiness.md`, 기존 V5 DB의 V6 적용 전 확인은 `docs/09-operations.md` 11절을 따른다.

@@ -61,6 +61,19 @@ class MenuAnalysisServiceTest {
 	}
 
 	@Test
+	void trimsMenuNameSearchQueryAndReasonInResponse() {
+		client.menuResult(new AiClient.MenuAnalysisResult(List.of(
+				new AiClient.MenuSuggestion(" 메뉴 A ", " 검색어 A ", " 이유 A ", null)
+		)));
+
+		var response = service.analyze(new MenuAnalysisRequest("region-a", "음식 요청", ATTRACTIONS));
+
+		assertThat(response.menus().getFirst().name()).isEqualTo("메뉴 A");
+		assertThat(response.menus().getFirst().searchQuery()).isEqualTo("검색어 A");
+		assertThat(response.menus().getFirst().reason()).isEqualTo("이유 A");
+	}
+
+	@Test
 	void rejectsEmptyAndMoreThanFiveMenus() {
 		assertInvalid(new AiClient.MenuAnalysisResult(List.of()));
 
@@ -75,10 +88,13 @@ class MenuAnalysisServiceTest {
 	void rejectsDuplicateMenusMissingFieldsAndUnknownAttractionTargets() {
 		assertInvalid(new AiClient.MenuAnalysisResult(List.of(
 				menu("메뉴 A", "검색어 A", null),
-				menu(" 메뉴 A ", "검색어 B", null)
+				menu(" 메뉴 a ", "검색어 B", null)
 		)));
 		assertInvalid(new AiClient.MenuAnalysisResult(List.of(
 				menu("메뉴 A", " ", null)
+		)));
+		assertInvalid(new AiClient.MenuAnalysisResult(List.of(
+				new AiClient.MenuSuggestion("메뉴 A", "검색어 A", " ", null)
 		)));
 		assertInvalid(new AiClient.MenuAnalysisResult(List.of(
 				menu("메뉴 A", "검색어 A", "unknown-place")

@@ -4,7 +4,6 @@ import com.example.travel.global.security.AuthenticatedUser;
 import com.example.travel.travelplan.dto.TravelPlanDetailResponse;
 import com.example.travel.travelplan.dto.TravelPlanPatchRequest;
 import com.example.travel.travelplan.service.TravelPlanMutationService;
-import com.example.travel.travelplan.service.TravelPlanReadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,18 +18,15 @@ import java.util.Map;
 @RequestMapping("/api/travel-plans")
 public class TravelPlanMutationController {
     private final TravelPlanMutationService mutations;
-    private final TravelPlanReadService reads;
 
-    public TravelPlanMutationController(TravelPlanMutationService mutations, TravelPlanReadService reads) {
+    public TravelPlanMutationController(TravelPlanMutationService mutations) {
         this.mutations = mutations;
-        this.reads = reads;
     }
 
     @PatchMapping("/{travelPlanId}")
     public TravelPlanDetailResponse patch(@AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable long travelPlanId, @RequestBody Map<String, Object> body) {
-        mutations.patch(user.userId(), travelPlanId, TravelPlanPatchRequest.from(body));
-        return reads.detail(user.userId(), travelPlanId);
+        return mutations.patch(user.userId(), travelPlanId, TravelPlanPatchRequest.from(body));
     }
 
     @DeleteMapping("/{travelPlanId}")

@@ -90,6 +90,7 @@ class TravelPlanCreateFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists(HttpHeaders.LOCATION))
                 .andExpect(jsonPath("$.warnings[0]").value("ESTIMATED_TRAVEL_TIMES_USED"))
+                .andExpect(jsonPath("$.hotel").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.days[0].items[?(@.type == 'VISIT')]").isNotEmpty())
                 .andExpect(jsonPath("$.coordinate").doesNotExist());
         mvc.perform(post("/api/travel-plans")
@@ -110,6 +111,7 @@ class TravelPlanCreateFlowIntegrationTest {
         var response = service.create(userId, requestId, request);
 
         assertThat(response.travelPlanId()).isPositive();
+        assertThat(response.hotel()).isNull();
         assertThat(response.warnings()).containsExactly("ESTIMATED_TRAVEL_TIMES_USED");
         assertThat(response.days()).singleElement().satisfies(day ->
                 assertThat(day.items()).extracting(item -> item.type()).contains("VISIT", "MOVE"));
@@ -175,8 +177,13 @@ class TravelPlanCreateFlowIntegrationTest {
         assertThat(response.travelMode()).isEqualTo(TravelMode.PUBLIC_TRANSIT);
         assertThat(response.days()).hasSize(2);
         assertThat(response.warnings()).containsExactly("ESTIMATED_TRAVEL_TIMES_USED");
-        assertThat(places.findByTravelPlanId(response.travelPlanId())).singleElement()
-                .satisfies(place -> assertThat(place.displayName()).isEqualTo("My hotel"));
+        var savedHotel = places.findByTravelPlanId(response.travelPlanId()).getFirst();
+        assertThat(response.hotel().planPlaceId()).isEqualTo(savedHotel.id());
+        assertThat(response.hotel().displayName()).isEqualTo("My hotel");
+        assertThat(response.hotel().memo()).isNull();
+        assertThat(response.hotel().placeUrl()).isEqualTo("https://place.map.kakao.com/900005");
+        assertThat(response.days()).flatExtracting(day -> day.items())
+                .noneMatch(item -> item.type().equals("STAY"));
     }
 
     private long user() {
