@@ -208,7 +208,7 @@
         }
       }
       if (positions.size !== built.value.places.length) return null;
-      return {request: {...built.value, places: built.value.places.map(place => ({...place, ...positions.get(place.clientPlaceId)}))}, slots};
+      return {request: {...built.value, places: built.value.places.map(place => ({...place, ...positions.get(place.clientPlaceId)}))}, slots, result: lastResult};
     }
     return {showStep, reset, showRouteNotFound, hasCurrentResult: () => Boolean(lastFingerprint && JSON.stringify(currentRequest().value) === lastFingerprint), confirmedEstimate};
   }

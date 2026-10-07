@@ -14,6 +14,7 @@
   <script src="js/menu-workspace.js" defer></script>
   <script src="js/estimate-workspace.js" defer></script>
   <script src="js/restaurant-workspace.js" defer></script>
+  <script src="js/review-workspace.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -290,6 +291,29 @@
             <div id="restaurant-selected" class="selected-places" aria-label="직접 선택한 음식점" hidden></div>
           </section>
 
+          <section class="review-workspace" id="review-workspace" aria-label="일차별 일정 검토" hidden>
+            <section class="review-picker" aria-labelledby="review-picker-title">
+              <header><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m-3 4h3"/></svg><div><p>날짜별 검토</p><h3 id="review-picker-title">확인할 날짜</h3></div></div><span>시간표와 지도가 함께 바뀝니다.</span></header>
+              <div id="review-days" class="review-days" role="group" aria-label="검토할 일차"></div>
+            </section>
+            <div class="review-layout">
+              <section class="review-schedule" aria-labelledby="review-day-title">
+                <header class="review-schedule-header"><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg><div><p>선택한 일정</p><h3 id="review-day-title">1일차 일정</h3></div></div><span>예상 시간표 · 저장 전</span></header>
+                <ol id="review-timeline" aria-label="선택한 날짜의 시간순 일정표"></ol>
+              </section>
+              <section class="review-map-card" aria-labelledby="review-map-title">
+                <header><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><div><p>방문 위치</p><h3 id="review-map-title">순서 지도</h3></div></div><span>위치 표시</span></header>
+                <div id="review-map" class="place-map" role="img" aria-label="선택한 날짜의 방문 순서 번호 지도"></div>
+                <div class="review-map-note"><p>방문 위치와 순서만 표시합니다. 실제 이동 경로는 아닙니다.</p><p id="review-map-status" role="status"></p></div>
+              </section>
+            </div>
+            <section class="review-finish" aria-labelledby="review-finish-title">
+              <header><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><div><p>마지막 확인</p><h3 id="review-finish-title">이 일정으로 여행을 완성할까요?</h3><span>완료 요청에서 전체 이동 경로와 저장 가능 여부를 다시 확인합니다.</span></div></div><button id="review-adjust" class="button button-ghost" type="button">일정 조정하기</button></header>
+              <form id="review-form" novalidate><label for="review-title">일정 제목</label><input id="review-title" type="text" maxlength="100" required><button id="review-submit" class="button button-primary" type="submit">전체 경로 확인하고 완료</button></form>
+              <p id="review-status" role="status" aria-live="polite" tabindex="-1"></p>
+            </section>
+          </section>
+
           <div class="state-preview" id="future-step-preview" aria-label="후속 UI 상태 골격 미리보기" hidden>
             <div class="state-toolbar">
               <span>STATE PREVIEW</span>
@@ -342,21 +366,13 @@
     <section class="page document-page" data-view="detail" aria-labelledby="detail-title" hidden>
       <header class="document-header">
         <a class="back-link" href="#/trips">← 내 여행</a>
-        <p class="eyebrow dark">TRIP DETAIL · STRUCTURE</p>
+        <p class="eyebrow dark">완료한 여행</p>
         <h1 id="detail-title">저장된 일정이 놓일 자리</h1>
-        <p>완료 화면은 지도 없이 저장 정보와 외부 링크만 표시합니다.</p>
+        <p id="detail-summary">완료 화면은 지도 없이 저장 정보와 외부 링크만 표시합니다.</p>
+        <p id="detail-warning" role="status"></p>
       </header>
-      <div class="document-grid">
-        <article class="itinerary-document">
-          <header><span>DAY 01</span><p>서버 응답 연결 전</p></header>
-          <ol>
-            <li><time>--:--</time><span><strong>사용자 장소 이름</strong><small>예상 이동시간과 메모 영역</small></span></li>
-            <li><time>--:--</time><span><strong>식사 또는 다음 장소</strong><small>저장된 순서만 표시</small></span></li>
-            <li><time>--:--</time><span><strong>하루의 마지막 장소</strong><small>지도·경로선 없음</small></span></li>
-          </ol>
-        </article>
-        <aside class="document-note"><p class="eyebrow dark">READ-ONLY CORE</p><h2>여행 문서의 원칙</h2><ul><li>저장된 시간표만 표시</li><li>지도와 외부 API 호출 없음</li><li>허용된 텍스트만 편집</li></ul><a class="text-link" href="#/shared">공유 화면 골격 보기 →</a></aside>
-      </div>
+      <div id="detail-days" class="document-grid"></div>
+      <div id="detail-hotel" class="document-note" hidden></div>
     </section>
 
     <section class="page shared-page" data-view="shared" aria-labelledby="shared-title" hidden>

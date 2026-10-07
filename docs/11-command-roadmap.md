@@ -256,4 +256,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-`T1-10`의 저장 금지·Aggregate 자동 점검과 `W1-03B`의 경로 없음 오류 표시 상태는 완료됐다. 다음 화면 작업은 실제 완료 생성 422 연결을 포함한 `W1-04`다. 다음 운영 작업은 `Q1-01`부터 순서대로 진행한다. 실제 구현·검증 상태와 남은 제한은 `docs/07-implementation-readiness.md`, 로컬 영속 V5 DB의 V6 적용 전 확인은 `docs/09-operations.md` 11절을 따른다.
+`T1-10`의 저장 금지·Aggregate 자동 점검, `W1-03B`의 경로 없음 오류 표시 상태와 `W1-04`의 일차별 검토·완료 생성 화면은 완료됐다. 다음 화면 작업은 기존 조회 DTO를 사용하는 고정 HTML 다운로드 `W1-04A`다. 다음 운영 작업은 `Q1-01`부터 순서대로 진행한다. 실제 구현·가짜 API 검증 상태와 남은 실제 제공자 확인은 `docs/07-implementation-readiness.md`, 로컬 영속 V5 DB의 V6 적용 전 확인은 `docs/09-operations.md` 11절을 따른다.

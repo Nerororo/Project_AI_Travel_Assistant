@@ -22,7 +22,7 @@
     ['메뉴', '여행 사이의 맛을 생각해요', '먹고 싶은 음식을 분석하거나 직접 메뉴를 추가하고 확정해 주세요.'],
     ['추정 일정', '하루 안에 들어오는지 살펴봐요', '실제 경로 검증 전 추정 일정과 조정 지점을 표시합니다.'],
     ['음식점', '식사 시간의 장소를 골라요', '식사 슬롯 앞뒤 장소와 후보를 목록·지도에 함께 표시합니다.'],
-    ['검토', '이제 실제 경로를 확인할 차례예요', '완료 생성의 영향과 경고를 확인하고 중복 제출을 막습니다.']
+    ['검토', '이제 실제 경로를 확인할 차례예요', '날짜별 시간표와 방문 순서를 살펴본 뒤 여행을 완성하세요.']
   ]);
 
   const VIEW_STATES = Object.freeze({
@@ -130,6 +130,7 @@
     let menuController;
     let estimateController;
     let restaurantController;
+    let reviewController;
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
       resetJourney();
       cancelForm();
@@ -190,6 +191,8 @@
       menuController?.reset();
       estimateController?.reset();
       restaurantController?.reset();
+      reviewController?.reset();
+      window.RoutyReviewWorkspace.clearCompleted(document);
       selectedRegion = null;
       currentStep = 0;
       furthestStep = 0;
@@ -398,7 +401,8 @@
       stepDescription.textContent = description;
       stepCount.textContent = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}`;
       previousStep.disabled = currentStep === 0;
-      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '첫 단계로 돌아가기 ↺'
+      nextStepButton.hidden = currentStep === STEPS.length - 1;
+      nextStepButton.textContent = currentStep === STEPS.length - 1 ? '완료 요청은 검토 화면에서 진행'
         : currentStep === 4 ? '다음: 추정 일정 →'
           : currentStep === 5 ? '다음: 음식점 선택 →'
             : currentStep === 6 ? '검토 화면 미리보기 →' : '다음 단계 →';
@@ -409,9 +413,10 @@
       menuController?.showStep(currentStep, selectedRegion?.regionId, placeController?.attractionContexts() || []);
       estimateController?.showStep(currentStep);
       restaurantController?.showStep(currentStep);
-      futureStepPreview.hidden = currentStep < 7;
-      document.querySelector('#step-badge').textContent = currentStep === 0 ? '지역 선택' : currentStep <= 3 ? '여행 장소 선택' : currentStep === 4 ? '메뉴 선택' : currentStep === 5 ? '추정 일정' : currentStep === 6 ? '음식점 선택' : '기능 준비 중';
-      document.querySelector('#step-action-note').textContent = currentStep <= 6 ? '선택한 내용은 이 작성 흐름에서만 유지됩니다.' : '후속 단계는 아직 연결 중입니다.';
+      reviewController?.showStep(currentStep);
+      futureStepPreview.hidden = true;
+      document.querySelector('#step-badge').textContent = currentStep === 0 ? '지역 선택' : currentStep <= 3 ? '여행 장소 선택' : currentStep === 4 ? '메뉴 선택' : currentStep === 5 ? '추정 일정' : currentStep === 6 ? '음식점 선택' : '완료 전 검토';
+      document.querySelector('#step-action-note').textContent = '선택한 내용은 이 작성 흐름에서만 유지됩니다.';
       const activeButton = stepList.querySelector('[aria-current="step"]');
       if (activeButton) stepList.scrollLeft = activeButton.offsetLeft - stepList.offsetLeft - (stepList.clientWidth - activeButton.offsetWidth) / 2;
       if (focusHeading) { stepTitle.scrollIntoView({block: 'start', behavior: 'instant'}); stepTitle.focus({preventScroll: true}); }
@@ -575,6 +580,14 @@
     restaurantController = window.RoutyRestaurantWorkspace.mount(document, window, client, () => ({
       confirmed: estimateController.confirmedEstimate(), menus: menuController.confirmedMenus()
     }));
+    reviewController = window.RoutyReviewWorkspace.mount(document, window, client, () => ({
+      confirmed: estimateController.confirmedEstimate(), selected: placeController.selected(),
+      restaurants: restaurantController.selected(), regionName: selectedRegion?.name
+    }), body => {
+      resetJourney();
+      window.RoutyReviewWorkspace.renderCompleted(document, body);
+      window.location.hash = '#/trip';
+    }, () => { currentStep = 5; renderStep(true); }, body => estimateController.showRouteNotFound(body));
     document.querySelector('#estimate-start-date').addEventListener('change', event => {
       renderRegionSummary();
     });
