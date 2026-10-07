@@ -291,7 +291,9 @@ Routy 자동차 요청은 인접 지점의 `origin`·`destination`만 사용하�
 - 자동차는 `summary=true`, `alternatives=false`로 최소 응답을 요청한다. 대중교통은 공식 응답이 steps와 path를 포함하므로 필요한 `status`와 선택된 `totalTime`만 요청 지역 변수에서 추출하고 응답 객체·좌표·안내·정류장·차량·landingURL을 캐시·세션·DB·로그에 남기지 않는다.
 - 공식 문서에는 제공자 timeout 값이 없다. 연결·전체 timeout은 실제 Client 구현 Task에서 사용자 경험과 재시도 1회를 포함한 서버 시간 예산으로 별도 확정하며 제공자 보장값으로 기록하지 않는다.
 
-감사 결론은 **계약 적합, 실제 Client 구현·검증 대기**다. 공식 endpoint·REST API 키 인증·WGS84 좌표·초 단위 시간·일일 쿼터는 Routy 방향과 맞으며, C1-05A에서 Local 도시 전체 공간 범위, 자동차 `result_code=1, 101~107`, 대중교통 후보·예상 이동시간·상태 매핑을 확정했다. `G1-06`의 기준 데이터·Loader와 `C1-05B`의 Local 요청 DTO·Fake 계약은 구현·검증을 완료했다. 실제 Kakao Local·Route HTTP Client, 제공자 응답 매핑과 공개 좌표 endpoint는 아직 구현하지 않았으며 각각 P1·R2의 해당 Task 전까지 운영 게이트를 통과하지 않는다.
+C1-05A 당시 감사 결론은 **계약 적합, 실제 Client 구현·검증 대기**였다. 공식 endpoint·REST API 키 인증·WGS84 좌표·초 단위 시간·일일 쿼터는 Routy 방향과 맞으며, C1-05A에서 Local 도시 전체 공간 범위, 자동차 `result_code=1, 101~107`, 대중교통 후보·예상 이동시간·상태 매핑을 확정했다. `G1-06`의 기준 데이터·Loader와 `C1-05B`의 Local 요청 DTO·Fake 계약은 당시 구현·검증을 완료했다. 이후 구현 상태와 남은 운영 검증은 `docs/07-implementation-readiness.md`를 따른다.
+
+카카오 DevTalk의 [카카오맵 대중교통 `totalTime` 단기 캐싱 불허 답변](https://devtalk.kakao.com/t/api-totaltime-caching/151653)을 확인했다. Routy는 자동차를 포함해 완료 생성 요청 사이의 경로 응답·이동시간을 캐시하거나 재사용하지 않는다. 작성 중 estimate는 경로 API를 호출하지 않으며, 각 완료 생성 요청에서 최종 후보의 모든 인접 구간을 검증한다. 정상 경로 없음으로 조정 후 다시 완료를 요청해도 이전 요청의 성공 구간 시간을 이어 쓰지 않는다.
 
 ## 11. DB와 배포 절차
 
@@ -313,7 +315,7 @@ F0-03에서는 아래 dependency만 DB 기반 목적으로 추가한다. 현재 
 Testcontainers는 테스트 전용이며 production runtime에 포함하지 않는다. MySQL 컨테이너 이미지는 운영 Compose와 같은 `mysql:8.4` 계열로 맞춘다.
 
 1. 새 versioned migration을 추가한다.
-2. 빈 DB와 기존 검증 DB에 migration을 적용한다.
+2. 빈 DB와 기존 검증 DB에 migration을 적용한다. 기존 V5 DB에 V6를 적용하기 전에는 `SELECT COUNT(*) FROM travel_plan_items WHERE item_type = 'STAY'`로 기존 행 수를 확인한다. 1건 이상이면 적용을 중단하고 데이터 처리 방안을 별도 결정하며 자동 삭제·변환하지 않는다.
 3. 관련 테스트와 `./gradlew test`를 통과시킨다.
 4. 백업·복구 방법과 이전 버전 호환성을 확인한다.
 5. 배포 시 migration을 적용하고 애플리케이션을 시작한다.
@@ -332,6 +334,7 @@ Testcontainers는 테스트 전용이며 production runtime에 포함하지 않�
 - [ ] 운영 비밀값이 코드·Git·이미지·로그 설정에 없는지 확인
 - [ ] 키의 API·origin·도메인 제한과 교체 절차 확인
 - [ ] migration을 빈 DB와 검증 DB에 적용
+- [ ] 기존 V5 DB에 V6를 적용하기 전 STAY Item 행 수를 확인하고, 1건 이상이면 적용을 중단
 - [ ] 자동 테스트 통과
 - [ ] CORS, JWT, DB 접근 범위 확인
 - [ ] 사용자별 한도와 API별 공식 무료 한도의 90% 차단 확인

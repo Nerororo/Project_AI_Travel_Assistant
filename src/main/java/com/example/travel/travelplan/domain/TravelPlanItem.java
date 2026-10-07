@@ -18,7 +18,7 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "travel_plan_items")
 public class TravelPlanItem {
-    public enum Type { VISIT, STAY, MEAL, MOVE }
+    public enum Type { VISIT, MEAL, MOVE }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

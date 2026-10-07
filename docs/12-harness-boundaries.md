@@ -138,6 +138,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | R2-07C | R2-07A~B 구현 결과, `docs/01` FR-08·FR-14, `docs/04` 7·11절, `docs/08` 6.7절, `docs/09` 5·7절 | `route/service/**`와 대응 route 테스트, 재시도 1회 확보를 위한 `user` 공개 Service 사용; 실제 metric·travelplan 연결은 금지 |
 | R2-07D | R2-07C 결과, `docs/01` FR-14, `docs/03` 8절, `docs/08` 6.7절, `docs/09` 4~5절 | `user` 공개 한도 결과 DTO·Service와 `route/service/**` 관측 전달 계약 및 대응 테스트; 실제 metric 등록은 Q1-04로 이관 |
 | R2-08 | R2-07A~D 구현 결과, `docs/08` 6.7절, `docs/10` 3·8·10·13절 | 발견한 문제의 책임 코드·문서; 새 문제 수정은 별도 Task와 Change Envelope로 분리 |
+| R2-09 | R2-08 결과, `docs/04` 완료 생성의 `ROUTE_NOT_FOUND`, `docs/08` 6.7절, `docs/09` 5·7절 | `route/service/**`와 대응 테스트의 첫 경로 없음 조기 종료·미호출 예약 반환 |
+| R2-09A | R2-09 결과, `docs/04` `INVALID_RESPONSE`·503 계약, `docs/08` 6.7절, `docs/09` 5·7절 | `route/service/**`와 대응 테스트의 시간 변환 실패·미호출 예약 반환; 다른 도메인 변경은 별도 Task |
 | S1-01~02 | `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | 새 정책 결정이 필요할 때 `docs/06` |
 | S1-03~04 | P1-07C 공개 경계 검증 Service·최소 DTO와 ADR-042, `docs/01` 여행 조건·FR-05~06·FR-09, `docs/04` 6절, `docs/08` 6.5~6.6절 | `travelplan` 계산·estimate Controller·DTO와 대응 테스트; place 내부 구현 변경은 별도 P1 Task |
 | S1-05 | `docs/01` 숙소·FR-03, `docs/04` 호텔 검색 endpoint, `docs/08` 6.4·6.6절 | place 공개 계약 변경 시 해당 Service·DTO |
@@ -146,9 +148,14 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | S1-07 | `docs/08` 6.6·6.10절, `docs/10` 9·12절 | 발견한 문제의 책임 문서 |
 | T1-01 | `docs/01` FR-10~13, `docs/03` 2·5·10·12·15절, `docs/04` 7~10절, `docs/07` 5절 | 새 결정을 기록할 `docs/06` |
 | T1-02~03 | T1-01 결정 기록, `docs/03` 2·4~14절, `docs/08` 6.8절 | 공개 DTO가 바뀔 때 `docs/04` 7~10절 |
+| T1-03A | `docs/03` 10·15절, `docs/06` ADR-034·044, `docs/08` 6.8절, `docs/10` 10절 | 신규 migration·`TravelPlanItem` 유형·대응 DB 통합 테스트; 적용된 V1~V5 수정과 기존 STAY 행 자동 삭제 금지 |
 | T1-04~06 | `docs/01` FR-07~10·FR-14, `docs/02` 7·10절, `docs/04` 7·11~12절, `docs/08` 6.7~6.8절 | 공개 Service·DTO 계약 변경 시 소유 도메인 기준 |
 | T1-06A | `T1-06` 구현 결과, `docs/04` 공통 오류·완료 생성 endpoint의 `ROUTE_NOT_FOUND` 계약, `docs/06` ADR-029, `docs/08` 4·6.7절, `docs/09` 5·7·10절 | `travelplan/**`의 오류 DTO·완료 생성 조정, 대응 테스트와 필요할 때만 `global/exception/**`; Route Client 결과 계약 변경이 필요하면 같은 Task에서 수정하지 않고 별도 C1/R2 Task 제안 |
+| T1-06B | T1-06A 결과, `docs/04` 완료 생성의 경로 없음 계약, `docs/08` 6.7절 | `travelplan/**`의 종료형 검증 결과 처리와 직접 대응 테스트; Route Service 변경은 별도 R2 Task |
+| T1-06C | `docs/04` 완료 생성·조회 응답, `docs/08` 4·6.7~6.8절, `docs/10` 10절 | 0분 MOVE의 생성·DB·상세 응답을 잇는 `travelplan` 통합 테스트; 운영 코드 변경은 별도 Task |
 | T1-07~09 | `docs/01` FR-11~12, `docs/03` 10·12절, `docs/04` 8·10절, `docs/08` 6.9절 | 공유·삭제 결정 변경 시 관련 ADR |
+| T1-07A | T1-07 결과, `docs/03` HOTEL 저장 계약, `docs/04` 생성·상세 응답, `docs/08` 6.9절 | `travelplan/**`의 nullable 숙소 응답과 대응 생성·조회 테스트; STAY Item 추가 금지 |
+| T1-08A | T1-08 결과, `docs/03` Aggregate 경계, `docs/04` PATCH·DELETE, `docs/08` 6.9절 | `travelplan/**`의 동일 일정 잠금·트랜잭션 응답과 동시성 테스트; T1-09 공유 발급은 이 잠금 규칙을 따름 |
 | T1-10 | `docs/08` 6.7~6.9·7절, `docs/10` 10~11·15절 | 발견한 문제의 책임 문서 |
 | W1-00 | `docs/01`의 목표 사용자 흐름, `docs/08` 8절, `docs/10` 14절, `Routy/AGENTS.md`, `Routy/INTEGRATION.md`의 현재 시안과 목표 흐름 | 정보 구조가 목표 계약과 충돌할 때 해당 책임 문서 변경 제안 |
 | W1-01A | W1-00 공통 골격, U1 인증 결과, `docs/04` 회원가입·로그인 API, `docs/08` 6.1절과 8절의 인증 만료 복구, `Routy/INTEGRATION.md`의 인증 흐름 | API 계약 오류 발견 시 문서 변경 제안 |

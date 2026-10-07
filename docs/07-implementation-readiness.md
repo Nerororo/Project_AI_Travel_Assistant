@@ -34,15 +34,15 @@
 | Web·Validation | dependency 존재 | webmvc·validation starter와 테스트 starter의 runtime·testRuntime classpath 확인 |
 | JPA·MySQL·Flyway | 기반 구현·검증 완료 | 승인 dependency와 profile 설정을 적용하고 MySQL 8.4에서 Flyway 실행 후 `ddl-auto: validate` 통과 |
 | Docker MySQL | 테스트 연결 검증 | Docker Engine과 Testcontainers MySQL 8.4 연결 성공, local Compose의 수동 연결·배포 검증은 남음 |
-| 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검 완료, 회원 탈퇴·TravelPlan 소유권은 후속 작업 |
-| 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했으며 완료 일정 snapshot은 후속 T1 책임 |
-| AI | A1 단계 구현·검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 지역 추천 브라우저 연결은 W1-01B, 메뉴 분석 브라우저 연결은 W1-02A에서 검증했다. |
+| 인증·보안 | U1 범위 구현·검증 완료 | 회원가입·JWT 로그인, 공개 API 경계, MySQL 호출 카운터와 requestId 실행 상태의 회귀 점검을 완료했다. TravelPlan 조회·수정·삭제 소유권은 T1-07~08에서 검증했으며 회원 탈퇴는 후속 작업이다. |
+| 지역 | G1 단계 구현·검증 완료 | 출처가 확인된 `regions.json` 246개와 최종 지역 161개의 공식 경계 기반 `searchBounds`, 시작 검증, 메모리 Catalog와 결정적 직접 검색 API 및 AI용 최종 선택 가능 지역 공개 계약을 전체 테스트로 검증했다. 완료 일정의 지역 이름 snapshot 저장·조회는 T1-05~07에서 검증했다. |
+| AI | A1 단계·A1-08 구현·자동 검증 완료 | DTO·Service·Fake와 prod·smoke 실제 Responses API Client에 인증된 지역·메뉴 HTTP API, 기능별 사용자 한도와 requestId 처리를 연결하고 AI 단계 전체 DoD와 한도 경계를 검증했다. 메뉴 출력의 앞뒤 공백 제거와 중복·공백 오류도 검증했다. 지역 추천 브라우저 연결은 W1-01B, 메뉴 분석 브라우저 연결은 W1-02A에서 검증했다. |
 | Place | P1 범위·P1-07B~D·S1-05·S1-06A 서버 범위 구현·검증 완료 | Kakao Local Client와 관광지·여행 경계·숙소·음식점 검색을 연결했다. 음식점 후보는 1·3·5km 또는 현재 지도 영역에서 찾고 주소 검증 뒤 `RESTAURANT` token을 발급한다. 숙소는 점수 없이 직접 선택한다. 관광지·경계·숙소 화면은 W1-02, 음식점 화면은 W1-03A에서 가짜 API로 검증했다. 완료 생성의 좌표 수명 검증은 T1 후속 작업이다. |
-| Route | R1·R2 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. |
+| Route | R1·R2·R2-09A 구현·검증 완료 | 순수 경로 알고리즘, 자동차·대중교통 Client, 최초 인접 구간과 재시도 직전 쿼터 확보, 미호출 예약 반환, 확보 실패 전체 fallback과 USER·SERVICE 단독·동시 차단 범위의 비식별 관측 전달을 구현했다. 실제 호출 수와 최종 차감량, 외부 호출 전 트랜잭션 종료, warning 비노출 계약을 R2-08에서 회귀 검증했다. R2-09에서 첫 경로 없음 뒤 호출 중단과 미호출 예약 반환을, R2-09A에서 큰 양수 이동시간 변환 실패의 조기 종료와 미호출 예약 반환을 검증했다. |
 | Recommendation | S1-06·S1-06A 서버 범위 구현·검증 완료 | 재계산된 식사 시각과 직전·직후 장소의 가용 시각으로 후보의 시간 적합성을 검사하고 Haversine 추가 이동거리와 결정적 동률 규칙으로 정렬한다. 음식점 검색 HTTP와 연결했으며 빈 후보와 제공자 장애를 구분한다. 지도·목록 연동과 사용자 직접 선택은 W1-03A의 가짜 API 브라우저 범위에서 검증했다. |
-| TravelPlan | S1-01~04·S1-06A 구현·검증 완료 | 공개 place 검증 Service가 요청 범위에서 token을 좌표로 바꾸고, estimate가 자동·사용자 배치와 Haversine 시간표·식사 예산·초과 거절을 응답한다. 음식점 검색 조정 Service는 확정된 날짜·순서를 다시 계산해 식사 슬롯과 직전·직후 기준 장소를 확인한 뒤 place·recommendation 공개 계약을 조합한다. DB와 실제 Route Client는 호출하지 않으며 create는 후속 작업이다. |
-| DB migration | User·호출 카운터·requestId schema 구현·검증 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약을 MySQL 8.4에 적용하고 Hibernate validate 통과 |
-| 자동 테스트 | S1-07A까지 456개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 기존 회귀와 음식점 반경 확대·주소·token·중복 requestId, 일정 재계산·식사 슬롯, HTTP 입력·인증·오류 경계를 함께 검증했다. 자동 배치의 시간 초과 거절과 입력 장소·체류 보존 사례를 포함하며 실패·오류·건너뜀은 0개다. |
+| TravelPlan | S1-01~04·S1-06A·T1-01~09·T1-03A·T1-06C·T1-07A·T1-08A 구현·자동 검증, T1-10 점검 완료 | estimate는 DB와 실제 Route Client 없이 시간표를 계산한다. 완료 생성은 확정한 날짜·순서를 다시 검증하고 인접 경로 예상시간·식사 슬롯·종료 시각을 재계산한 뒤 Aggregate와 requestId 성공 상태를 한 트랜잭션으로 저장한다. 계산 후보의 0분 MOVE는 저장·생성·상세 응답에서 생략하고 Item 순서를 다시 매긴다. STAY Item은 저장하지 않는다. 경로 없음 422는 종료형 결과에서 최종 후보의 `date + moveOrder + travelMode`만 세부 정보로 반환하며 저장을 시작하지 않는다. 목록·상세는 인증 사용자 소유 일정의 저장 DTO만 반환하고 생성·상세는 저장된 숙소를 nullable `hotel`로 제공한다. 완료 후 제목·장소 표시 이름·메모만 부분 수정하며 PATCH·DELETE는 같은 일정의 잠금을 공유하고 PATCH 응답을 수정 트랜잭션 안에서 구성한다. 삭제는 공유 토큰을 포함한 Aggregate 전체를 한 트랜잭션에서 제거한다. 공유 토큰은 Aggregate 잠금 아래 재발급하고 원문 문자열의 해시만 저장하며, 공개 조회는 저장된 일정의 읽기 전용 DTO를 반환한다. T1-10에서 완료 일정 금지 열·저장값·응답, V5→V6 승격과 rollback을 점검했다. 실제 제공자 smoke와 공유 화면은 후속 작업이다. |
+| DB migration | V1~V6 빈 DB·V5→V6 승격 검증 완료 | V1 `users`, V2 `api_usage_counters`, V3 `request_executions`, V4 호출 카운터 기능값 제약, V5 완료 일정 Aggregate, V6 STAY Item 금지를 Testcontainers MySQL 8.4의 빈 DB에 적용하고 Hibernate validate·DB 제약 테스트를 통과했다. 별도 Testcontainers MySQL에서 기존 V5 일정의 STAY 0건을 확인하고 V6를 적용해 데이터 보존과 STAY 금지를 검증했다. 로컬 영속 DB 적용과 백업·복구는 Q1-05에서 확인한다. |
+| 자동 테스트 | T1-10까지 510개 통과 | Docker/Testcontainers 기반 루트 `test.ps1`에서 완료 일정 저장 금지 열·값·응답, V5→V6 승격, rollback과 기존 회귀를 검증했다. 실패·오류·건너뜀은 0개다. |
 | 화면 | W1-00·W1-01A~C·W1-02·W1-02A·W1-03·W1-03A 범위 구현·가짜 API 브라우저 검증 완료 | 공통 app shell·6개 view·8단계 Workspace에 인증·지역·여행 조건·관광지·여행 경계·숙소 검색과 메모리 선택, 메뉴 분석·확정, 날짜별 활동 시간·관광지 직접 배치·추정 일정과 식사 슬롯별 음식점 목록·지도 선택을 연결했다. 카카오 지도 SDK는 브라우저용 키가 있을 때 지연 로드하고 키가 없으면 목록 선택을 유지한다. 완료 화면과 실제 OpenAI·카카오 지도·장소 smoke는 후속 검증이다. |
 
 ## 3. 문서·하네스 정렬 결과
@@ -55,7 +55,7 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 |---|---|---|
 | 인증·지역·AI·장소·경로 기반 | 해당 단계 구현·자동 검증 완료 | 실제 제공자와 배포 환경의 smoke 검증 |
 | 일정 추정·음식점 추천 | S1 서버 기능과 W1-03A까지 가짜 API 브라우저 흐름 검증 | 실제 카카오 지도 SDK·Local API smoke |
-| 완료 일정·공유 | T1-01 정책·T1-02 설계·T1-03 Entity와 V5 migration, T1-04 완료 계산, T1-05 Aggregate 저장 Service 완료 | T1-06부터 생성·조회·공유 API 구현과 검증 |
+| 완료 일정·공유 | T1-01~09 완료 생성·조회·제한 편집·삭제·공유 API 및 T1-10 저장·DB 점검과 T1-03A STAY 금지·T1-06C 0분 MOVE 회귀·T1-07A 숙소 응답·T1-08A 동시 수정·삭제 보호·R2-09A 경로 응답 보완의 자동 테스트 통과 | W1-04 완료 화면의 좌표 폐기, Q1-05 로컬 DB 승격·복구, Q1-06 실제 제공자 smoke |
 | 운영 배포 | 구현 전 | Q1 운영·보안·배포 완료 기준 검증 |
 
 ## 5. 구현 전 확정할 세부 계약
@@ -64,19 +64,15 @@ D0 문서·하네스 정렬과 K0-02A 정책 확인을 완료했다. 정책 확�
 
 ## 6. 문서 정렬 후 진행 가능한 범위
 
-작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. 다음 백엔드 작업은 `T1-06`이다.
+작업 순서와 선행 조건은 `docs/11-command-roadmap.md`를 따른다. T1-10 저장·DB 자동 점검을 완료했다. 다음 작업은 `docs/11-command-roadmap.md` 16절을 따른다.
 
-## 7. 현재 작업 상태
+## 7. 남은 검증
 
-`T1-01`에서 미선택 MEAL의 null 장소 참조, 선택 식당만 PlanPlace에 연결하는 규칙, User·일정 삭제와 공유 토큰 해시·만료 정책을 ADR-043 및 DB·API 문서에 확정했다. 문서 전용 작업으로 Entity·migration·완료·공유 API는 구현하지 않았다. 당시 루트 `test.ps1` 전체 456개와 `git diff --check`가 통과했다. 실제 경로 시간으로 재검증한 완료 저장과 공유 기능은 후속 T1 작업이다. 별도 보완 작업 `A1-08`은 미실행 상태다.
+최신 구현과 자동 테스트 근거는 2절, 다음 작업 순서는 `docs/11-command-roadmap.md` 16절을 따른다. 단계별 과거 테스트 수와 완료 작업 이력은 이 문서에 누적하지 않는다.
 
-`T1-02`에서 Item의 일정 소속을 검증하는 복합 FK, Aggregate의 UNIQUE·CHECK·삭제 경계와 V5 migration의 물리 계약을 `docs/03-database.md`에 확정했다. 루트 `test.ps1`과 `git diff --check`가 통과했으며 Gradle `test`는 `UP-TO-DATE`였다. Entity·migration·DB 적용 테스트는 `T1-03` 범위로 남아 있다.
-
-`T1-03`에서 여섯 Entity와 Repository, V5 migration을 구현했다. Testcontainers MySQL의 빈 DB에 Flyway V5를 적용하고 Hibernate schema validate, 저장·복원, UNIQUE·CHECK·복합 FK 제약을 검증했다. 완료 계산·저장 Service와 API는 후속 T1 작업이다.
-
-`T1-04`에서 확정한 관광지 날짜·순서를 유지하고 선택한 음식점만 최종 경유 지점에 넣어 Route 공개 Service의 구간별 예상 이동시간으로 시간표를 다시 계산하는 Service를 구현했다. 긴 체류 안의 선택 음식점 왕복과 식사 시간창·종료 시각을 검증하고 정상 경로 없음·제공자 계약 오류를 구분하며 warning은 요청 범위 결과에만 둔다. 집중 테스트 21개와 루트 `test.ps1` 전체 471개 테스트, `git diff --check`가 통과했다. DB 저장·HTTP 완료 생성 연결과 실제 제공자 smoke는 아직 수행하지 않았으며 각각 T1-05·T1-06과 별도 운영 검증 범위다.
-
-`T1-05`에서 좌표·토큰·warning을 받지 않는 저장 명령과 Aggregate 저장 Service를 구현했다. 계산을 마친 결과의 장소 snapshot, 날짜, 항목, 확정 메뉴만 짧은 DB 트랜잭션으로 저장하며 0분 MOVE는 DB의 양수 이동시간 제약에 맞춰 생략한다. Testcontainers MySQL로 전체 저장과 중간 Item 실패 시 TravelPlan·Day·Item·PlanPlace·FoodPreference rollback을 검증했고 루트 `test.ps1` 전체 테스트와 `git diff --check`가 통과했다. 완료 생성 HTTP 연결과 실제 제공자 smoke는 각각 T1-06과 별도 운영 검증 범위다.
+- 로컬 영속 V5 DB에 V6를 적용하기 전 STAY 행 수를 확인하고, 백업·복구와 배포 절차를 Q1-05에서 검증한다(`docs/09-operations.md` 11절).
+- 실제 카카오·OpenAI 제공자 연결과 좌표 수명, 브라우저 실제 연동 및 운영 배포는 각 단계에서 별도로 검증한다. 현재 자동 테스트 통과를 해당 검증의 완료로 간주하지 않는다.
+- `W1-03B` 이후 화면 작업이 남아 있다.
 
 ## 8. 완료 해석
 

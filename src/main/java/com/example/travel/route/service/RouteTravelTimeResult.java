@@ -7,8 +7,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Request-scoped route verification result. The fallback reason is for warning and observation
- * mapping and must not be persisted with an itinerary.
+ * Request-scoped route verification result. A verified result stops at its first NotFound, so
+ * its ordered times may be shorter than the requested segments. Fallback results cover every
+ * segment. The fallback reason is for warning and observation mapping and must not be persisted.
  */
 public record RouteTravelTimeResult(
 		List<RouteSegmentTravelTime> segmentTravelTimes,

@@ -161,7 +161,7 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 
 ### GET /api/regions?query=강릉
 
-정적 regions.json에서 서울특별시·광역시·세종특별자치시, 도·특별자치도와 그 아래 시·군, 특별시·광역시 아래 검색 필터용 구·군을 검색한다. 서울특별시·광역시·세종특별자치시는 자체를 최종 선택할 수 있고 도·특별자치도는 그 아래 시·군 하나만 최종 선택한다. 특별시·광역시 아래 구·군은 장소 검색 필터로만 반환하며 최종 일정의 regionId로 사용할 수 없다. 읍·면·동과 해외 지역은 반환하지 않는다.
+정적 regions.json에서 서울특별시·광역시·세종특별자치시·광주 여행 지역, 도·특별자치도 아래 시·군과 장소 검색 필터용 구·군을 검색한다. 최종 여행 지역은 기준 데이터의 `selectable=true`인 항목만 허용한다. 전남광주통합특별시 상위 항목은 선택할 수 없고, 종전 광주광역시의 다섯 구를 묶은 `광주` 여행 지역과 종전 전라남도 영역의 `전남` 아래 시·군은 선택할 수 있다. `placeSearchFilterable=true`인 구·군은 최종 일정의 regionId로 사용할 수 없다. 읍·면·동과 해외 지역은 반환하지 않는다.
 
 ~~~json
 {
@@ -199,7 +199,7 @@ access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 end
 }
 ~~~
 
-`parentRegionId`, `selectable`, `placeSearchFilterable`로 최종 여행 지역과 장소 검색 필터를 구분한다. 최상위 지역의 parentRegionId는 null이다. `placeSearchFilterable=true`인 항목은 특별시·광역시 아래 구·군이며 최종 지역으로 선택할 수 없다. 대표 좌표와 데이터 출처는 내부 검색 범위 계산에 사용하며 공개 Response의 필수 필드로 노출하지 않는다.
+`parentRegionId`, `selectable`, `placeSearchFilterable`로 최종 여행 지역과 장소 검색 필터를 구분한다. 최상위 지역의 parentRegionId는 null이다. `placeSearchFilterable=true`인 항목은 특별시·광역시와 광주 여행 지역 아래 구·군이며 최종 지역으로 선택할 수 없다. 대표 좌표와 데이터 출처는 내부 검색 범위 계산에 사용하며 공개 Response의 필수 필드로 노출하지 않는다.
 
 `regionId`는 Routy가 소유하는 불투명하고 안정적인 식별자다. 클라이언트는 `KR-` 접두사, 숫자 길이 또는 문자열 구조에서 지역의 계층·유형·외부 행정코드를 추론하지 않고 응답의 `parentRegionId`, `type`, `selectable`, `placeSearchFilterable`을 사용한다.
 
@@ -264,6 +264,8 @@ AI 응답에 허용 목록 밖의 ID·중복이 있거나 AI 응답 JSON을 해�
 
 AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~5개, 카카오 검색어, 짧은 이유와 선택적인 대상 관광지를 구조화한다. 식당 선택·평가와 동선 순위는 결정하지 않는다. 사용자가 결과를 수정·삭제·확정하며 두 번 실패하면 화면은 직접 메뉴 입력을 제공한다. AI 요청·응답 원문, 이유와 대상 연결은 저장하지 않는다.
 
+서버는 AI가 만든 `name`, `searchQuery`, `reason`의 앞뒤 공백을 `trim()`으로 제거해 Response에 반환한다. null이거나 공백 제거 후 비어 있는 값은 `AI_RESPONSE_INVALID`이며, 메뉴 이름의 중복은 같은 공백 제거 뒤 대소문자를 구분하지 않고 검사한다. 잘못된 결과의 재시도는 위의 최대 1회 규칙을 따른다. `targetClientPlaceId`는 보정하지 않고 요청의 관광지 ID와 정확히 일치해야 한다.
+
 ---
 
 ## 5. 카카오 장소 검색 API
@@ -285,8 +287,8 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 
 - 이 endpoint의 placeRole은 ATTRACTION만 허용한다. HOTEL은 `/api/places/hotels/search`, RESTAURANT는 `/api/places/restaurants/search`의 검증된 제작 흐름에서만 검색한다.
 - size는 1~15다.
-- regionId는 최종 선택 가능한 서울특별시·광역시·세종특별자치시 또는 도·특별자치도 아래 시·군 하나다.
-- districtFilterId는 ATTRACTION 검색에서만 사용하는 선택 필드다. 특별시·광역시 아래 `placeSearchFilterable=true`인 구·군 하나만 허용하고 상위 지역이 regionId와 일치해야 한다.
+- regionId는 서버 기준 데이터에서 `selectable=true`인 최종 여행 지역 하나다. 광주 여행 지역과 전남 아래 시·군을 포함하고 전남광주통합특별시 상위 항목은 제외한다.
+- districtFilterId는 ATTRACTION 검색에서만 사용하는 선택 필드다. 특별시·광역시·광주 여행 지역 아래 `placeSearchFilterable=true`인 구·군 하나만 허용하고 상위 지역이 regionId와 일치해야 한다.
 - 도·특별자치도 아래 시·군과 세종특별자치시는 districtFilterId를 받을 수 없다. 선택 불가능한 항목, 다른 상위 지역의 구·군과 읍·면·동은 400 `VALIDATION_FAILED`다.
 - 최초 검색 중심은 regionId의 공공데이터 대표 좌표다.
 - 중심 이동 재검색에서만 center를 받을 수 있으며 이때 역할별 허용 radiusMeters가 필수다.
@@ -562,13 +564,15 @@ Request는 estimate 입력에 다음 필드를 추가한다.
 
 기술 장애는 1회 재시도 후 거리 기반 추정시간으로 대체할 수 있으며 성공 Response의 warnings에 표시한다. 정상적인 경로 없음은 대체하지 않고 422 ROUTE_NOT_FOUND다. 완료 생성 전에 최초 인접 구간의 실제 제공자 요청 수를 계산해 사용자와 서비스 잔여 한도를 원자적으로 확보한다. 기술 장애 재시도는 두 번째 외부 호출 직전에 1회분을 별도로 확보하며, 이 추가 확보에 실패하면 재시도를 호출하지 않고 일부 성공 결과를 폐기한 뒤 전체 구간을 Haversine 기반 예상시간으로 계산해 warning을 반환한다. 최초 일괄 확보에 실패해도 외부 경로 API를 호출하지 않고 같은 전체 fallback을 사용한다. 생성 Response warning은 사용자·서비스 중 어느 한도가 부족했는지 노출하지 않는다.
 
+자동차·대중교통 응답의 양수 이동시간이 10분 단위 정수로 변환할 수 없을 만큼 크면 `INVALID_RESPONSE`로 처리한다. 재시도·fallback·뒤 구간 호출 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`을 반환하고 최초 선확보분 중 미호출 몫을 반환한다. 원본 이동시간은 오류 응답과 로그에 포함하지 않는다.
+
 카카오모빌리티 자동차 길찾기의 HTTP 200 응답에서 `result_code=1`인 경우는 선택한 자동차 이동수단으로 제공자가 유효한 경로를 반환하지 못한 정상 결과로 해석한다. 물리적으로 길이 없거나 도보·선박만 가능하다고 원인을 단정하지 않으며 `RouteResult.NotFound`로 변환한다. 재시도·Haversine fallback·자동 장소 삭제·자동 이동수단 변경 없이 일정 전체를 저장하지 않고 422 `ROUTE_NOT_FOUND`를 반환한다. 브라우저는 작성 상태를 유지하고 사용자가 순서·장소 또는 이동수단을 변경한 뒤 전체 경로 검증을 다시 요청한다. 이동수단 변경은 기존 요청 안에서 혼합하거나 서버가 자동 수행하지 않는다.
 
 Routy의 자동차 Client는 인접한 두 지점을 `origin`과 `destination`으로만 보내고 카카오 `waypoints` 파라미터를 사용하지 않는다. 따라서 경유지 주변 도로 탐색 실패인 `result_code=101`과 경유지 주변 교통 장애인 `result_code=107`은 정상적인 Routy 요청에서 예상할 수 없는 응답이다. 두 코드는 `RouteClientFailure.INVALID_RESPONSE`로 변환하고 재시도·Haversine fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`을 반환하며 일정을 저장하지 않는다. 이를 사용자의 장소·순서 문제인 `ROUTE_NOT_FOUND`로 바꾸지 않는다. 제공자 `result_message`, 경유지 번호, 좌표와 요청 payload는 오류 응답과 로그에 남기지 않으며, 원문 없는 provider·result code metric만 허용한다. 향후 `waypoints`를 도입하려면 별도 Task와 공식 계약 재검토가 필요하다.
 
 시작 지점 주변 도로를 탐색할 수 없는 `result_code=102`와 도착 지점 주변 도로를 탐색할 수 없는 `103`은 유효한 인접 구간 요청에서 발생할 수 있는 정상적인 경로 없음으로 보고 `RouteResult.NotFound`로 변환한다. 요청 형식 오류로 취급하지 않으며 `result_code=1`과 동일하게 재시도·Haversine fallback 없이 422 `ROUTE_NOT_FOUND`로 저장을 차단한다. 제공자가 주변 자동차 도로에 연결하지 못했다는 결과 이상으로 물리적 도로 부재, 도보·선박 필요 또는 좌표 자체의 오류를 단정하지 않는다.
 
-출발지와 도착지가 5m 이내여서 경로를 탐색하지 않는 `result_code=104`는 실패가 아니라 이동 경로가 필요 없는 성공인 `RouteResult.Found(0)`으로 변환한다. 재시도·fallback·422·503 없이 생성을 계속하며 해당 `MOVE.estimatedMinutes`는 0이다. 0분에는 10분 단위 올림이나 고정 이동 buffer를 적용하지 않는다. 서버가 Haversine 거리로 카카오의 내부 5m 판정을 미리 복제해 호출을 생략하지 않고, 실제 제공자 응답이 104일 때만 이 규칙을 적용한다.
+출발지와 도착지가 5m 이내여서 경로를 탐색하지 않는 `result_code=104`는 실패가 아니라 이동 경로가 필요 없는 성공인 `RouteResult.Found(0)`으로 변환한다. 재시도·fallback·422·503 없이 생성을 계속하며 계산 후보의 해당 `MOVE.estimatedMinutes`는 0이다. 0분에는 10분 단위 올림이나 고정 이동 buffer를 적용하지 않는다. 저장 시 0분 MOVE는 Item 행과 생성·조회 응답에서 생략하고 남은 Item의 `order`를 연속으로 다시 매긴다. 서버가 Haversine 거리로 카카오의 내부 5m 판정을 미리 복제해 호출을 생략하지 않고, 실제 제공자 응답이 104일 때만 이 규칙을 적용한다.
 
 시작 지점 주변 도로에 교통 장애가 있는 `result_code=105`와 도착 지점 주변 도로에 교통 장애가 있는 `106`은 현재 선택한 자동차 구간의 정상적인 경로 없음인 `RouteResult.NotFound`로 변환한다. 제공자 자체 장애인 503으로 취급하지 않고 `result_code=1·102·103`과 동일하게 재시도·Haversine fallback 없이 422 `ROUTE_NOT_FOUND`로 저장을 차단한다. 오류 응답은 사고·통제 등 변할 수 있는 구체적 원인을 노출하지 않고 사용자가 장소·순서·이동수단을 조정하거나 나중에 전체 검증을 다시 요청하도록 한다.
 
@@ -576,7 +580,7 @@ Routy의 자동차 Client는 인접한 두 지점을 `origin`과 `destination`�
 
 대중교통 요청에는 여행 날짜와 출발 시각을 전달할 수 없으므로 선택한 `totalTime`은 API 조회 시 제공자가 반환한 일정 계획용 예상 이동시간이다. 미래 여행일의 운행 여부·배차·막차·지연과 실제 소요시간을 검증하거나 보장하지 않는다. 제작·완료·공유 응답과 화면은 모두 `예상 이동시간`으로 표시하며 `실제 이동시간`, `확정 시간` 또는 미래 시간표 검증 완료로 표현하지 않는다. 완료·공유 조회 시 외부 API를 다시 호출하거나 여행 당일 자동 재계산하지 않는다.
 
-대중교통의 `STARTNODES_NULL`, `ENDNODES_NULL`, `NO_RESULTS`는 유효한 인접 구간의 정상적인 경로 없음으로 `RouteResult.NotFound`로 변환한다. 재시도·Haversine fallback 없이 422 `ROUTE_NOT_FOUND`로 저장을 차단하고, `date + moveOrder + travelMode`만 반환한다. `EQUAL_POINTS`는 이동이 필요 없는 `RouteResult.Found(0)`으로 변환하며 10분 올림·고정 이동 buffer 없이 생성한다. `INVALID_REQUEST`는 사용자가 좌표를 직접 전달하지 않고 서버가 선택 token에서 요청을 구성하는 계약상 `RouteClientFailure.INVALID_REQUEST`로 변환한다. 문서에 없는 status, status 누락, `OK`인데 `routes`가 없거나 첫 후보가 손상된 응답은 `RouteClientFailure.INVALID_RESPONSE`로 변환한다. 두 failure는 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`로 저장을 차단하며, 카카오 원문·좌표·payload는 오류 응답과 로그에 포함하지 않는다.
+대중교통의 `STARTNODES_NULL`, `ENDNODES_NULL`, `NO_RESULTS`는 유효한 인접 구간의 정상적인 경로 없음으로 `RouteResult.NotFound`로 변환한다. 재시도·Haversine fallback 없이 422 `ROUTE_NOT_FOUND`로 저장을 차단하고, `date + moveOrder + travelMode`만 반환한다. `EQUAL_POINTS`는 이동이 필요 없는 `RouteResult.Found(0)`으로 변환하며 10분 올림·고정 이동 buffer 없이 계산하고, 0분 MOVE는 저장·응답에서 생략한다. `INVALID_REQUEST`는 사용자가 좌표를 직접 전달하지 않고 서버가 선택 token에서 요청을 구성하는 계약상 `RouteClientFailure.INVALID_REQUEST`로 변환한다. 문서에 없는 status, status 누락, `OK`인데 `routes`가 없거나 첫 후보가 손상된 응답은 `RouteClientFailure.INVALID_RESPONSE`로 변환한다. 두 failure는 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`로 저장을 차단하며, 카카오 원문·좌표·payload는 오류 응답과 로그에 포함하지 않는다.
 
 `ROUTE_NOT_FOUND`는 장소 식별자가 아니라 실패한 `MOVE` 항목의 날짜와 순서로 구간을 식별한다.
 
@@ -623,6 +627,12 @@ Routy의 자동차 Client는 인접한 두 지점을 `origin`과 `destination`�
   "startDate": "2026-10-01",
   "endDate": "2026-10-03",
   "warnings": [],
+  "hotel": {
+    "planPlaceId": 21,
+    "displayName": "숙소",
+    "memo": null,
+    "placeUrl": "https://place.map.kakao.com/..."
+  },
   "days": [
     {
       "day": 1,
@@ -663,6 +673,7 @@ Routy의 자동차 Client는 인접한 두 지점을 `origin`과 `destination`�
 ~~~
 
 Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문을 포함하지 않는다. 완료 화면은 이 저장 응답만으로 표시할 수 있어야 한다.
+`hotel`은 1박 이상 일정에서 저장된 HOTEL PlanPlace의 ID·사용자 표시 이름·메모·카카오 링크를 반환하며, 당일치기에는 null이다. 숙소를 위한 STAY Item은 만들지 않는다.
 
 ---
 
@@ -670,11 +681,12 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 ### GET /api/travel-plans
 
-현재 사용자의 일정 목록을 반환한다. 기본 정렬은 createdAt 내림차순이다. paging 방식은 인증 구현 전에 확정한다.
+현재 사용자의 일정 목록을 반환한다. 현재 구현은 paging 없이 전체 목록을 `createdAt DESC, id DESC`로 정렬한다. 목표 paging 계약은 아직 확정되지 않았으며 목록 화면 연결 전에 별도 작업으로 결정한다.
 
 ### GET /api/travel-plans/{travelPlanId}
 
 저장된 완료 일정을 반환한다. 생성 Response와 같은 일정 구조를 사용한다.
+`hotel`도 저장된 값을 반환하며 당일치기에는 null이다. 상세 응답에는 생성 시의 `warnings`가 없다.
 
 - 카카오 장소·경로 API를 호출하지 않는다.
 - 좌표나 지도를 반환하지 않는다.
@@ -705,6 +717,7 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 - 외부 API나 경로 계산을 실행하지 않는다.
 - 일부 필드만 보내는 부분 수정이다.
 - 모든 검증 후 하나의 트랜잭션으로 적용한다.
+- 성공 응답은 수정 트랜잭션 안에서 구성한 상세 일정이다. 같은 일정의 PATCH·DELETE는 TravelPlan 잠금으로 직렬화한다.
 
 ### DELETE /api/travel-plans/{travelPlanId}
 

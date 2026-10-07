@@ -128,6 +128,36 @@ class RouteServiceTest {
 		assertThat(result.fallbackApplied()).isFalse();
 	}
 
+	@ParameterizedTest
+	@CsvSource({
+			"CAR, 9223372036854775807",
+			"PUBLIC_TRANSIT, 128849018401"
+	})
+	void oversizedProviderDurationStopsAndReleasesUnusedInitialQuota(
+			TravelMode mode, long durationSeconds) {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		RouteSegment third = segment(2.0, 2.0, 3.0, 3.0);
+		AtomicLong released = new AtomicLong();
+		AtomicInteger retryReservations = new AtomicInteger();
+		if (mode == TravelMode.CAR) carClient.willReturn(RouteResult.found(durationSeconds));
+		else publicTransitClient.willReturn(RouteResult.found(durationSeconds));
+
+		assertThatThrownBy(() -> service.findEstimatedTravelTimes(mode,
+				List.of(first, second, third), () -> {
+					retryReservations.incrementAndGet();
+					return UsageReservationResult.success();
+				}, released::addAndGet))
+				.isInstanceOfSatisfying(RouteClientException.class,
+					exception -> assertThat(exception.failure())
+							.isEqualTo(RouteClientFailure.INVALID_RESPONSE));
+		assertThat(released).hasValue(2L);
+		assertThat(retryReservations).hasValue(0);
+		assertThat(carClient.receivedSegments()).hasSize(mode == TravelMode.CAR ? 1 : 0);
+		assertThat(publicTransitClient.receivedSegments())
+				.hasSize(mode == TravelMode.PUBLIC_TRANSIT ? 1 : 0);
+	}
+
 	@Test
 	void usesOnlyPublicTransitClientAndPreservesNormalRouteAbsence() {
 		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
@@ -220,6 +250,32 @@ class RouteServiceTest {
 		assertThat(result.segmentTravelTimes()).containsExactly(RouteSegmentTravelTime.notFound());
 		assertThat(retryReservations).hasValue(0);
 		assertThat(carClient.callCount()).isEqualTo(1);
+	}
+
+	@Test
+	void earlyRouteAbsenceStopsBeforeLaterTechnicalFailureAndReleasesUnusedQuota() {
+		RouteSegment first = segment(0.0, 0.0, 1.0, 1.0);
+		RouteSegment second = segment(1.0, 1.0, 2.0, 2.0);
+		RouteSegment third = segment(2.0, 2.0, 3.0, 3.0);
+		AtomicLong released = new AtomicLong();
+		AtomicInteger retryReservations = new AtomicInteger();
+		carClient.willReturnThenFail(RouteResult.notFound(), RouteClientFailure.TIMEOUT);
+
+		RouteTravelTimeResult result = service.findEstimatedTravelTimes(
+				TravelMode.CAR,
+				List.of(first, second, third),
+				() -> {
+					retryReservations.incrementAndGet();
+					return UsageReservationResult.success();
+				},
+				released::addAndGet
+		);
+
+		assertThat(result.segmentTravelTimes()).containsExactly(RouteSegmentTravelTime.notFound());
+		assertThat(result.fallbackApplied()).isFalse();
+		assertThat(carClient.receivedSegments()).containsExactly(first);
+		assertThat(retryReservations).hasValue(0);
+		assertThat(released).hasValue(2L);
 	}
 
 	@ParameterizedTest

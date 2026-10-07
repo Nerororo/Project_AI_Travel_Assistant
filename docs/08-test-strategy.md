@@ -71,7 +71,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 자동차 `result_code=102·103` fixture는 모두 `RouteResult.NotFound`로 변환하고 `result_code=1`과 같은 422 흐름을 적용하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장·자동 장소 삭제·자동 이동수단 변경은 모두 0회여야 하며, 실패 구간은 `date + moveOrder + travelMode`만으로 식별해야 한다.
 
-자동차 `result_code=104` fixture는 `RouteResult.Found(0)`으로 변환하고 일정 생성을 차단하지 않는지 검증한다. 외부 호출은 1회이며 재시도·fallback은 0회, `MOVE.estimatedMinutes`는 0이고 10분 올림·고정 buffer가 추가되지 않아야 한다. Haversine 거리가 5m 이하라는 이유만으로 실제 Client 호출을 생략하는 테스트나 구현을 두지 않는다.
+자동차 `result_code=104` fixture는 `RouteResult.Found(0)`으로 변환하고 일정 생성을 차단하지 않는지 검증한다. 외부 호출은 1회이며 재시도·fallback은 0회, 계산 후보의 `MOVE.estimatedMinutes`는 0이고 10분 올림·고정 buffer가 추가되지 않아야 한다. 완료 생성 통합 테스트는 0분 MOVE가 DB와 생성·상세 응답에서 생략되고 남은 Item의 순서가 연속인지 검증한다. Haversine 거리가 5m 이하라는 이유만으로 실제 Client 호출을 생략하는 테스트나 구현을 두지 않는다.
 
 자동차 `result_code=105·106` fixture는 모두 `RouteResult.NotFound`로 변환하고 422 `ROUTE_NOT_FOUND`로 저장을 차단하는지 검증한다. 외부 호출 1회, 재시도·Haversine fallback·Aggregate 저장은 0회여야 한다. 503 제공자 장애로 변환하거나 제공자 원문의 사고·통제 정보와 좌표를 오류 응답·로그에 노출해서는 안 된다.
 
@@ -79,7 +79,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 대중교통 제작·완료·공유 UI 테스트는 모든 이동시간을 `예상 이동시간`으로 표시하고 `실제 이동시간`, `확정 시간`, 미래 시간표·운행 검증 완료처럼 표현하지 않는지 확인한다. 완료·공유 조회와 여행 당일에 외부 경로 API를 다시 호출하거나 자동 재계산하지 않는지도 검증한다. `routeVerified`는 외부 제공자 조회 수행 여부만 뜻하고 미래 여행일의 시간표·실제 소요시간 보장으로 해석하지 않는다.
 
-대중교통 status fixture는 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 각각 `RouteResult.NotFound`와 422 `ROUTE_NOT_FOUND`로 변환하고, 재시도·fallback·Aggregate 저장이 모두 0회인지 검증한다. `EQUAL_POINTS`는 `RouteResult.Found(0)`과 0분 `MOVE` 성공으로 변환하며 10분 올림·고정 buffer가 없어야 한다. `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`, 알 수 없는·누락된 status와 빈 routes·손상된 첫 후보를 포함한 `OK` 응답은 `RouteClientFailure.INVALID_RESPONSE`으로 변환하고, 모두 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`과 저장 0회인지 검증한다. 제공자 원문·좌표·payload는 오류 응답·로그·fixture에 포함하지 않는다.
+대중교통 status fixture는 `STARTNODES_NULL`·`ENDNODES_NULL`·`NO_RESULTS`를 각각 `RouteResult.NotFound`와 422 `ROUTE_NOT_FOUND`로 변환하고, 재시도·fallback·Aggregate 저장이 모두 0회인지 검증한다. `EQUAL_POINTS`는 `RouteResult.Found(0)`과 계산 후보의 0분 `MOVE` 성공으로 변환하며 10분 올림·고정 buffer가 없어야 한다. 저장·응답에서는 0분 MOVE를 생략한다. `INVALID_REQUEST`는 `RouteClientFailure.INVALID_REQUEST`, 알 수 없는·누락된 status와 빈 routes·손상된 첫 후보를 포함한 `OK` 응답은 `RouteClientFailure.INVALID_RESPONSE`으로 변환하고, 모두 재시도·fallback 없이 503 `ROUTE_PROVIDER_UNAVAILABLE`과 저장 0회인지 검증한다. 제공자 원문·좌표·payload는 오류 응답·로그·fixture에 포함하지 않는다.
 
 ## 5. Fixture 규칙
 
@@ -130,6 +130,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 - 사용자가 입력하지 않은 메뉴를 임의로 확정하지 않는지
 - 최종 선택 가능한 국내 regionId만 허용하고 미존재·상위 도·검색 필터용 구·군은 외부 호출과 차감 전에 거절하는지
 - 관광지 맥락 0·35개를 허용하고 36개, clientPlaceId 중복·공백·길이 초과와 displayName 길이 초과를 거절하는지
+- AI 메뉴 이름·검색어·이유의 앞뒤 공백을 제거한 값이 Response에 반환되는지, 공백만 남는 값은 `AI_RESPONSE_INVALID`인지, 메뉴 이름은 같은 공백 제거와 대소문자 무시 기준으로 중복을 거절하는지
 - 잘못된 구조 응답을 최대 한 번 재시도하고 다시 실패하면 오류로 끝나는지
 
 공통:
@@ -332,13 +333,18 @@ Nearest Neighbor:
 - 이동수단 하나 선택
 - 장소 검색, 빈 사용자 표시 이름 작성, 체류 시간 10분 단위 조정
 - 추정 일정 확인과 입력 유지
+- 완료 요청 전 검토에서 일차 버튼을 바꾸면 해당 날짜의 방문 순서 번호 마커와 시간순 일정표가 함께 바뀌고 다른 날짜 마커가 사라지는지; 날짜 전환만으로 estimate·create·경로 API가 호출되지 않는지
+- 검토 지도에 장소 간 직선·실제 경로선을 그리지 않고, 같은 위치의 반복 방문 순서와 미선택 음식점의 지도 표시를 정확히 처리하는지; 지도 실패 시에도 날짜별 일정표를 사용할 수 있는지
+- `일정 조정하기`로 돌아가 추정 입력을 바꾸면 이전 검토 결과가 무효화되고 재계산 뒤에만 검토·완료 요청을 진행하는지; 음식점 선택만 바꾸면 검토 표시를 갱신하되 estimate를 재호출하지 않는지; 같은 입력의 재계산을 임의의 새 일정으로 표현하지 않는지
 - 완료 요청 성공 후 고정 일정 화면 표시
 - 시간 초과·경로 없음·한도 초과·인증 만료 후 안전한 복구
 - 완료 화면에서 허용된 텍스트만 수정
 - 공유 링크의 읽기 전용 표시
 - 새로고침·완료·취소·탭 종료 뒤 작성 좌표가 브라우저 저장소에 남지 않는지
 
-실제 카카오 지도 렌더링은 완료 화면 요구사항이 아니다. 제한된 테스트 키를 사용하는 실제 연결 확인은 자동 회귀 테스트와 분리한다.
+작성 중 검토 지도는 Fake 응답으로 날짜별 마커·목록 동기화와 금지된 선·외부 호출 부재를 검증한다. 실제 카카오 지도 렌더링은 완료 화면 요구사항이 아니다. 제한된 테스트 키를 사용하는 실제 연결 확인은 자동 회귀 테스트와 분리한다.
+
+W1 화면 정리와 W1-06 시각 회귀에서는 `Routy/INTEGRATION.md` 6.7절을 기준으로 데스크톱·모바일 캡처를 함께 비교한다. 단계 제목·핵심 정보·입력·결과·주요 행동 순서가 읽히는지, 상태·오류가 평문으로 흩어지지 않는지, 작은 화면에서 선택 요약·지도·버튼이 가려지지 않는지 확인한다. 대표 화면은 지역·장소·숙소·메뉴·추정 일정·음식점·일차별 검토 단계와 빈 결과·오류 상태를 포함한다. 제공된 참고 이미지의 예약·가격·평점 표현은 화면 요구사항이 아니며, 현재 `build/qa` 캡처는 개선 완료 증거가 아닌 비교 기준이다.
 
 ## 9. 기능 완료 기준
 

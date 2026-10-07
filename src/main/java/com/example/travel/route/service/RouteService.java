@@ -7,6 +7,7 @@ import com.example.travel.route.algorithm.TravelTimePolicy;
 import com.example.travel.route.client.CarRouteClient;
 import com.example.travel.route.client.PublicTransitRouteClient;
 import com.example.travel.route.client.RouteClientException;
+import com.example.travel.route.client.RouteClientFailure;
 import com.example.travel.route.client.RouteResult;
 import com.example.travel.route.client.RouteSegment;
 import com.example.travel.user.dto.UsageDenialScope;
@@ -49,8 +50,9 @@ public class RouteService {
 	}
 
 	/**
-	 * Keeps segment order, retries transient technical failures once, and replaces the whole
-	 * request with Haversine estimates if that retry also fails transiently.
+	 * Keeps segment order, stops at the first normal route absence, retries transient technical
+	 * failures once, and replaces the whole request with Haversine estimates if that retry also
+	 * fails transiently.
 	 */
 	RouteTravelTimeResult findEstimatedTravelTimes(
 			TravelMode travelMode,
@@ -92,22 +94,13 @@ public class RouteService {
 		List<RouteSegmentTravelTime> providerTravelTimes = new ArrayList<>(segments.size());
 		for (int index = 0; index < segments.size(); index++) {
 			RouteSegment segment = segments.get(index);
+			RouteAttempt attempt;
 			try {
-				RouteAttempt attempt = findRouteWithRetry(
+				attempt = findRouteWithRetry(
 						travelMode,
 						segment,
 						retryQuotaReservation
 				);
-				if (attempt.retryQuotaUnavailable()) {
-				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
-					return fallbackWithHaversine(
-							travelMode,
-							segments,
-							RouteFallbackReason.QUOTA_UNAVAILABLE,
-							attempt.quotaDeniedScopes()
-					);
-				}
-				providerTravelTimes.add(toTravelTime(attempt.result()));
 			}
 			catch (RouteClientException exception) {
 				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
@@ -123,6 +116,25 @@ public class RouteService {
 			catch (RuntimeException exception) {
 				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
 				throw exception;
+			}
+			if (attempt.retryQuotaUnavailable()) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+				return fallbackWithHaversine(
+						travelMode,
+						segments,
+						RouteFallbackReason.QUOTA_UNAVAILABLE,
+						attempt.quotaDeniedScopes()
+				);
+			}
+			try {
+				providerTravelTimes.add(toTravelTime(attempt.result()));
+			} catch (ArithmeticException exception) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+				throw new RouteClientException(RouteClientFailure.INVALID_RESPONSE);
+			}
+			if (attempt.result() instanceof RouteResult.NotFound) {
+				releaseUnusedInitialQuota(segments.size(), index, unusedInitialQuotaRelease);
+				return RouteTravelTimeResult.verified(providerTravelTimes);
 			}
 		}
 		return RouteTravelTimeResult.verified(providerTravelTimes);

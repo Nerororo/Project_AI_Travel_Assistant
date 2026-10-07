@@ -26,6 +26,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,8 +55,24 @@ class TravelPlanRepositoryIntegrationTest {
     }
 
     @Test
+    void completedPlanTablesHaveNoForbiddenProviderOrRequestColumns() {
+        List<String> columns = jdbc.queryForList("""
+                SELECT LOWER(column_name)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name IN ('travel_plans', 'food_preferences', 'travel_plan_shares',
+                                     'plan_places', 'travel_plan_days', 'travel_plan_items')
+                """, String.class);
+
+        assertThat(columns).isNotEmpty().noneMatch(column -> column.matches(
+                ".*(coordinate|latitude|longitude|address|phone|category|provider|raw|payload|response|"
+                        + "polyline|warning|selection_token|search_query|prompt).*"));
+    }
+
+    @Test
     void flywayCreatesSchemaAndJpaRestoresAggregateRows() {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version = '5' AND success = 1", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE version = '6' AND success = 1", Integer.class)).isEqualTo(1);
         TravelPlan plan = plan("plan-one@example.test");
         FoodPreference food = foods.saveAndFlush(new FoodPreference(plan.id(), "noodles"));
         TravelPlanShare share = shares.saveAndFlush(new TravelPlanShare(plan.id(), new byte[32],
@@ -87,14 +104,14 @@ class TravelPlanRepositoryIntegrationTest {
         TravelPlan first = plan("plan-first@example.test");
         TravelPlan second = plan("plan-second@example.test");
         PlanPlace otherPlace = places.saveAndFlush(new PlanPlace(second.id(), "kakao-2", "https://place.map.kakao.com/2",
-                PlanPlace.Role.HOTEL, "My hotel", null, null));
+                PlanPlace.Role.ATTRACTION, "My museum", null, 60));
         TravelPlanDay day = days.saveAndFlush(new TravelPlanDay(first.id(), 1, LocalDate.of(2026, 10, 1),
                 LocalTime.of(9, 0), LocalTime.of(18, 0)));
 
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO travel_plan_items
                   (travel_plan_day_id, travel_plan_id, item_order, item_type, plan_place_id, start_time, end_time)
-                VALUES (?, ?, 1, 'STAY', ?, '09:00:00', '10:00:00')
+                VALUES (?, ?, 1, 'VISIT', ?, '09:00:00', '10:00:00')
                 """, day.id(), first.id(), otherPlace.id())).isInstanceOf(DataIntegrityViolationException.class);
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO travel_plan_items
@@ -111,6 +128,22 @@ class TravelPlanRepositoryIntegrationTest {
         assertThatThrownBy(() -> places.saveAndFlush(new PlanPlace(first.id(), "kakao-3",
                 "https://place.map.kakao.com/3", PlanPlace.Role.ATTRACTION, "My park", null, null)))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void databaseRejectsStayItemForOwnHotel() {
+        TravelPlan plan = plan("plan-stay@example.test");
+        PlanPlace hotel = places.saveAndFlush(new PlanPlace(plan.id(), "kakao-hotel",
+                "https://place.map.kakao.com/hotel", PlanPlace.Role.HOTEL, "My hotel", null, null));
+        TravelPlanDay day = days.saveAndFlush(new TravelPlanDay(plan.id(), 1, LocalDate.of(2026, 10, 1),
+                LocalTime.of(9, 0), LocalTime.of(18, 0)));
+
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO travel_plan_items
+                  (travel_plan_day_id, travel_plan_id, item_order, item_type, plan_place_id, start_time, end_time)
+                VALUES (?, ?, 1, 'STAY', ?, '09:00:00', '10:00:00')
+                """, day.id(), plan.id(), hotel.id())).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("ck_travel_plan_items_no_stay");
     }
 
     @Test
