@@ -280,13 +280,14 @@
             </form>
             <p class="field-help">검색 결과는 식사 전후 시각과 동선 이탈을 서버가 평가한 순서입니다. 음식점은 직접 선택하거나 미정으로 둘 수 있습니다.</p>
             <div id="restaurant-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소"></div>
-            <div class="mobile-place-view" role="group" aria-label="음식점 검색 결과 보기"><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
-            <div class="place-layout" id="restaurant-layout" data-mobile-view="list">
+            <div id="restaurant-intro" class="workspace-empty"><h3>아직 찾은 음식점이 없어요</h3><p>식사 날짜와 메뉴를 고른 뒤 음식점 찾기를 눌러 주세요.</p></div>
+            <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소" hidden></div>
+            <div class="mobile-place-view" id="restaurant-view-switch" role="group" aria-label="음식점 검색 결과 보기" hidden><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
+            <div class="place-layout" id="restaurant-layout" data-mobile-view="list" hidden>
               <div class="place-list-pane"><ul id="restaurant-results" class="place-results" aria-label="음식점 검색 결과"></ul><div class="place-pagination"><button id="restaurant-prev-page" type="button" class="button button-ghost">이전</button><span id="restaurant-page">1</span><button id="restaurant-next-page" type="button" class="button button-ghost">다음</button></div></div>
               <div class="place-map-pane"><div id="restaurant-map" class="place-map" role="img" aria-label="식사 전후 장소와 음식점 지도"></div><p id="restaurant-map-status" class="field-help"></p><button id="restaurant-search-map" type="button" class="button button-ghost">현재 지도 영역에서 다시 검색</button></div>
             </div>
-            <div id="restaurant-selected" class="selected-places" aria-label="직접 선택한 음식점"></div>
+            <div id="restaurant-selected" class="selected-places" aria-label="직접 선택한 음식점" hidden></div>
           </section>
 
           <div class="state-preview" id="future-step-preview" aria-label="후속 UI 상태 골격 미리보기" hidden>
@@ -311,15 +312,15 @@
 
         <aside class="journey-summary" aria-labelledby="summary-title">
           <div class="summary-heading"><p class="eyebrow dark">LIVE SUMMARY</p><h2 id="summary-title">현재 선택</h2></div>
-          <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>아직 선택한 지역이 없어요</strong><p>여행 지역을 고르면 현재 선택을 이곳에서 확인할 수 있어요.</p></div>
-          <dl class="summary-list">
+          <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>지역을 선택해 주세요</strong><p>선택한 여행 정보가 여기에 표시돼요.</p></div>
+          <dl class="summary-list" hidden>
             <div><dt>지역</dt><dd id="summary-region">선택 전</dd></div>
-            <div><dt>기간</dt><dd id="summary-days">1일</dd></div>
-            <div><dt>시작 날짜</dt><dd id="summary-date">미정</dd></div>
-            <div><dt>이동</dt><dd id="summary-mode">자동차</dd></div>
-            <div><dt>장소</dt><dd id="summary-places">0곳</dd></div>
+            <div><dt>기간</dt><dd id="summary-days">설정 전</dd></div>
+            <div><dt>시작 날짜</dt><dd id="summary-date">설정 전</dd></div>
+            <div><dt>이동</dt><dd id="summary-mode">설정 전</dd></div>
+            <div><dt>장소</dt><dd id="summary-places">선택 전</dd></div>
           </dl>
-          <p class="summary-policy">거리·순서·시간표는 화면이 계산하지 않습니다.</p>
+          <p class="summary-policy" hidden>거리·순서·시간표는 화면이 계산하지 않습니다.</p>
         </aside>
       </div>
     </section>

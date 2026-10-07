@@ -117,14 +117,17 @@
     }
     function renderResult(body) {
       result.replaceChildren();
-      const note = document.createElement('p'); note.textContent = '추정 일정 · 실제 경로 검증 전 · 저장되지 않음'; result.append(note);
       for (const day of body.days) {
         const group = document.createElement('section'), title = document.createElement('h3'), list = document.createElement('ol');
+        group.className = 'estimate-result-day';
+        list.className = 'estimate-timeline';
         title.textContent = day.date; group.append(title);
         for (const item of day.items) {
-          const entry = document.createElement('li');
-          const label = item.type === 'VISIT' ? item.displayName : item.type === 'MOVE' ? `이동 · 예상 ${item.estimatedMinutes}분` : '식사';
-          entry.textContent = `${item.startTime}–${item.endTime} · ${label}`; list.append(entry);
+          const entry = document.createElement('li'), time = document.createElement('time'), label = document.createElement('strong');
+          entry.className = `estimate-${item.type.toLowerCase()}`;
+          time.textContent = `${item.startTime}–${item.endTime}`;
+          label.textContent = item.type === 'VISIT' ? item.displayName : item.type === 'MOVE' ? `이동 · 예상 ${item.estimatedMinutes}분` : '식사';
+          entry.append(time, label); list.append(entry);
         }
         group.append(list); result.append(group);
       }
@@ -142,7 +145,7 @@
         if (id !== version || currentRequest().error || JSON.stringify(currentRequest().value) !== fingerprint) return;
         if (!response.ok) { clearResult(); setStatus(errorText(response, body), true); return; }
         if (!validResult(body, built.value)) { clearResult(); setStatus('일정 응답을 확인할 수 없습니다. 다시 계산해 주세요.', true); return; }
-        renderResult(body); lastFingerprint = fingerprint; lastResult = body; setStatus('추정 일정을 확인해 주세요. 일정은 아직 저장되지 않았습니다.');
+        renderResult(body); lastFingerprint = fingerprint; lastResult = body; setStatus('추정 일정입니다. 실제 경로 검증 전이며 아직 저장되지 않았어요.');
       } catch (_) { if (id === version) setStatus('연결을 확인하고 다시 계산해 주세요. 입력은 유지됩니다.', true); }
       finally { if (pending === controller) { pending = null; submit.disabled = false; } }
     }

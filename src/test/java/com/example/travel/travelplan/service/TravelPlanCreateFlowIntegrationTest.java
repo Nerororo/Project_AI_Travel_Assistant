@@ -21,6 +21,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -37,6 +38,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +75,7 @@ class TravelPlanCreateFlowIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired JwtService jwt;
+    @Autowired JdbcTemplate jdbc;
 
     @Test
     void httpCreateRequiresAuthenticationAndReturnsStoredPlan() throws Exception {
@@ -92,7 +95,12 @@ class TravelPlanCreateFlowIntegrationTest {
                 .andExpect(jsonPath("$.warnings[0]").value("ESTIMATED_TRAVEL_TIMES_USED"))
                 .andExpect(jsonPath("$.hotel").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.days[0].items[?(@.type == 'VISIT')]").isNotEmpty())
-                .andExpect(jsonPath("$.coordinate").doesNotExist());
+                .andExpect(jsonPath("$..coordinate").doesNotExist())
+                .andExpect(jsonPath("$..latitude").doesNotExist())
+                .andExpect(jsonPath("$..longitude").doesNotExist())
+                .andExpect(jsonPath("$..address").doesNotExist())
+                .andExpect(jsonPath("$..category").doesNotExist())
+                .andExpect(jsonPath("$..selectionToken").doesNotExist());
         mvc.perform(post("/api/travel-plans")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.issue(userId))
                         .header("Idempotency-Key", requestId)
@@ -100,6 +108,16 @@ class TravelPlanCreateFlowIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("REQUEST_ALREADY_COMPLETED"));
         assertThat(plans.findByUserId(userId)).hasSize(1);
+        Map<String, Object> savedPlace = jdbc.queryForMap("""
+                SELECT p.kakao_place_id, p.place_url, p.display_name, p.memo, p.stay_minutes
+                FROM plan_places p JOIN travel_plans t ON t.id = p.travel_plan_id
+                WHERE t.user_id = ?
+                """, userId);
+        assertThat(savedPlace).containsEntry("kakao_place_id", "900002")
+                .containsEntry("place_url", "https://place.map.kakao.com/900002")
+                .containsEntry("display_name", "My stop")
+                .containsEntry("memo", null)
+                .containsEntry("stay_minutes", 30);
     }
 
     @Test
