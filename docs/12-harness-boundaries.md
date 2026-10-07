@@ -163,10 +163,11 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | W1-02 | W1-00 공통 골격, P1-03A 서버 계약·P1-06 상태 모듈, S1-05 숙소 전용 검색 API 구현 결과, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-03B | T1-06A의 422 응답, W1-03 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 상태·구간 강조와 직접 대응 UI 테스트; API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
-| W1-03A | W1-00 공통 골격, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-04·W1-05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03A | W1-00 공통 골격, W1-02A 확정 메뉴·W1-03 추정 결과, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03B | T1-06A의 422 응답, W1-03·W1-03A 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 표시 상태·정확한 구간 또는 날짜 단위 fallback과 직접 대응 UI 테스트; 완료 생성 요청 연결·재검증은 W1-04, API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
+| W1-04 | W1-00 공통 골격과 W1-03B 오류 표시 상태, `docs/04` 생성·상세 endpoint와 422 응답, `docs/08` 8절의 완료·오류 복구, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 실제 생성 422 연결·작성 상태 유지·오래된 응답 무시·사용자 조정 뒤 전체 재검증과 직접 대응 UI·브라우저 테스트; API 계약 오류 발견 시 문서 변경 제안 |
 | W1-04A | W1-04 구현 결과, `docs/01` FR-11, `docs/02` 8절, `docs/06` ADR-031, `docs/08` 6.9·8절, `docs/10` 14~15절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 고정 다운로드 템플릿·동작과 직접 대응 UI·브라우저 테스트; 완료 일정 조회 DTO가 계약을 표현하지 못하면 화면에서 우회하지 않고 별도 API 문서·백엔드 Task 제안 |
+| W1-05 | W1-04A 완료 화면, `docs/04` 비페이징 목록·상세·PATCH·DELETE·공유 endpoint, `docs/08` 8절의 소유권·공유 흐름, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 비페이징 목록·제한 편집·삭제·공유 직접 진입과 직접 대응 UI·브라우저 테스트; API 계약 오류 발견 시 문서 변경 제안 |
 | W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
 | Q1-01~02 | `docs/09` 2~4·9절, `docs/10` 13절 | 발견한 계약 불일치의 책임 문서 |
 | Q1-03~04 | `docs/09` 4·8절, `docs/10` 13절 | dependency가 필요할 때 `build.gradle`과 관련 ADR |

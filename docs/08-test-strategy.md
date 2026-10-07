@@ -65,7 +65,7 @@ RouteService → RouteClient      → FakeCarRouteClient
 
 각 Client 계약은 성공, 빈 결과, timeout, 4xx, 5xx, 잘못된 응답을 재현할 수 있어야 한다. 실제 HTTP 구현 테스트는 요청 URL·헤더·timeout·응답 매핑까지만 검증하며 운영 API 호출을 기본 테스트에 포함하지 않는다.
 
-기술적 경로 장애는 최초 실패 뒤 한 번만 재시도하는지 검증한다. 두 번째 기술적 실패는 Haversine 추정값과 warning으로 대체할 수 있다. 정상적인 “경로 없음”은 재시도나 fallback 없이 `ROUTE_NOT_FOUND`로 끝나야 한다. 자동차 `result_code=1`은 `RouteResult.NotFound`로 변환하고 외부 호출 1회, Aggregate 저장 0회, 자동 장소 삭제·자동 이동수단 변경 0회인지 검증한다. `ROUTE_NOT_FOUND.details`는 실패한 날짜, 그 날짜 최종 후보의 1부터 시작하는 유일한 `MOVE` 순서와 요청 이동수단만 반환하고 좌표·장소명·카카오 ID·제공자 원문을 포함하지 않는지 검증한다. 출발·도착 경계, 관광지, 숙소, 식사 및 같은 숙소 반복 방문 사이의 실패를 모두 같은 구조로 식별해야 한다. 브라우저 테스트는 422 뒤 작성 상태를 유지하고 정확히 대응하는 `MOVE`가 있으면 앞뒤 항목을 강조하며, 대응하지 않으면 날짜 단위 오류만 표시하고 사용자가 조정한 뒤에만 전체 경로 검증을 다시 요청하는지 확인한다.
+기술적 경로 장애는 최초 실패 뒤 한 번만 재시도하는지 검증한다. 두 번째 기술적 실패는 Haversine 추정값과 warning으로 대체할 수 있다. 정상적인 “경로 없음”은 재시도나 fallback 없이 `ROUTE_NOT_FOUND`로 끝나야 한다. 자동차 `result_code=1`은 `RouteResult.NotFound`로 변환하고 외부 호출 1회, Aggregate 저장 0회, 자동 장소 삭제·자동 이동수단 변경 0회인지 검증한다. `ROUTE_NOT_FOUND.details`는 실패한 날짜, 그 날짜 최종 후보의 1부터 시작하는 유일한 `MOVE` 순서와 요청 이동수단만 반환하고 좌표·장소명·카카오 ID·제공자 원문을 포함하지 않는지 검증한다. 출발·도착 경계, 관광지, 숙소, 식사 및 같은 숙소 반복 방문 사이의 실패를 모두 같은 구조로 식별해야 한다. W1-03B 브라우저 테스트는 동일한 추정 입력·이동수단에서 유일한 `MOVE`와 양옆 항목이 대응할 때만 강조하고, 선택 음식점으로 최종 후보 순서가 달라지거나 대응을 확인할 수 없으면 날짜 단위 오류로 내리는지 확인한다. W1-04 브라우저 테스트는 실제 완료 생성 요청의 422 뒤 작성 상태 유지, 오래된 응답 무시와 사용자 조정 뒤에만 전체 경로 검증 재요청을 확인한다.
 
 자동차 Client 요청 테스트는 각 호출이 `origin`과 `destination`만 포함하고 `waypoints`를 보내지 않는지 검증한다. 그 상태에서 `result_code=101` 또는 `107` 응답 fixture를 받으면 `RouteClientFailure.INVALID_RESPONSE`로 변환하고, 외부 호출 1회·재시도 0회·Haversine fallback 0회·Aggregate 저장 0회와 503 `ROUTE_PROVIDER_UNAVAILABLE`을 검증한다. `ROUTE_NOT_FOUND`로 변환하거나 제공자 `result_message`, 경유지 번호, 좌표와 payload를 오류 응답·로그에 노출해서는 안 된다.
 

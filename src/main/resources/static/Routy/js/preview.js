@@ -571,7 +571,7 @@
     estimateController = window.RoutyEstimateWorkspace.mount(document, window, client, () => ({
       regionId: selectedRegion?.regionId, summary: placeController.summary(), selected: placeController.selected(),
       places: placeController.estimatePlaces(), foods: menuController.confirmedMenus().map(menu => menu.name)
-    }));
+    }), () => restaurantController?.selected() || []);
     restaurantController = window.RoutyRestaurantWorkspace.mount(document, window, client, () => ({
       confirmed: estimateController.confirmedEstimate(), menus: menuController.confirmedMenus()
     }));

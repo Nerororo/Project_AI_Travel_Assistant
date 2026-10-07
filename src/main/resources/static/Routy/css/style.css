@@ -575,6 +575,7 @@
   .estimate-timeline time { color: var(--blue-deep); font-weight: 750; font-variant-numeric: tabular-nums; }
   .estimate-timeline strong { font-weight: 650; }
   .estimate-timeline .estimate-move strong { color: var(--ink-soft); font-weight: 500; }
+  .estimate-timeline .estimate-route-failure { padding-inline: .75rem; border-left: 3px solid var(--danger); background: #fbe9e6; }
   .restaurant-workspace form label { align-content: start; }
   .restaurant-context { display: flex; flex-wrap: wrap; gap: .5rem; }
   .restaurant-context span { padding: .5rem .75rem; border-radius: 999px; background: var(--paper-deep); font-size: var(--text-sm); }

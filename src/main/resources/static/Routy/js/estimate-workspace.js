@@ -55,15 +55,28 @@
     return '추정 일정을 계산하지 못했습니다. 입력을 유지한 채 다시 시도해 주세요.';
   }
 
-  function mount(document, window, client, context) {
+  function routeFailure(body, estimate, travelMode, restaurants = []) {
+    const details = body?.code === 'ROUTE_NOT_FOUND' ? body.details : null;
+    if (!details || !iso.test(details.date || '') || dateAt(details.date, 0) !== details.date || !Number.isInteger(details.moveOrder) || details.moveOrder < 1) return null;
+    const day = estimate?.days?.find(day => day.date === details.date);
+    if (!day) return null;
+    const index = day.items.findIndex(item => item.order === details.moveOrder && item.type === 'MOVE');
+    const exact = details.travelMode === travelMode && !restaurants.some(item => item.slot?.startsWith(`${details.date}|`))
+      && index > 0 && index < day.items.length - 1
+      && day.items[index - 1].order === details.moveOrder - 1 && day.items[index + 1].order === details.moveOrder + 1
+      && day.items.filter(item => item.order === details.moveOrder).length === 1;
+    return {date: details.date, orders: exact ? [day.items[index - 1].order, details.moveOrder, day.items[index + 1].order] : []};
+  }
+
+  function mount(document, window, client, context, restaurantSelections = () => []) {
     const $ = selector => document.querySelector(selector);
     const section = $('#estimate-workspace'), dateInput = $('#estimate-start-date'), dayFields = $('#estimate-day-fields');
     const manual = $('#estimate-manual'), placement = $('#estimate-placement');
     const result = $('#estimate-result'), status = $('#estimate-status'), submit = $('#estimate-submit');
-    let pending = null, version = 0, lastFingerprint = null, lastResult = null;
+    let pending = null, version = 0, lastFingerprint = null, lastResult = null, failedRoute = null, failureSelections = null;
     function setStatus(message, error = false) { status.textContent = message; status.dataset.error = String(error); if (error) status.focus({preventScroll: true}); else if (document.activeElement === status) status.blur(); }
     function cancel() { version++; pending?.abort(); pending = null; submit.disabled = false; }
-    function clearResult() { result.replaceChildren(); lastFingerprint = null; lastResult = null; }
+    function clearResult() { result.replaceChildren(); lastFingerprint = null; lastResult = null; failedRoute = null; failureSelections = null; }
     function reset() { cancel(); clearResult(); dateInput.value = ''; manual.checked = false; placement.replaceChildren(); placement.hidden = true; dayFields.replaceChildren(); setStatus(''); }
     function renderDays() {
       const count = context().summary?.days || 1;
@@ -114,6 +127,9 @@
       if (manual.checked) renderPlacement();
       const request = currentRequest();
       if (lastFingerprint && JSON.stringify(request.value) !== lastFingerprint) clearResult();
+      else if (failureSelections !== null && failureSelections !== JSON.stringify(restaurantSelections())) {
+        failedRoute = null; failureSelections = null; renderResult(lastResult); setStatus('');
+      }
     }
     function renderResult(body) {
       result.replaceChildren();
@@ -125,12 +141,28 @@
         for (const item of day.items) {
           const entry = document.createElement('li'), time = document.createElement('time'), label = document.createElement('strong');
           entry.className = `estimate-${item.type.toLowerCase()}`;
+          if (failedRoute?.date === day.date && failedRoute.orders.includes(item.order)) {
+            entry.classList.add('estimate-route-failure');
+            if (item.type === 'MOVE') entry.setAttribute('aria-label', '경로를 찾지 못한 이동 구간');
+          }
           time.textContent = `${item.startTime}–${item.endTime}`;
           label.textContent = item.type === 'VISIT' ? item.displayName : item.type === 'MOVE' ? `이동 · 예상 ${item.estimatedMinutes}분` : '식사';
           entry.append(time, label); list.append(entry);
         }
         group.append(list); result.append(group);
       }
+    }
+    function showRouteNotFound(body) {
+      const built = currentRequest();
+      if (built.error || !lastResult || JSON.stringify(built.value) !== lastFingerprint) return;
+      const selections = restaurantSelections();
+      failedRoute = routeFailure(body, lastResult, built.value.travelMode, selections);
+      failureSelections = JSON.stringify(selections);
+      renderResult(lastResult);
+      const date = failedRoute?.date;
+      setStatus(date
+        ? `${date} 이동 경로를 찾지 못했습니다. ${failedRoute.orders.length ? '표시한 구간의 앞뒤 일정을 확인하고 ' : '정확한 구간을 확인할 수 없어 해당 날짜의 일정을 확인하고 '}장소·방문 순서 또는 이동수단을 조정한 뒤 전체 경로를 다시 검증해 주세요. 작성 내용은 유지됩니다.`
+        : '이동 경로를 찾지 못했습니다. 작성 내용을 확인하고 장소·방문 순서 또는 이동수단을 조정한 뒤 전체 경로를 다시 검증해 주세요. 작성 내용은 유지됩니다.', true);
     }
     async function estimate(event) {
       event.preventDefault(); if (pending) return;
@@ -178,7 +210,7 @@
       if (positions.size !== built.value.places.length) return null;
       return {request: {...built.value, places: built.value.places.map(place => ({...place, ...positions.get(place.clientPlaceId)}))}, slots};
     }
-    return {showStep, reset, hasCurrentResult: () => Boolean(lastFingerprint && JSON.stringify(currentRequest().value) === lastFingerprint), confirmedEstimate};
+    return {showStep, reset, showRouteNotFound, hasCurrentResult: () => Boolean(lastFingerprint && JSON.stringify(currentRequest().value) === lastFingerprint), confirmedEstimate};
   }
-  return Object.freeze({buildRequest, validResult, errorText, mount});
+  return Object.freeze({buildRequest, validResult, errorText, routeFailure, mount});
 });
