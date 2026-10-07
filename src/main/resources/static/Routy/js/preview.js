@@ -220,8 +220,16 @@
       if (error) status.focus({preventScroll: true});
     }
     function renderRegionSummary() {
+      const selected = Boolean(selectedRegion);
+      const summary = placeController?.summary();
+      document.querySelector('.summary-empty').hidden = selected;
+      document.querySelector('.summary-list').hidden = !selected;
+      document.querySelector('.summary-policy').hidden = !selected;
       document.querySelector('#summary-region').textContent = selectedRegion?.name || '선택 전';
-      document.querySelector('.summary-empty').hidden = Boolean(selectedRegion);
+      document.querySelector('#summary-days').textContent = selected && furthestStep >= 1 ? `${summary.days}일` : '설정 전';
+      document.querySelector('#summary-mode').textContent = selected && furthestStep >= 1 ? (summary.travelMode === 'CAR' ? '자동차' : '대중교통') : '설정 전';
+      document.querySelector('#summary-places').textContent = summary?.attractionCount ? `${summary.attractionCount}곳` : '선택 전';
+      document.querySelector('#summary-date').textContent = document.querySelector('#estimate-start-date').value || '설정 전';
     }
     function selectRegion(region, source) {
       const changed = selectedRegion?.regionId !== region.regionId;
@@ -395,7 +403,7 @@
           : currentStep === 5 ? '다음: 음식점 선택 →'
             : currentStep === 6 ? '검토 화면 미리보기 →' : '다음 단계 →';
       document.querySelector('.workspace-shell').dataset.activeStep = String(currentStep);
-      document.querySelector('#summary-date').textContent = document.querySelector('#estimate-start-date').value || '미정';
+      renderRegionSummary();
       regionWorkspace.hidden = currentStep !== 0;
       placeController?.showStep(currentStep);
       menuController?.showStep(currentStep, selectedRegion?.regionId, placeController?.attractionContexts() || []);
@@ -555,11 +563,8 @@
 
     window.addEventListener('hashchange', () => showRoute(true));
     placeController = window.RoutyPlaceWorkspace.mount(document, window, client, () => {
-      const summary = placeController?.summary();
-      if (!summary) return;
-      document.querySelector('#summary-days').textContent = `${summary.days}일`;
-      document.querySelector('#summary-mode').textContent = summary.travelMode === 'CAR' ? '자동차' : '대중교통';
-      document.querySelector('#summary-places').textContent = `${summary.attractionCount}곳`;
+      if (!placeController) return;
+      renderRegionSummary();
       updateStepAvailability();
     });
     menuController = window.RoutyMenuWorkspace.mount(document, window, client);
@@ -571,7 +576,7 @@
       confirmed: estimateController.confirmedEstimate(), menus: menuController.confirmedMenus()
     }));
     document.querySelector('#estimate-start-date').addEventListener('change', event => {
-      document.querySelector('#summary-date').textContent = event.target.value || '미정';
+      renderRegionSummary();
     });
     renderStep(false);
     renderState();

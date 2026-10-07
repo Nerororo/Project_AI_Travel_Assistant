@@ -256,4 +256,4 @@ TravelPlan 소유권 연결은 T1에서 Aggregate와 함께 완성한다. U1에�
 
 ## 16. 지금 시작할 작업
 
-다음 백엔드 작업은 `T1-10` 저장 금지·Aggregate DoD 점검이다. 화면 작업은 `W1-03B`를 시작할 수 있으며 `W1-04`는 T1 이후 진행한다. 현재 구현·검증 상태와 남은 제한은 `docs/07-implementation-readiness.md`, 기존 V5 DB의 V6 적용 전 확인은 `docs/09-operations.md` 11절을 따른다.
+`T1-10`의 저장 금지·Aggregate 자동 점검은 완료됐다. 다음 화면 작업은 `W1-03B`이며, `W1-04`는 T1 이후 진행한다. 다음 운영 작업은 `Q1-01`부터 순서대로 진행한다. 실제 구현·검증 상태와 남은 제한은 `docs/07-implementation-readiness.md`, 로컬 영속 V5 DB의 V6 적용 전 확인은 `docs/09-operations.md` 11절을 따른다.

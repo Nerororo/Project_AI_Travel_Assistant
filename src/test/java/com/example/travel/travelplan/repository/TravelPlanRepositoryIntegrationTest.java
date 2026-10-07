@@ -26,6 +26,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +52,21 @@ class TravelPlanRepositoryIntegrationTest {
         Long userId = users.saveAndFlush(new User(email, "encoded")).id();
         return plans.saveAndFlush(new TravelPlan(userId, "My trip", "region-1", "Region snapshot",
                 LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2), TravelMode.CAR, 15));
+    }
+
+    @Test
+    void completedPlanTablesHaveNoForbiddenProviderOrRequestColumns() {
+        List<String> columns = jdbc.queryForList("""
+                SELECT LOWER(column_name)
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name IN ('travel_plans', 'food_preferences', 'travel_plan_shares',
+                                     'plan_places', 'travel_plan_days', 'travel_plan_items')
+                """, String.class);
+
+        assertThat(columns).isNotEmpty().noneMatch(column -> column.matches(
+                ".*(coordinate|latitude|longitude|address|phone|category|provider|raw|payload|response|"
+                        + "polyline|warning|selection_token|search_query|prompt).*"));
     }
 
     @Test

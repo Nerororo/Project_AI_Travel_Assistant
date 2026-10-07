@@ -297,6 +297,9 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('#auth-submit');
     await until(`document.body.dataset.view === 'workspace'`);
     assert.equal(await evaluate(`document.querySelector('#logout-button').hidden`), false);
+    assert.equal(await evaluate(`document.querySelector('.summary-empty').hidden`), false);
+    assert.equal(await evaluate(`document.querySelector('.summary-list').hidden`), true);
+    await screenshot('w1-workspace-initial-desktop.png');
     loginTtl = 3600;
   });
   await t.test('direct search and exactly three AI candidates support an explicit region choice', async () => {
@@ -308,6 +311,8 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#region-search-results').textContent.includes('장소 검색 필터')`), true);
     await click('#region-search-results [data-region-id]');
     assert.equal(await evaluate(`document.querySelector('#summary-region').textContent`), '강릉시');
+    assert.equal(await evaluate(`document.querySelector('.summary-list').hidden`), false);
+    assert.equal(await evaluate(`document.querySelector('#summary-days').textContent`), '설정 전');
     await click('[data-region-method="ai"]');
     await evaluate(`document.querySelector('#region-request').value='바다가 있고 조용한 여행';document.querySelector('#region-request').dispatchEvent(new Event('input'));document.querySelector('#region-ai-form').requestSubmit()`);
     await until(`document.querySelectorAll('#region-ai-results .region-result').length === 3`);
@@ -465,7 +470,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       assert.equal(await evaluate(`document.activeElement === document.querySelector('#estimate-status')`), false);
       assert.equal(estimateRequests.at(-1).days.length, 1);
       assert.equal(estimateRequests.at(-1).places[0].selectionToken.startsWith('fake-'), true);
-      assert.equal(await evaluate(`document.querySelector('#estimate-result').textContent.includes('실제 경로 검증 전')`), true);
+      assert.equal(await evaluate(`document.querySelector('#estimate-status').textContent.includes('실제 경로 검증 전')`), true);
       assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
       await click('#estimate-manual');
       assert.equal(await evaluate(`document.querySelector('#estimate-placement').hidden`), false);
@@ -490,8 +495,11 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('[data-step="6"]').getAttribute('aria-current')`), 'step');
     assert.equal(await evaluate(`document.querySelector('#next-step').textContent`), '검토 화면 미리보기 →');
     assert.equal(await evaluate(`document.querySelector('#restaurant-slot').options.length`), 2);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-layout').hidden`), true);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-intro').hidden`), false);
     await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#restaurant-results .place-result').length === 1`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-layout').hidden`), false);
     assert.equal(restaurantRequests.at(-1).body.mealType, 'LUNCH');
     assert.equal(restaurantRequests.at(-1).body.estimate.places[0].order, 1);
     assert.equal(restaurantRequests.at(-1).body.estimate.places[0].day, '2026-10-01');
@@ -544,6 +552,8 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     restaurantMode = 'empty';
     await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
     await until(`document.querySelector('#restaurant-status').textContent.includes('후보가 없습니다')`);
+    assert.equal(await evaluate(`document.querySelector('#restaurant-results .workspace-empty h3').textContent`), '조건에 맞는 음식점이 없어요');
+    assert.equal(await evaluate(`document.querySelector('#restaurant-layout').dataset.mobileView`), 'list');
     assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
     await screenshot('w1-03a-restaurant-desktop.png');
     await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
@@ -573,7 +583,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#region-query').value='부산';document.querySelector('#region-search-form').requestSubmit()`);
     await until(`document.querySelector('#region-search-results [data-region-id="opaque-metro"]') !== null`);
     await click('#region-search-results [data-region-id="opaque-metro"]');
-    assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '0곳');
+    assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '선택 전');
     assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 0);
     await click('#next-step'); await click('#next-step');
     await evaluate(`document.querySelector('#district-query').value='해운대';document.querySelector('#district-form').requestSubmit()`);
