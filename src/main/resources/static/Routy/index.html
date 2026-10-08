@@ -8,6 +8,7 @@
   <title>Routy — 여행의 흐름을 만들다</title>
   <link rel="icon" href="img/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/journey.css">
   <script src="js/auth.js" defer></script>
   <script src="js/place-selection-state.js" defer></script>
   <script src="js/place-workspace.js" defer></script>
@@ -18,6 +19,15 @@
   <script src="js/preview.js" defer></script>
 </head>
 <body>
+  <svg class="journey-symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18M7 14h3m-3 4h3"/></symbol>
+    <symbol id="icon-car" viewBox="0 0 24 24"><path d="m4 10 2-6h12l2 6M4 18v3m16-3v3"/><rect x="2" y="10" width="20" height="8" rx="3"/><path d="M6 14h2m8 0h2"/></symbol>
+    <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3 5 6-3 6 3 6-3v17l-6 3-6-3-6 3Zm6-3v17m6-14v17"/></symbol>
+    <symbol id="icon-note" viewBox="0 0 24 24"><path d="M14 2H5v20h14V7Zm0 0v5h5M8 11h8m-8 4h8m-8 4h5"/></symbol>
+    <symbol id="icon-meal" viewBox="0 0 24 24"><path d="M5 2v7m3-7v7m3-7v7M5 7v3a3 3 0 0 0 6 0V7M8 13v9M19 2c-3 3-4 6-4 10h4m0-10v20"/></symbol>
+    <symbol id="journey-doodle" viewBox="0 0 260 145"><path d="M155 5C125 46 61 57 47 90S95 143 174 118" fill="none" stroke="#d8fa00" stroke-width="2" stroke-dasharray="9 11"/><path d="m47 105-30-10 10 29 5-17Z" fill="#101b19"/><path d="m32 107-5 17 9-11" fill="#46625b"/><path d="m235 29 3 7 7 3-7 2-3 8-2-8-8-2 8-3Z" fill="none" stroke="#1647ff" stroke-width="1.5"/></symbol>
+  </defs></svg>
   <a class="skip-link" href="#content">본문으로 이동</a>
 
   <header class="site-header" data-shell="public">
@@ -128,14 +138,16 @@
     <section class="page auth-page" data-view="auth" aria-labelledby="auth-title" hidden>
       <div class="auth-visual" aria-hidden="true">
         <p class="eyebrow"><span></span> KEEP YOUR JOURNEY CLOSE</p>
-        <strong>다시 보고 싶은 여행을<br>한곳에 이어두세요.</strong>
+        <div class="auth-story"><strong>다시 보고 싶은 여행을<br>한곳에 이어두세요.</strong><p>흩어진 여행의 순간을 모아,<br>언제든 다시 떠날 수 있도록.</p></div>
         <div class="auth-route"><i></i><i></i><i></i><span></span></div>
+        <div class="auth-photos"><div class="travel-photo auth-photo-coast"><img src="img/auth-coast.png" alt="" width="1536" height="1024" decoding="async"></div><div class="travel-photo auth-photo-heritage"><img src="img/auth-heritage.png" alt="" width="1536" height="1024" decoding="async"></div><span class="photo-note">좋은 여행은<br>좋은 흐름에서.</span><span class="photo-spark">✦</span></div>
         <p>떠나기 전의 설렘부터, 다시 꺼내 볼 여행까지.</p>
       </div>
       <div class="auth-panel">
+        <div class="auth-doodle travel-doodle" aria-hidden="true"><svg><use href="#journey-doodle"/></svg><span>여행은<br>언제든 다시 시작할 수 있어요.</span></div>
         <a class="back-link" href="#/">← 홈으로</a>
         <p class="eyebrow dark">ACCOUNT</p>
-        <h1 id="auth-title">여행을 이어볼까요?</h1>
+        <h1 id="auth-title">여행을 <span class="title-accent">이어볼까요?</span></h1>
         <p class="page-description" id="auth-description">로그인하고 나만의 여행을 시작하세요.</p>
         <div class="segmented" role="group" aria-label="인증 화면 선택">
           <button type="button" aria-pressed="true" data-auth-tab="login">로그인</button>
@@ -143,10 +155,10 @@
         </div>
         <form class="auth-form" id="auth-form" method="post" action="/api/auth/login" aria-describedby="auth-notice" novalidate>
           <label for="auth-email">이메일</label>
-          <input id="auth-email" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="255" required aria-describedby="email-error">
+          <input id="auth-email" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="255" placeholder="이메일을 입력해 주세요." required aria-describedby="email-error">
           <p id="email-error" class="field-error" hidden></p>
           <label for="auth-password">비밀번호</label>
-          <input id="auth-password" name="password" type="password" autocomplete="current-password" required aria-describedby="password-help password-error">
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력해 주세요." required aria-describedby="password-help password-error">
           <p id="password-help" class="field-help">8~64자, UTF-8 기준 72바이트 이하로 입력해 주세요. 공백도 비밀번호에 포함됩니다.</p>
           <p id="password-error" class="field-error" hidden></p>
           <p id="auth-status" role="status" aria-live="polite" tabindex="-1"></p>
@@ -157,23 +169,17 @@
     </section>
 
     <section class="page workspace-page" data-view="workspace" aria-labelledby="workspace-title" hidden>
-      <header class="workspace-header">
-        <div>
-          <p class="eyebrow dark">JOURNEY WORKSPACE</p>
-          <h1 id="workspace-title">새 여행 만들기</h1>
-        </div>
-        <div class="workspace-meta"><span>저장되지 않은 작성 흐름</span><button type="button" data-action="cancel">작성 취소</button></div>
-      </header>
-
       <div class="workspace-shell">
         <nav class="step-rail" aria-label="여행 만들기 단계">
-          <p>YOUR ROUTE</p>
+          <header class="workspace-header"><div><h1 id="workspace-title">여행 만들기</h1><p>나만의 여행을 만들어보세요.</p></div></header>
           <ol id="step-list"></ol>
-          <div class="rail-note"><span aria-hidden="true">✦</span><p>장소를 고르면<br>서버가 흐름을 계산합니다.</p></div>
+          <div class="rail-note" aria-hidden="true"><p>좋은 여행은<br>좋은 흐름에서.</p><span class="rail-spark">✦</span><div class="travel-photo"><img src="img/workspace-coast.png" alt="" width="1536" height="1024" decoding="async" loading="lazy"><span class="photo-pin"><svg class="journey-icon"><use href="#icon-pin"/></svg></span></div></div>
+          <div class="workspace-meta"><span>저장 전</span><button type="button" data-action="cancel">작성 취소</button></div>
         </nav>
 
         <section class="work-canvas" aria-labelledby="step-title">
           <div class="canvas-heading">
+            <div class="canvas-doodle travel-doodle" aria-hidden="true"><svg><use href="#journey-doodle"/></svg><span id="step-doodle-note">어떤 곳으로 떠나볼까요?<br>AI가 추천해드려요!</span></div>
             <div><span class="step-count" id="step-count">STEP 01 / 08</span><h2 id="step-title" tabindex="-1">어디로 떠나고 싶나요?</h2><p id="step-description">직접 검색하거나 세 곳을 추천받는 화면이 이 영역에 연결됩니다.</p></div>
             <span class="skeleton-badge" id="step-badge">지역 선택</span>
           </div>
@@ -241,13 +247,13 @@
 
           <section class="menu-workspace" id="menu-workspace" aria-label="메뉴 분석과 선택" hidden>
             <form id="menu-analysis-form" class="place-search-form" novalidate>
-              <label for="menu-request">먹고 싶은 음식이나 여행 분위기</label>
+              <label for="menu-request" class="section-label"><svg class="journey-icon" aria-hidden="true"><use href="#icon-note"/></svg>먹고 싶은 음식이나 여행 분위기</label>
               <textarea id="menu-request" rows="3" maxlength="200" placeholder="예: 바다를 본 뒤 매콤한 지역 음식을 먹고 싶어요" aria-describedby="menu-request-help"></textarea>
               <p id="menu-request-help" class="field-help">선택한 지역과 사용자 이름을 붙인 관광지 맥락으로 메뉴를 분석합니다. 식당은 아직 선택하지 않습니다.</p>
               <button id="menu-submit" class="button button-primary" type="submit">AI로 메뉴 분석하기</button>
             </form>
             <div id="menu-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div class="menu-heading"><h3>검토할 메뉴</h3><p>이름·검색어·이유와 기준 관광지를 수정하거나 메뉴를 삭제할 수 있어요.</p></div>
+            <div class="menu-heading"><svg class="journey-icon" aria-hidden="true"><use href="#icon-meal"/></svg><div><h3>검토할 메뉴</h3><p>이름·검색어·이유와 기준 관광지를 수정하거나 메뉴를 삭제할 수 있어요.</p></div></div>
             <ul id="menu-draft" class="menu-list" aria-label="검토할 메뉴"></ul>
             <form id="menu-direct-form" class="place-search-form" novalidate>
               <h3>메뉴 직접 추가</h3>
@@ -335,14 +341,14 @@
         </section>
 
         <aside class="journey-summary" aria-labelledby="summary-title">
-          <div class="summary-heading"><p class="eyebrow dark">LIVE SUMMARY</p><h2 id="summary-title">현재 선택</h2></div>
+          <div class="summary-heading"><p class="eyebrow dark">LIVE SUMMARY</p><h2 id="summary-title">현재 선택</h2><svg class="journey-icon" aria-hidden="true"><use href="#icon-map"/></svg></div>
           <div class="summary-empty"><span aria-hidden="true">⌁</span><strong>지역을 선택해 주세요</strong><p>선택한 여행 정보가 여기에 표시돼요.</p></div>
           <dl class="summary-list" hidden>
-            <div><dt>지역</dt><dd id="summary-region">선택 전</dd></div>
-            <div><dt>기간</dt><dd id="summary-days">설정 전</dd></div>
-            <div><dt>시작 날짜</dt><dd id="summary-date">설정 전</dd></div>
-            <div><dt>이동</dt><dd id="summary-mode">설정 전</dd></div>
-            <div><dt>장소</dt><dd id="summary-places">선택 전</dd></div>
+            <div><dt><svg class="journey-icon" aria-hidden="true"><use href="#icon-pin"/></svg>지역</dt><dd id="summary-region">선택 전</dd></div>
+            <div><dt><svg class="journey-icon" aria-hidden="true"><use href="#icon-calendar"/></svg>기간</dt><dd id="summary-days">설정 전</dd></div>
+            <div><dt><svg class="journey-icon" aria-hidden="true"><use href="#icon-calendar"/></svg>시작 날짜</dt><dd id="summary-date">설정 전</dd></div>
+            <div><dt><svg class="journey-icon" aria-hidden="true"><use href="#icon-car"/></svg>이동</dt><dd id="summary-mode">설정 전</dd></div>
+            <div><dt><svg class="journey-icon" aria-hidden="true"><use href="#icon-pin"/></svg>장소</dt><dd id="summary-places">선택 전</dd></div>
           </dl>
           <p class="summary-policy" hidden>거리·순서·시간표는 화면이 계산하지 않습니다.</p>
         </aside>

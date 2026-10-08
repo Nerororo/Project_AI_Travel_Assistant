@@ -1,0 +1,374 @@
+@charset "UTF-8";
+
+@font-face {
+  font-family: "Routy Handwriting";
+  src: url("../fonts/NanumPenScript-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Reference design for authentication and the eight creation steps.
+   Scoped tokens keep the landing and saved itinerary presentation independent. */
+body:is([data-view="auth"], [data-view="workspace"]) {
+  --paper: #faf9f5;
+  --surface: #fdfcf9;
+  --paper-deep: #f0eee7;
+  --ink: #101918;
+  --ink-soft: #697581;
+  --line: #e4e5e5;
+  --blue: #1042ff;
+  --blue-deep: #0736ed;
+  --blue-soft: #eaf0ff;
+  --lime: #dfff00;
+  --text-sm: .9375rem;
+  --text-xs: .8125rem;
+  --shadow-soft: 0 8px 28px rgb(27 40 61 / .035);
+  background: var(--paper);
+}
+.journey-symbols { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.journey-icon { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+body:is([data-view="auth"], [data-view="workspace"]) .site-header { min-height: 4.75rem; background: rgb(250 249 245 / .96); padding-inline: 2.75rem; }
+body:is([data-view="auth"], [data-view="workspace"]) .brand { font-size: 1.85rem; }
+body:is([data-view="auth"], [data-view="workspace"]) .brand-mark { background: transparent; border: 4px solid #0c141a; border-radius: 44%; width: 2.35rem; height: 2.35rem; }
+body:is([data-view="auth"], [data-view="workspace"]) .brand-mark img { visibility: hidden; }
+body:is([data-view="auth"], [data-view="workspace"]) .primary-nav { background: white; padding: .2rem; }
+body:is([data-view="auth"], [data-view="workspace"]) .primary-nav a { padding: .6rem 1.35rem; }
+body[data-view="workspace"] .primary-nav a[aria-current] { background: var(--blue); box-shadow: 0 3px 9px #1242ff20; }
+body:is([data-view="auth"], [data-view="workspace"]) .account-action { min-width: 6.6rem; }
+body:is([data-view="auth"], [data-view="workspace"]) .button-primary { background: linear-gradient(115deg, #0844ff, #243fff); box-shadow: 0 3px 8px #1242ff0a; }
+body:is([data-view="auth"], [data-view="workspace"]) :is(input, textarea, select) { font-family: inherit; font-size: 1rem; }
+body:is([data-view="auth"], [data-view="workspace"]) :is(input, textarea, select):focus-visible { outline: 3px solid #dce5ff; outline-offset: 2px; border-color: #7793ff; }
+body:is([data-view="auth"], [data-view="workspace"]) input::placeholder,
+body:is([data-view="auth"], [data-view="workspace"]) textarea::placeholder { color: #8c96a2; }
+.title-accent { color: var(--blue); }
+.travel-photo { padding: .65rem .65rem 1rem; border-radius: .6rem; background: white; box-shadow: 0 10px 25px #17253e26; }
+.travel-photo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: .2rem; }
+.travel-doodle { position: absolute; width: 15rem; height: 8.5rem; pointer-events: none; }
+.travel-doodle > svg { width: 100%; height: 100%; overflow: visible; }
+.travel-doodle > span, .photo-note, .rail-note > p { position: absolute; font-family: "Routy Handwriting", cursive; font-style: normal; font-weight: 400; font-size: 1.5rem; line-height: 1.25; letter-spacing: 0; transform: rotate(-13deg); }
+.travel-doodle > span { top: 2rem; right: .5rem; color: #697783; }
+
+/* Login: full-height blue story and a quiet form panel. */
+.auth-page { grid-template-columns: 1fr 1fr; }
+.auth-visual { min-height: max(53rem, calc(100dvh - 4.75rem)); display: grid; grid-template-rows: auto 1fr auto auto; padding: 4.6rem 4.2rem 2.7rem; background: linear-gradient(135deg, #315fff, #2853f5 60%, #3b6bff); isolation: isolate; }
+.auth-visual::before, .auth-visual::after { content: ''; position: absolute; z-index: -1; width: 36rem; height: 36rem; border-radius: 50%; background: #1440db24; left: -20rem; top: 26%; }
+.auth-visual::after { left: auto; top: auto; right: -20rem; bottom: -16rem; background: #6183ff35; }
+.auth-story { align-self: end; z-index: 1; padding-top: 10rem; }
+.auth-story strong { display: block; font-size: clamp(2.5rem, 3.85vw, 3.6rem); line-height: 1.25; letter-spacing: -.065em; word-break: keep-all; }
+.auth-story p { margin-top: 1.1rem; color: #e0e7ff; font-size: 1.25rem; line-height: 1.65; }
+.auth-route { z-index: -1; inset: 17% -9% auto 35%; height: 54%; border-width: 1.5px; border-color: #d9e6ff88; }
+.auth-route i { width: 1.6rem; height: 1.6rem; }
+.auth-route::after { content: '✦'; position: absolute; top: 4%; right: 24%; color: var(--lime); font-size: 2rem; }
+.auth-photos { position: relative; width: 100%; height: 19rem; margin-top: 2rem; }
+.auth-photos::before { content: ''; position: absolute; width: 21rem; height: 7rem; left: 0; top: 5rem; border: 2px dashed var(--lime); border-radius: 50%; rotate: 32deg; }
+.auth-photo-coast { position: absolute; width: 11.5rem; top: 2.5rem; left: 1rem; rotate: -12deg; }
+.auth-photo-heritage { position: absolute; width: 13rem; top: 6rem; left: 8.5rem; rotate: 7deg; }
+.photo-note { color: white; top: 7rem; left: 23rem; white-space: nowrap; }
+.photo-spark { position: absolute; color: var(--lime); font-size: 2rem; left: 15rem; top: 2.7rem; }
+.auth-visual > p:last-child { font-size: .875rem; color: #e1e8ff; }
+.auth-panel { position: relative; width: 100%; max-width: 43rem; padding: 5.5rem 4.4rem; }
+.auth-panel::before { content: ''; position: absolute; right: -4rem; top: 5rem; width: 10rem; height: 10rem; border-radius: 50%; background: #e5f59b30; box-shadow: 0 0 0 2rem #e5f59b20; pointer-events: none; }
+.auth-page { overflow: clip; }
+.auth-doodle { top: -.5rem; right: 1rem; }
+.auth-panel .back-link { margin-bottom: 2.4rem; }
+.auth-panel h1 { font-size: clamp(2.2rem, 3.5vw, 3.2rem); letter-spacing: -.055em; line-height: 1.25; }
+.auth-panel .page-description { font-size: 1.3rem; margin-top: .8rem; }
+.auth-panel .segmented { margin-top: 3.2rem; }
+.auth-panel .segmented button { font-size: 1.1rem; padding: 1rem; }
+.auth-form { margin-top: 2.5rem; gap: .7rem; }
+.auth-form input { min-height: 4.25rem; background: white; border-color: #d8dce0; border-radius: .85rem; padding: 1rem 1.25rem; }
+#auth-email, #auth-password { padding-left: 4rem; background-repeat: no-repeat; background-position: 1.4rem center; background-size: 1.4rem; }
+#auth-email { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23727e87' stroke-width='1.6'%3E%3Crect x='2' y='4' width='20' height='16' rx='2'/%3E%3Cpath d='m3 5 9 8 9-8'/%3E%3C/svg%3E"); }
+#auth-password { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23727e87' stroke-width='1.6'%3E%3Crect x='4' y='10' width='16' height='12' rx='2'/%3E%3Cpath d='M8 10V6a4 4 0 0 1 8 0v4m-4 4v4'/%3E%3C/svg%3E"); }
+.auth-form label:not(:first-child) { margin-top: .7rem; }
+.auth-form .field-help { line-height: 1.6; }
+#auth-status:empty { display: none; }
+.auth-form .button { min-height: 4rem; margin-top: 1.1rem; font-size: 1.1rem; }
+.auth-form .button::after { content: '→'; font-size: 1.4rem; }
+.auth-panel .inline-notice { line-height: 1.7; font-size: .875rem; }
+
+/* Shared creation shell. The same layout serves every step. */
+.workspace-page { padding: 0; }
+.workspace-shell { grid-template-columns: 15rem minmax(0, 1fr) 19rem; min-height: calc(100dvh - 4.75rem); border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+.step-rail { position: relative; align-self: start; min-height: calc(100dvh - 4.75rem); padding: 2.6rem 1.7rem 1.5rem; border: 0; background: transparent; }
+.workspace-header { display: block; padding: 0 .75rem 1.2rem; }
+.workspace-header h1 { margin: 0; font-size: 1.45rem; letter-spacing: -.055em; }
+.workspace-header p { margin-top: .35rem; color: var(--ink-soft); font-size: .875rem; white-space: nowrap; }
+.step-rail ol { display: grid; gap: .2rem; }
+.step-rail button { grid-template-columns: 2.5rem 1fr; gap: 1rem; min-height: 3.6rem; padding: .55rem .85rem; font-size: .95rem; border-radius: .85rem; }
+.step-rail button span { width: 2.5rem; height: 2.5rem; font-size: .95rem; background: white; }
+.step-rail button:disabled { opacity: 1; color: #666c70; }
+.step-rail button[aria-current="step"] { background: var(--blue); color: white; box-shadow: 0 4px 12px #1242ff15; }
+.step-rail button[aria-current="step"] span { color: #1640ea; background: var(--lime); border-color: var(--lime); }
+.rail-note { position: relative; display: block; height: 19rem; margin-top: 2.5rem; padding: 0; border: 0; }
+.rail-note > p { top: 1.5rem; left: 1.8rem; color: var(--blue); font-size: 1.65rem; }
+.rail-note::before { content: ''; position: absolute; inset: 0 0 1rem; border: 2px dashed var(--lime); border-left-color: transparent; border-radius: 45%; rotate: -20deg; }
+.rail-note .travel-photo { position: absolute; top: 8rem; left: .25rem; width: 11.7rem; rotate: -12deg; }
+.rail-spark { position: absolute; top: 0; left: 1rem; color: var(--lime) !important; font-size: 1.7rem; }
+.photo-pin { position: absolute; right: -.65rem; top: -1.15rem; display: grid; place-items: center; width: 2.7rem; height: 2.7rem; background: white; border-radius: 50%; box-shadow: 0 3px 16px #17253e26; color: var(--blue); }
+.photo-pin .journey-icon { width: 1.4rem; height: 1.4rem; }
+.workspace-meta { justify-content: center; gap: .8rem; margin-top: auto; font-size: .75rem; }
+.work-canvas { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 2.5rem 2rem 2rem; border: 1px solid #ececeb; border-top: 0; border-radius: 1.3rem 1.3rem 0 0; background: radial-gradient(circle at 100% 17rem, #eef6c55c 0 4.7rem, #eff6d033 4.7rem 7rem, transparent 7rem), #fcfbf8; }
+.canvas-heading { position: relative; display: block; min-height: 8rem; margin-bottom: 2rem; padding: 0; border: 0; isolation: isolate; }
+.canvas-heading > div:not(.travel-doodle) { position: relative; z-index: 1; }
+.step-count { font-size: .875rem; letter-spacing: .16em; }
+.canvas-heading h2 { margin-top: 1rem; font-size: clamp(1.9rem, 3vw, 2.8rem); line-height: 1.23; letter-spacing: -.06em; font-weight: 800; }
+.canvas-heading p { max-width: 42rem; margin-top: .85rem; font-size: 1rem; line-height: 1.7; }
+.canvas-heading .skeleton-badge { position: absolute; right: 0; top: 0; z-index: 2; padding: .5rem .85rem; border-color: #e2e4e8; background: white; color: var(--ink); box-shadow: 0 3px 8px #25345b05; font-size: .75rem; }
+.canvas-doodle { right: -.7rem; top: .7rem; z-index: 0; opacity: .85; }
+.canvas-doodle > span { top: 2rem; right: -.1rem; width: 11rem; font-size: 1.4rem; text-align: center; word-break: keep-all; text-wrap: balance; }
+#step-title { word-break: keep-all; }
+.canvas-heading:has(.canvas-doodle) { padding-right: 0; }
+.canvas-doodle { display: none; }
+@media (min-width: 90rem) { .canvas-doodle { display: block; top: 3rem; } .canvas-heading { margin-bottom: 1.5rem; } }
+.journey-summary { position: sticky; top: 6.2rem; align-self: start; margin: 1.4rem 1.25rem; padding: 1.5rem; border: 1px solid #eeefef; border-radius: 1.3rem; background: #ffffffcf; box-shadow: 0 5px 25px #17253e02; }
+.summary-heading { position: relative; padding-right: 3rem; }
+.summary-heading .eyebrow { font-size: .7rem; letter-spacing: .13em; color: #647084; }
+.summary-heading h2 { margin-top: .5rem; font-size: 1.4rem; }
+.summary-heading > svg { position: absolute; right: -.35rem; top: 0; width: 3.3rem; height: 3.3rem; padding: .85rem; border: 1px solid #edf0f2; border-radius: 50%; background: #f8f9fa; color: var(--blue); }
+.summary-list { display: grid; gap: 0; margin-top: 1.8rem; }
+.summary-list > div { padding: .95rem 0; align-items: center; font-size: .9375rem; }
+.summary-list dt { display: flex; gap: .7rem; align-items: center; white-space: nowrap; }
+.summary-list dt svg { color: var(--blue); width: 1.3rem; height: 1.3rem; }
+.summary-list dd { text-align: right; overflow-wrap: anywhere; }
+.summary-policy { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: #768293; font-size: .875rem; }
+.summary-empty { padding-top: 1.5rem; }
+.canvas-actions { position: static; margin-top: 2rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }
+.canvas-actions > span { font-size: .75rem; }
+.workspace-page .button { min-height: 3rem; }
+.workspace-page .button-primary { padding-inline: 1.4rem; }
+#region-ai-submit::before, #menu-submit::before { content: '✦'; font-size: 1.3rem; }
+#restaurant-submit::before { content: ''; width: 1rem; height: 1rem; border: 2px solid currentColor; border-radius: 50%; margin-right: .2rem; }
+.selected-place:empty { display: none; }
+.workspace-page .field-help { font-size: .8125rem; line-height: 1.7; }
+.workspace-page :is(.region-form, .place-search-form, #estimate-form, .menu-card, .condition-grid > label, .condition-grid fieldset, .review-picker, .review-schedule, .review-map-card) { border-color: #e9eaec; border-radius: 1.3rem; background: white; box-shadow: var(--shadow-soft); }
+.workspace-page :is(.region-form, .place-search-form, #estimate-form) { padding: 1.6rem; gap: 1rem; }
+.workspace-page :is(input:not([type="radio"]):not([type="checkbox"]), textarea, select) { border-color: #cdd2db; border-radius: .8rem; background-color: white; padding: .75rem .95rem; min-height: 3rem; }
+.workspace-page :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--blue); width: 1.1rem; height: 1.1rem; vertical-align: middle; }
+.workspace-page :is(.region-status, #menu-status, #place-status, #hotel-status, #district-status):empty { display: none; }
+.workspace-page :is(.region-status, #menu-status, #place-status, #hotel-status, #district-status):not(:empty) { padding: .9rem 1rem; border-radius: .8rem; background: var(--blue-soft); color: #344668; font-size: .875rem; }
+.workspace-page [data-error="true"]:not(:empty) { background: #fff0ec; color: #a43935; }
+.workspace-page .workspace-empty { padding: 2.5rem 1.5rem; border: 1px dashed #cbd5e6; background: #f5f8ff; text-align: center; }
+
+/* Search and selection cards. */
+.region-methods { width: max-content; padding: .25rem; margin-bottom: 1.2rem; background: white; border-color: var(--line); }
+.region-methods button { min-height: 2.75rem; padding-inline: 1.6rem; font-size: .9375rem; }
+.region-form label { font-size: 1.125rem; }
+.region-form textarea { min-height: 9.5rem; }
+.region-result { padding: 1.35rem 1.2rem; min-height: 7.5rem; border-color: #e4e7ed; box-shadow: 0 3px 12px #26365403; }
+.region-result h3 { font-size: 1.25rem; }
+.region-result p { margin-top: .5rem; font-size: .9375rem; line-height: 1.65; }
+.region-result.is-selected { background: #f3f7ff; border: 1.5px solid var(--blue); box-shadow: 0 3px 16px #1242ff09; }
+.region-result.is-selected .button { color: var(--blue); background: #e7eeff; border-color: transparent; }
+.condition-grid { gap: 1.2rem; }
+.condition-grid > label, .condition-grid fieldset { padding: 1.75rem; min-width: 0; margin: 0; }
+.condition-grid > label { align-content: start; font-size: 1.1rem; }
+.condition-grid fieldset legend { padding-inline: .4rem; font-size: 1.1rem; }
+.condition-grid fieldset label { display: flex; align-items: center; gap: .7rem; padding: 1rem; border: 1px solid var(--line); border-radius: .85rem; }
+.condition-grid fieldset label:has(input:checked) { border-color: #7896ff; background: #eff4ff; color: var(--blue); }
+.place-tabs { margin-bottom: .5rem; }
+.place-tabs button[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); }
+.place-results { gap: .9rem; }
+.place-result, .selected-place { padding: 1.25rem; border-color: #e4e7ed; border-radius: 1.1rem; gap: .65rem; }
+.place-result > strong { font-size: 1.125rem; }
+.place-result > span, .place-result > a { font-size: .875rem; }
+.place-result > a { text-decoration: underline; text-underline-offset: .2rem; }
+.place-result .button { justify-self: stretch; border-color: #c8d5ff; color: var(--blue); background: #f4f7ff; }
+.place-result:has([aria-pressed="true"]) { border-color: var(--blue); background: #f5f8ff; }
+.place-result .button[aria-pressed="true"] { background: var(--blue); color: white; }
+.place-map-pane { padding: .5rem; border: 1px solid #e4e7ed; border-radius: 1.2rem; background: white; align-self: start; }
+.place-map-pane > .button { width: 100%; margin-top: .7rem; font-size: .8125rem; }
+.place-map-pane > p:not(:empty) { padding: .6rem; }
+.workspace-page .place-map { border-radius: .8rem; border-color: #e9edf3; height: 28rem; background: #f0f4f8; }
+.selected-places { margin-top: .5rem; }
+.selected-place { background: #f7f9ff; }
+.selected-place label { font-size: .875rem; }
+
+/* Menu, estimate, restaurant and review share the same visual grammar. */
+.section-label { display: flex !important; align-items: center; gap: 1rem !important; font-size: 1.15rem !important; }
+.section-label > svg, .menu-heading > svg { width: 3.25rem; height: 3.25rem; padding: .85rem; border-radius: 1rem; background: #eef3ff; color: var(--blue); }
+.menu-heading { display: flex; align-items: center; gap: 1rem; margin-top: .5rem; }
+.menu-heading h3 { font-size: 1.25rem; }
+.menu-heading p { font-size: .875rem; }
+.menu-workspace textarea { min-height: 8rem; }
+.menu-card { position: relative; padding: 1.25rem; gap: 1rem; }
+.menu-card h3 { padding: 1rem 8rem 1rem 1rem; border-radius: 1rem; background: linear-gradient(90deg, #f0f5ff, #f8faff); font-size: 1.2rem; }
+.menu-card label:nth-of-type(4) { grid-column: 1 / -1; }
+.menu-card > .button { position: absolute; top: 1.6rem; right: 1.6rem; width: 2.5rem; min-height: 2.5rem; padding: .6rem; background: white; font-size: 0; }
+.menu-card > .button::before { content: ''; width: 1.1rem; height: 1.1rem; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23101918' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7'/%3E%3C/svg%3E"); }
+.menu-confirmation { padding: 1.25rem; border-color: #dce5ff; }
+.menu-confirmation .button { background: var(--blue); }
+.estimate-day { grid-template-columns: minmax(6rem, .65fr) repeat(2, minmax(0, 1fr)); padding: 1.2rem; background: #f7f9fc; border: 1px solid #e5eaf1; border-radius: 1rem; }
+.estimate-day strong { color: var(--blue); }
+.estimate-result-day { box-shadow: var(--shadow-soft); }
+.estimate-timeline time { color: var(--blue); }
+#restaurant-search-form { grid-template-columns: 1.5fr 1fr 1fr; }
+#restaurant-search-form select { font-size: .9375rem; padding-inline: .65rem; }
+#restaurant-search-form > label { padding: .8rem; min-width: 0; background: #fafbfd; border: 1px solid #eef0f3; border-radius: 1rem; font-size: .8125rem; }
+#restaurant-submit { grid-column: 1 / -1; border-radius: .9rem; }
+#restaurant-status:not(:empty), #estimate-status:not(:empty) { border-left: 0; border-radius: .8rem; background: #e4edff; }
+.restaurant-context span { background: #eff3fa; color: #536176; font-size: .8125rem; }
+.review-picker { padding: 1.3rem 1.5rem; }
+.review-picker header { align-items: center; border: 0; padding: 0; }
+.review-heading > div > p { display: none; }
+.review-heading-icon { width: 3.1rem; height: 3.1rem; padding: .75rem; background: #eaf0ff; color: var(--blue); }
+.review-picker h3, .review-map-card h3, .review-finish h3 { margin-top: 0; font-size: 1.25rem; }
+.review-days { margin-top: .9rem; gap: .5rem; }
+.review-days .button { min-width: 11rem; font-size: .875rem; }
+.review-days [aria-pressed="true"] { color: var(--blue); background: #edf2ff; border-color: #7894ff; }
+.review-schedule-header { padding: 1rem; border: 0; background: white; align-items: center; }
+.review-schedule-header .review-heading-icon { background: #eaf0ff; }
+.review-schedule-header h3 { font-size: 1.25rem; }
+.review-entry-marker { background: var(--lime); color: #111b17; }
+.review-boundary .review-entry-marker { background: var(--ink); color: white; }
+.review-move .review-entry-marker { background: #edf2fa; color: var(--blue); }
+.review-entry-content { padding: .85rem 1rem; }
+.review-map-card header { padding: 1rem; }
+.review-map-card .place-map { margin: 0 .5rem; width: calc(100% - 1rem); height: 30rem; border: 0; border-radius: 1rem; }
+.review-map-note { padding: 1rem; font-size: .8125rem; }
+.review-finish { background: #e6edff; border: 0; border-radius: 1.1rem; }
+.review-finish header { padding: 1.5rem; border-bottom-color: #d3ddf8; align-items: center; }
+.review-finish .review-heading-icon { background: var(--blue); color: white; border-radius: 50%; }
+.review-finish #review-adjust { background: white; border-color: #d9dfeb; border-radius: 1rem; }
+#review-form { padding: 1.25rem 1.5rem; }
+#review-submit { border-radius: 1rem; }
+.review-marker { background: var(--lime); color: var(--ink); border-color: white; }
+
+@media (min-width: 105rem) { .workspace-shell { grid-template-columns: 16rem minmax(0, 1fr) 21rem; } .work-canvas { padding-inline: 3rem; } }
+@media (max-width: 80rem) {
+  .workspace-shell { grid-template-columns: 12rem minmax(0, 1fr) 16rem; }
+  .step-rail { padding-inline: .9rem; }
+  .step-rail button { gap: .6rem; padding-inline: .6rem; }
+  .workspace-header { padding-inline: .4rem; }
+  .workspace-header p { font-size: .75rem; }
+  .rail-note .travel-photo { width: 9.5rem; }
+  .work-canvas { padding: 2rem 1.4rem; }
+  .journey-summary { display: block; margin-inline: .8rem; padding: 1.1rem; }
+  .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .journey-summary { grid-column: auto; padding: 1.1rem; border: 1px solid #eeefef; }
+  .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .summary-list { grid-template-columns: 1fr; gap: 0; }
+  .summary-list dt { gap: .4rem; }
+  .summary-list > div { font-size: .8125rem; }
+  .canvas-heading .skeleton-badge { display: none; }
+  .place-layout, .review-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auth-panel { padding: 4.5rem 2.5rem; }
+  .auth-visual { padding-inline: 2.5rem; }
+  .photo-note { left: 19rem; font-size: .8rem; }
+  #restaurant-search-form { grid-template-columns: 1fr 1fr; }
+  #restaurant-search-form > label:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 68rem) {
+  .workspace-shell { grid-template-columns: 11.5rem minmax(0, 1fr); }
+  .journey-summary, .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .journey-summary { position: static; grid-column: 2; grid-row: 1; margin: 1rem; }
+  .journey-summary .summary-heading { padding: 0; }
+  .summary-heading > svg, .journey-summary .summary-policy { display: none; }
+  .summary-heading h2 { font-size: 1.05rem; }
+  .summary-heading .eyebrow { font-size: .6rem; }
+  .summary-list, .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .summary-list { margin-top: .8rem; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem 1rem; }
+  .summary-list > div { display: block; padding: .3rem 0; border: 0; }
+  .summary-list dd { text-align: left; margin-top: .2rem; }
+  .summary-list dt svg { width: 1rem; height: 1rem; }
+  .summary-empty { padding-top: .5rem; }.summary-empty > span { display: none; }
+  .summary-empty strong { margin-top: 0; font-size: .875rem; }
+  .summary-empty p { font-size: .75rem; }
+  .step-rail { grid-row: 1 / 3; }
+  .work-canvas { grid-column: 2; grid-row: 2; }
+  .auth-story strong { font-size: 2.6rem; }
+  .photo-note { left: 15rem; top: 13.5rem; }
+  .auth-photo-heritage { left: 6rem; width: 11rem; }
+}
+@media (max-width: 58rem) {
+  body:is([data-view="auth"], [data-view="workspace"]) .site-header { padding-inline: 1.25rem; }
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-visual { min-height: 25rem; padding: 2rem; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; column-gap: 1rem; }
+  .auth-visual > .eyebrow { grid-column: 1 / -1; }
+  .auth-story { padding-top: 3rem; align-self: center; }
+  .auth-story strong { font-size: 2.2rem; }
+  .auth-story p { font-size: 1rem; }
+  .auth-photos { height: 17rem; margin: 0; grid-column: 2; grid-row: 2 / 4; align-self: center; }
+  .auth-photo-coast { width: 9rem; left: 0; }
+  .auth-photo-heritage { width: 10rem; left: 4rem; }
+  .auth-photos::before { width: 14rem; }
+  .photo-note { left: 2rem; top: 13rem; }
+  .auth-visual > p:last-child { font-size: .75rem; }
+  .auth-panel { max-width: 40rem; padding: 4rem 2rem; }
+  .auth-doodle { top: 0; }
+  .workspace-shell { grid-template-columns: minmax(0, 1fr); }
+  .step-rail { position: static; grid-row: 1; grid-column: 1; order: 0; min-height: 0; padding: 1.25rem 1rem .75rem; border-bottom: 1px solid var(--line); }
+  .workspace-header { display: flex; padding: 0 .25rem 1rem; }
+  .workspace-header h1 { font-size: 1.25rem; }.workspace-header p { font-size: .8125rem; }
+  .step-rail ol { display: flex; gap: .4rem; overflow-x: auto; }
+  .step-rail button { display: flex; min-height: 3rem; gap: .5rem; font-size: .8125rem; padding: .4rem .65rem; }
+  .step-rail button span { width: 2rem; height: 2rem; font-size: .8125rem; }
+  .rail-note { display: none; }
+  .workspace-meta { position: absolute; right: 1.25rem; top: 6rem; }
+  .workspace-meta > span { display: none; }
+  .journey-summary, .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .journey-summary { grid-column: 1; grid-row: 2; order: 0; margin: 1rem; }
+  .work-canvas { grid-column: 1; grid-row: 3; order: 0; padding: 1.75rem 1.25rem; border: 0; border-radius: 0; }
+  .canvas-heading { min-height: 0; margin-bottom: 1.5rem; }
+  .canvas-heading h2 { font-size: 2rem; }
+  .canvas-heading p { font-size: .9375rem; }
+  .canvas-heading .skeleton-badge { display: none; }
+  .canvas-actions { margin: 1.5rem 0 0; padding: 1rem 0 0; background: transparent; backdrop-filter: none; }
+}
+@media (max-width: 44rem) {
+  body:is([data-view="auth"], [data-view="workspace"]) .site-header { min-height: 4.3rem; padding: .6rem 1rem; }
+  body:is([data-view="auth"], [data-view="workspace"]) .brand { font-size: 1.55rem; }
+  body:is([data-view="auth"], [data-view="workspace"]) .brand-mark { width: 2rem; height: 2rem; border-width: 3px; }
+  body:is([data-view="auth"], [data-view="workspace"]) .account-action { min-width: 5rem; }
+  .auth-visual { min-height: 22rem; padding: 1.7rem 1.25rem; grid-template-columns: 1fr; }
+  .auth-story { padding: 2rem 0 5rem; }
+  .auth-story strong { font-size: 2rem; max-width: 19rem; }
+  .auth-story p { font-size: .9375rem; }
+  .auth-photos { position: absolute; right: 1rem; bottom: 1.5rem; width: 10rem; height: 6rem; }
+  .auth-photo-coast { width: 5.5rem; top: 0; }.auth-photo-heritage { width: 6rem; top: 2rem; left: 3.3rem; }
+  .auth-photos::before, .photo-note, .photo-spark { display: none; }
+  .travel-photo { padding: .3rem .3rem .5rem; border-radius: .35rem; }
+  .auth-panel { padding: 3rem 1.25rem; min-height: 0; }
+  .auth-doodle { width: 10rem; right: .5rem; top: .2rem; opacity: .6; }
+  .auth-doodle > span { font-size: 1.1rem; }
+  .auth-panel h1 { font-size: 2.1rem; }.auth-panel .page-description { font-size: 1rem; }
+  .auth-panel .segmented { margin-top: 2rem; }.auth-form { margin-top: 1.5rem; }
+  .auth-form input { min-height: 3.5rem; }.auth-form .button { min-height: 3.5rem; }
+  .workspace-meta { top: 5.5rem; }
+  .workspace-page :is(.region-form, .place-search-form, #estimate-form, .condition-grid > label, .condition-grid fieldset) { padding: 1.15rem; }
+  .workspace-page .section-label { font-size: 1rem !important; gap: .7rem !important; }
+  .section-label > svg, .menu-heading > svg { width: 2.6rem; height: 2.6rem; padding: .65rem; }
+  .summary-list, .workspace-shell:is([data-active-step="5"], [data-active-step="6"]) .summary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .condition-grid, .place-layout, .review-layout, .menu-card, .menu-direct-fields { grid-template-columns: minmax(0, 1fr); }
+  .region-methods { max-width: 100%; }.region-methods button { padding-inline: 1.2rem; }
+  .region-result { min-height: 0; padding: 1.2rem; }
+  .region-result h3 { font-size: 1.15rem; }
+  .region-form-footer { gap: .8rem; }
+  .mobile-place-view { display: grid; background: #edf2fc; }
+  .mobile-place-view button[aria-pressed="true"] { background: var(--blue); }
+  .place-map-pane { padding: .4rem; }.workspace-page .place-map { height: 21rem; }
+  .menu-card { padding: 1rem; }.menu-card > .button { right: 1.25rem; top: 1.35rem; }
+  .menu-card h3 { padding-right: 6.5rem; font-size: 1rem; }
+  .menu-heading { gap: .7rem; }.menu-heading h3 { font-size: 1.15rem; }.menu-heading p { font-size: .8125rem; }
+  .estimate-day { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .9rem; gap: .65rem; }
+  .estimate-day strong { grid-column: 1 / -1; }
+  #restaurant-search-form { grid-template-columns: minmax(0, 1fr); }
+  #restaurant-search-form > label { padding: .9rem; }
+  .review-picker { padding: 1.1rem; }
+  .review-days .button { min-width: 0; flex: 1 1 9rem; padding-inline: .75rem; }
+  .review-picker header > span { font-size: .8125rem; }
+  #review-timeline { padding: 1rem; }
+  .review-entry { grid-template-columns: 2rem minmax(0, 1fr); gap: .55rem; }
+  .review-entry-marker { width: 2rem; height: 2rem; }
+  .review-entry:not(:last-child)::before { left: .95rem; }
+  .review-entry-content { padding: .75rem; }
+  .review-finish header, #review-form { padding: 1.1rem; }
+  .review-finish header { align-items: stretch; }
+  .review-finish h3 { font-size: 1.125rem; }
+  .review-finish header span { font-size: .8125rem; }
+  #review-adjust { width: 100%; }
+  #review-form { grid-template-columns: minmax(0, 1fr); }
+  .review-map-card .place-map { height: 22rem; }
+}
+@media (prefers-reduced-motion: reduce) { .travel-doodle, .travel-photo { animation: none; } }
+@media (forced-colors: active) {
+  .travel-doodle, .auth-route { display: none; }
+  .title-accent, .journey-icon { color: CanvasText; }
+  .step-rail button[aria-current="step"], .region-result.is-selected { outline: 2px solid Highlight; }
+}

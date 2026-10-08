@@ -417,10 +417,38 @@ node --check src/main/resources/static/Routy/js/auth.js
 node --check src/main/resources/static/Routy/js/preview-server.cjs
 node --test src/main/resources/static/Routy/js/preview.test.cjs src/main/resources/static/Routy/js/auth.test.cjs
 node --test src/main/resources/static/Routy/js/auth.browser.test.cjs
-.\gradlew.bat -g .gradle-user test
+.\test.ps1
 git diff --check
 ```
 
 파일 이름이 W1-00에서 변경되면 동일 책임의 새 파일로 검증 명령을 갱신한다. 자동 테스트는 실제 OpenAI·카카오 API를 호출하지 않는다. 모바일·데스크톱, 키보드, reduced motion, forced colors와 브라우저 저장소의 금지 데이터 부재를 별도로 확인한다.
 
 브라우저 테스트는 Node.js 24와 로컬 Chrome을 사용한다. 다른 Chromium 설치 경로는 `CHROME_PATH`로 지정할 수 있다. 검증 캡처는 Git에서 제외된 `build/qa/`에 생성한다.
+
+## 15. W1-06 PNG 디자인 적용 기록 (2026-10-08)
+
+### Change Envelope
+
+- Task ID: W1-06 화면 디자인·회귀 검증.
+- Goal: 제공된 로그인·지역 선택·메뉴·음식점·검토 PNG를 기준으로 로그인과 제작 8단계의 외형을 변경한다. PNG에 없는 여행 조건·관광지·숙소·추정 일정도 같은 색상·카드·입력·탐색 구조를 적용한다.
+- Allowed Paths: `Routy/index.html`, `Routy/css/journey.css`, `Routy/js/preview.js`의 표시 코드, `Routy/js/preview-server.cjs`, `Routy/js/auth.browser.test.cjs`, `Routy/INTEGRATION.md`, `Routy/img/auth-coast.png`, `Routy/img/auth-heritage.png`, `Routy/img/workspace-coast.png`, `Routy/fonts/NanumPenScript-Regular.ttf`, `Routy/fonts/OFL.txt` (모두 `src/main/resources/static/` 기준).
+- Conditional Paths: 없음.
+- Forbidden Paths: Java·DB·설정·빌드, 인증·지역·장소·메뉴·추정·음식점·검토 기능 모듈과 선택 상태 모듈, 사용자 제공 원본 PNG, 기존 travela.
+- References Read: 루트 및 resources/static/Routy 적용 AGENTS, `docs/01-requirements.md` 제작 흐름, `docs/04-api-spec.md` 관련 API, `docs/08-test-strategy.md` 브라우저 검증, `docs/10-definition-of-done.md` 14·15절, `docs/11-command-roadmap.md` W1 단계·종료 보고, `docs/12-harness-boundaries.md` 해당 단계, 본 문서.
+- Verification: JavaScript 구문·기존 단위/브라우저 회귀 테스트, 데스크톱·390px 모바일 캡처, 전체 `test.ps1`, `git diff --check`, 관련 DoD.
+
+### 적용 내용과 경계
+
+- 로그인은 파란 소개 영역과 사진 2장, 오른쪽 인증 폼으로 구성했다. 제작 화면은 단계 메뉴·작업 카드·선택 요약의 3열 구조, 파랑·라임 강조와 손그림 장식을 적용했다.
+- 스타일은 별도 `journey.css`에서 인증·제작 화면을 중심으로 적용한다. 입력 ID, 폼 이벤트, API 요청·응답과 선택 상태 수명은 유지한다. 표시용 제목 강조와 장식 문구만 `preview.js`에서 변경한다.
+- 사진 3장은 생성한 장식용 이미지이며 실제 여행 후보 사진이나 장소 데이터가 아니다. 사용자 제공 PNG의 예시 일정·음식점·평점 등 미지원 내용은 추가하지 않는다. 검토 지도에 경로선을 추가하지 않으며 완료·공유 화면은 저장 데이터 조회 계약을 유지한다.
+- 왼쪽 하단과 오른쪽 상단 장식 문구에는 원본 [Nanum Pen Script](https://github.com/google/fonts/tree/main/ofl/nanumpenscript)를 사용한다. 글꼴 파일과 SIL OFL 라이선스는 `fonts/`에 포함하며 외부 폰트 서버 요청은 없다. 본문·입력 글꼴은 기존 값을 사용한다.
+- 미리보기 서버와 테스트 서버에 새 CSS·이미지·글꼴 경로를 등록하고 기존 추정·음식점·검토 스크립트의 누락된 미리보기 경로도 등록했다. 새 패키지 의존성은 없다.
+
+### 검증 결과와 남은 확인
+
+- JavaScript 단위 테스트 56개와 실제 Chrome 기반 가짜 API 브라우저 테스트 16개 통과. 로그인·지역·장소·메뉴·추정·음식점·검토·완료, 인증 만료·실패 복구·키보드·모바일·모션 감소 회귀를 확인했다.
+- 로그인과 제작 8단계 데스크톱 캡처 및 모바일 캡처를 `build/qa/`에서 확인했다. 사진 비율·로컬 손글씨 로딩과 추가 캡처의 가로 넘침을 자동 검사한다.
+- `git diff --check` 통과. DoD 14·15절의 UI·기존 데이터 수명 관련 회귀를 확인했으며 저장·외부 호출 로직 변경은 없다.
+- 전체 `test.ps1`은 제한된 실행 환경에서 Docker CLI를 찾지 못했으나, 2026-10-08 권한을 확보해 재실행한 결과 `BUILD SUCCESSFUL` (5분 42초)을 확인했다. 격리된 Testcontainers MySQL을 사용하는 전체 테스트 510개가 통과했고 실패·오류·건너뜀은 모두 0개다. 종료 중 Hikari 연결 정리 경고가 있었으나 테스트 실패는 없었다. 실제 카카오 지도·외부 API smoke는 이번 변경에서 검증하지 않았으며 전체 운영 DoD 완료나 로드맵 다음 단계 이동은 기록하지 않는다.
+- 사용자 원본 PNG 변경과 Git 스테이징 상태는 유지했다. Change Envelope 밖 구현 변경은 없다. 새 Spring 개념 도입은 없다.

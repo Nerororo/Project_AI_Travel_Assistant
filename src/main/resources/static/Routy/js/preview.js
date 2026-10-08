@@ -22,7 +22,7 @@
     ['메뉴', '여행 사이의 맛을 생각해요', '먹고 싶은 음식을 분석하거나 직접 메뉴를 추가하고 확정해 주세요.'],
     ['추정 일정', '하루 안에 들어오는지 살펴봐요', '실제 경로 검증 전 추정 일정과 조정 지점을 표시합니다.'],
     ['음식점', '식사 시간의 장소를 골라요', '식사 슬롯 앞뒤 장소와 후보를 목록·지도에 함께 표시합니다.'],
-    ['검토', '이제 실제 경로를 확인할 차례예요', '날짜별 시간표와 방문 순서를 살펴본 뒤 여행을 완성하세요.']
+    ['검토', '여행 일정을 검토해요', '날짜별 시간표와 방문 순서를 살펴본 뒤 여행을 완성하세요.']
   ]);
 
   const VIEW_STATES = Object.freeze({
@@ -176,7 +176,7 @@
       setAuthStatus('');
       setBusy(false);
       passwordInput.autocomplete = authMode === 'signup' ? 'new-password' : 'current-password';
-      document.querySelector('#auth-title').textContent = authMode === 'signup' ? '첫 여행을 시작해요' : '여행을 이어볼까요?';
+      paintTitle(document.querySelector('#auth-title'), authMode === 'signup' ? '첫 여행을 시작해요' : '여행을 이어볼까요?', authMode === 'signup' ? '시작해요' : '이어볼까요?');
       document.querySelector('#auth-description').textContent = authMode === 'signup' ? '이메일로 계정을 만들고 여행을 준비하세요.' : '로그인하고 나만의 여행을 시작하세요.';
       document.querySelectorAll('[data-auth-tab]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.authTab === authMode)));
     }
@@ -380,6 +380,14 @@
       });
     }
 
+    function paintTitle(element, title, accent) {
+      const offset = title.indexOf(accent);
+      if (offset < 0) { element.textContent = title; return; }
+      const emphasis = document.createElement('span');
+      emphasis.className = 'title-accent'; emphasis.textContent = accent;
+      element.replaceChildren(document.createTextNode(title.slice(0, offset)), emphasis, document.createTextNode(title.slice(offset + accent.length)));
+    }
+
     function renderStep(focusHeading) {
       currentStep = clampStep(currentStep);
       furthestStep = Math.max(furthestStep, currentStep);
@@ -397,7 +405,13 @@
       }));
       updateStepAvailability();
       const [, title, description] = STEPS[currentStep];
-      stepTitle.textContent = title;
+      paintTitle(stepTitle, title, ['어디로', '시간과 이동', '장면', '숙소', '맛', '하루', '장소를 골라요', '검토해요'][currentStep]);
+      document.querySelector('#step-doodle-note').textContent = [
+        '어떤 곳으로 떠나볼까요? AI가 추천해드려요!', '나의 속도로 떠나는 여행',
+        '기억하고 싶은 장면을 모아요.', '하루 끝의 편안한 쉼',
+        '여행의 맛이 더 특별한 기억이 되니까!', '좋아하는 장소를 하루에 이어봐요.',
+        '맛있는 여행도 여행의 일부니까!', '이제 거의 다 왔어요! 멋진 여행이 기다려요.'
+      ][currentStep];
       stepDescription.textContent = description;
       stepCount.textContent = `STEP ${String(currentStep + 1).padStart(2, '0')} / ${String(STEPS.length).padStart(2, '0')}`;
       previousStep.disabled = currentStep === 0;

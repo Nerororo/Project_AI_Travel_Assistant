@@ -14,7 +14,10 @@ const {setTimeout: delay} = require('node:timers/promises');
 test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
   const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/menu-workspace.js', 'js/menu-workspace.js'], ['/js/estimate-workspace.js', 'js/estimate-workspace.js'], ['/js/restaurant-workspace.js', 'js/restaurant-workspace.js'], ['/js/review-workspace.js', 'js/review-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
-  const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml'};
+  files.set('/css/journey.css', 'css/journey.css');
+  files.set('/fonts/NanumPenScript-Regular.ttf', 'fonts/NanumPenScript-Regular.ttf');
+  for (const name of ['auth-coast.png', 'auth-heritage.png', 'workspace-coast.png']) files.set(`/img/${name}`, `img/${name}`);
+  const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf'};
   const account = {email: `${randomBytes(6).toString('hex')}@example.invalid`, password: randomBytes(12).toString('base64url')};
   const token = Array.from({length: 3}, () => randomBytes(16).toString('base64url')).join('.');
   let responseMode = 'success';
@@ -238,6 +241,22 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     const shot = await send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: false});
     await fs.writeFile(path.join(directory, name), Buffer.from(shot.data, 'base64'));
   }
+  async function designScreenshot(name) {
+    await evaluate('document.fonts.ready.then(() => true)');
+    const scroll = await evaluate('scrollY');
+    await delay(150);
+    await evaluate('window.scrollTo({top:0,behavior:"instant"})');
+    await until('scrollY === 0');
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'design fits viewport');
+    await screenshot(name);
+    await evaluate(`window.scrollTo({top:${scroll},behavior:"instant"})`);
+  }
+  async function mobileDesignScreenshot(name) {
+    const size = await evaluate('({width: innerWidth, height: innerHeight})');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    await designScreenshot(name);
+    await send('Emulation.setDeviceMetricsOverride', {...size, deviceScaleFactor: 1, mobile: size.width <= 700});
+  }
   async function fill() {
     await evaluate(`document.querySelector('#auth-email').value=${JSON.stringify(account.email)};document.querySelector('#auth-password').value=${JSON.stringify(account.password)}`);
   }
@@ -256,6 +275,10 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: `${origin}/#/workspace`});
   await until(`document.body?.dataset.view === 'auth'`);
+  await evaluate('document.fonts.ready.then(() => true)');
+  assert.equal(await evaluate('document.fonts.check(\'24px "Routy Handwriting"\')'), true, 'local decoration font loads');
+  await until(`Array.from(document.querySelectorAll('.auth-photos img')).every(img => img.complete && img.naturalWidth > 0)`);
+  assert.equal(await evaluate(`Array.from(document.querySelectorAll('.auth-photos img')).every(img => Math.abs(img.clientWidth / img.clientHeight - 1.5) < .03)`), true, 'login photos retain landscape aspect ratio');
   await screenshot('w1-01a-auth-desktop.png');
 
   await t.test('anonymous deep links are guarded and shared remains public', async () => {
@@ -366,10 +389,13 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('[data-step="0"]').getAttribute('aria-current')`), 'step');
     await click('#next-step');
     assert.equal(await evaluate(`document.querySelector('[data-step="1"]').getAttribute('aria-current')`), 'step');
+    await designScreenshot('w1-06-conditions-desktop.png');
+    await mobileDesignScreenshot('w1-06-conditions-mobile.png');
     await evaluate(`document.querySelector('#trip-days').value='2';document.querySelector('#trip-days').dispatchEvent(new Event('change'))`);
     await click('#next-step');
     await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
+    await designScreenshot('w1-06-attractions-desktop.png');
     const attractionRequest = placeRequests.at(-1);
     assert.equal(attractionRequest.path, '/api/places/search');
     assert.equal(attractionRequest.body.placeRole, 'ATTRACTION');
@@ -404,6 +430,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`(()=>{const heading=document.querySelector('#step-title').getBoundingClientRect();return heading.top >= document.querySelector('.site-header').getBoundingClientRect().bottom && heading.top < innerHeight})()`), true);
     assert.equal(await evaluate(`document.querySelector('#hotel-map').classList.contains('is-unavailable')`), true);
     await screenshot('w1-02-hotel-desktop.png');
+    await mobileDesignScreenshot('w1-06-hotel-mobile.png');
     assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
     assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
     await click('#next-step');
@@ -712,6 +739,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('.review-picker').scrollIntoView({block:'start',behavior:'instant'})`);
     await delay(150);
     await screenshot('w1-04-review-overview-desktop.png');
+    await designScreenshot('w1-06-review-desktop.png');
     await evaluate(`document.querySelector('.review-schedule').scrollIntoView({block:'start',behavior:'instant'})`);
     await delay(150);
     await screenshot('w1-04-review-schedule-desktop.png');
