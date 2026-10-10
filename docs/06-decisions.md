@@ -653,6 +653,26 @@ Accepted (2026-10-06), T1-03A
 
 ---
 
+# ADR-045 - 학습용 공개 배포는 Render Web Service와 Aiven MySQL을 사용한다
+
+## 상태
+
+Accepted (2026-10-09), SEC1-01 설계 기준
+
+## 문제와 결정
+
+학생이 GitHub 연동, Docker 기반 Spring Boot 기동, 환경 변수, 외부 DB TLS 연결, 로그와 재배포를 학습할 수 있도록 공개 배포 조합을 고정한다. 앱은 Render 무료 Web Service에서 Docker로 실행하고, 영속 데이터는 Aiven 무료 MySQL에 둔다. 두 서비스는 같은 사설 네트워크가 아니므로 Aiven 공개 endpoint를 사용한다. 운영 연결은 전용 최소 권한 DB 계정, TLS 서버 인증과 호스트 검증(`sslMode=VERIFY_IDENTITY` 또는 Aiven CA를 검증하는 동등한 설정), Aiven IP allowlist에 Render 공식 outbound CIDR만 허용하는 방식으로 제한한다.
+
+Render 무료 서비스의 유휴 절전, ephemeral filesystem, 외부 DB traffic threshold, 월 750 instance-hour와 단일 인스턴스 제약은 학습·시연용 운영 위험으로 문서화한다. 일정·사용자 데이터는 앱 파일시스템에 저장하지 않고 MySQL에만 저장한다. 이 구성은 높은 가용성이나 실제 상용 트래픽을 보장하지 않으며, 사용자 수·가동시간·DB 트래픽이 증가하면 Render 유료/고정 outbound IP 또는 DB 사설 네트워크를 제공하는 다른 운영 구성으로 재검토한다.
+
+## 이유와 영향
+
+현재 MySQL 8.4·Flyway·JPA 계약을 바꾸지 않고 배포 학습 범위를 확보한다. 공개 DB endpoint를 사용하므로 “DB 포트가 인터넷에 존재하지 않는다”를 완료 조건으로 삼지 않고, allowlist·TLS·계정 권한·비밀값 관리와 실제 연결 거부 테스트를 보안 기준으로 삼는다. Render와 Aiven의 무료 정책·지역·outbound CIDR가 바뀌면 SEC1-01을 다시 수행하고 이 ADR과 `docs/09` 운영 계약을 함께 갱신한다. 이 ADR의 Accepted는 실제 배포·보안 검증 완료를 뜻하지 않는다.
+
+공식 기준: [Render free services](https://render.com/docs/free), [Render Docker deploy](https://render.com/docs/docker), [Render outbound IPs](https://render.com/docs/outbound-ip-addresses), [Render environment variables](https://render.com/docs/configure-environment-variables), [Aiven MySQL free tier](https://aiven.io/docs/products/mysql/concepts/mysql-free-tier), [Aiven network access](https://aiven.io/docs/platform/howto/restrict-access), [Aiven TLS certificates](https://aiven.io/docs/platform/concepts/tls-ssl-certificates).
+
+---
+
 ## 4. 후속 결정 필요
 
 현재 T1 완료 저장·공유의 미결정 정책은 없다. 구현은 위 결정을 검증해야 한다.

@@ -55,6 +55,14 @@
 | S1 추정 일정·추천 | `travelplan`의 계산·음식점 검색 조정 Service·정책·전달 DTO, `recommendation/**`, 대응 테스트 | `place`·`route/algorithm`·`region`의 공개 Service·DTO, `global/exception/**`, estimate·음식점 검색 API의 Controller·DTO와 관련 요구사항·ADR·테스트 문서 | Entity·Repository·migration, `route/client/**`, `route/service/**`, `ai/**`, 완료·공유 API, 정적 자산 |
 | T1 외부 경로 통합·완료 일정·API | `travelplan/**`, 대응 테스트, 새 versioned migration | `user`·`place`·`route`·`recommendation` 공개 계약, `global/exception/**`, DB·API·ADR·테스트·DoD 문서 | 외부 Client 내부 구현, `route/algorithm/**`, `ai/**`, 기존 migration, 정적 자산 |
 | W1 실제 화면 | `src/main/resources/static/Routy/**`, 직접 대응 UI 테스트 | API 계약 오류가 확인된 경우 문서 변경 제안 | Java 코드, Repository, migration, 설정, `travela-1.0.0/**` |
+| SEC1-01 배포·네트워크 | `application-prod.yml`, 직접 대응 설정 검증 | Render Docker 배포를 위해 실제 파일을 Change Envelope에 명시한 `Dockerfile`·`.dockerignore`·`render.yaml` 중 필요한 파일; Aiven TLS/allowlist·Render outbound CIDR·환경 변수는 플랫폼 콘솔 증거와 `docs/09` 계약으로 기록; 로컬 포트 제한이 필요할 때만 `docker-compose.yaml`; `global/security/**`, `.env.example` | 미선택 플랫폼 설정 파일, 운영 서버·프록시 Compose 신설, 도메인 비즈니스 코드, migration, 정적 화면, 원본 템플릿 |
+| SEC1-02 인증·세션 | `user` 인증 Controller·Service, `global/security/**`, 직접 대응 테스트 | `user` 한도 저장소, 새 versioned migration, `global/exception/**`, 인증 API·DB·ADR·운영 문서 | AI·장소·경로·일정 비즈니스 코드, 정적 화면, 기존 migration |
+| SEC1-03 외부 비용 | `user` 호출 한도 정책·Service, 직접 대응 테스트 | `ai` 공개 Service, 새 versioned migration, `global/exception/**`, 한도 API·DB·운영 문서 | 외부 Client 구현, 경로 알고리즘, 완료 일정 Aggregate, 정적 화면, 기존 migration |
+| SEC1-04 일정 자원 | `travelplan` 계산·생성·목록의 Controller·DTO·Service·Repository, 직접 대응 테스트 | `user` 공개 한도 Service·DTO, 후속 W1-05 화면 계약 문서, 새 versioned migration, API·DB·운영 문서 | 외부 Client 내부 구현, 경로 알고리즘, 정적 화면, 원본 템플릿, 기존 migration |
+| SEC1-05 입력 상한 | `global` 웹·security 설정, 해당 요청 DTO, `place/service/SelectionTokenService.java`, 직접 대응 테스트 | 선택한 Render 요청 크기 설정, `global/exception/**`, API·운영 문서 | 도메인 알고리즘·Repository·migration, 원본 템플릿 |
+| SEC1-06 공유 링크 | `travelplan` 공유·조회 Controller·Service, 직접 대응 테스트 | 활성화된 플랫폼 접근 로그 설정, 후속 W1-05 공유 화면 계약 문서, `user` 공개 한도 계약, `global/exception/**`, 새 versioned migration, 공유 API·운영 문서 | AI·장소·경로 구현, 정적 화면, 기존 migration |
+| SEC1-07 브라우저·키 | `src/main/resources/static/Routy/**`, `global/security/**`, 직접 대응 브라우저·헤더 테스트 | `run-local.ps1`, `.gitignore`, `build.gradle`, 실제 파일을 명시한 운영 배포 파일·문서 | 도메인 비즈니스 코드, Repository·migration, `travela-1.0.0/**` |
+| SEC1-08 보안 회귀 | 읽기·테스트 실행·Render 보안 전용 Web Service와 Aiven MySQL의 비파괴 점검 | endpoint별 결과표와 플랫폼 콘솔 증거를 `docs/07`·`docs/11`에 비밀값 없이 기록; 발견한 수정은 별도 Task와 Change Envelope | 검증 중 임의 코드·설정·migration·정적 화면 변경, 비밀값·좌표·공유 token 원문의 기록 |
 | Q1 품질·운영 | `global/**`, 운영 관련 테스트, 승인된 `application*.yml`·`application*.properties`·Docker·배포 파일 | `build.gradle`, 각 도메인의 health용 공개 계약, 운영·DoD·준비도 문서 | 도메인 비즈니스 알고리즘, migration, 정적 화면, 원본 템플릿 |
 
 ### 확정된 카카오 데이터 수명 규칙
@@ -84,7 +92,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 
 ### 5.1 작업별 최소 참조 라우팅
 
-아래 표는 구현 작업을 시작할 때 읽을 최소 기준이다. 모든 작업은 이 표와 별개로 루트·대상 경로의 `AGENTS.md`, 로드맵의 해당 ID, 이 문서의 해당 단계 행, 대상 파일과 직접 참조 코드를 읽는다. `공통 오류`는 `docs/04-api-spec.md` 1절에서 해당 상태만, `완료 판정`은 `docs/10-definition-of-done.md`에서 해당 도메인 절만 뜻한다. 문서를 읽는 것은 수정 권한이 아니며, 계약이 실제로 바뀔 때만 6절의 Conditional 규칙으로 문서 수정을 제안한다.
+아래 표는 구현 작업을 시작할 때 읽을 최소 기준이며 행 배치는 실행 순서가 아니다. 실행 순서는 `docs/11-command-roadmap.md`를 따른다. 모든 작업은 이 표와 별개로 루트·대상 경로의 `AGENTS.md`, 로드맵의 해당 ID, 이 문서의 해당 단계 행, 대상 파일과 직접 참조 코드를 읽는다. `공통 오류`는 `docs/04-api-spec.md` 1절에서 해당 상태만, `완료 판정`은 `docs/10-definition-of-done.md`에서 해당 도메인 절만 뜻한다. SEC1-01~08은 공통으로 `docs/08-test-strategy.md` 6.11절의 대응 행과 `docs/09-operations.md` 12절의 실행 행을 읽는다. 문서를 읽는 것은 수정 권한이 아니며, 계약이 실제로 바뀔 때만 6절의 Conditional 규칙으로 문서 수정을 제안한다.
 
 | Task ID | 필수 참조 | 조건부 참조 |
 |---|---|---|
@@ -163,11 +171,20 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | W1-02 | W1-00 공통 골격, P1-03A 서버 계약·P1-06 상태 모듈, S1-05 숙소 전용 검색 API 구현 결과, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-03B | T1-06A의 422 응답, W1-03 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 상태·구간 강조와 직접 대응 UI 테스트; API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
-| W1-03A | W1-00 공통 골격, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-04·W1-05 | W1-00 공통 골격, `docs/04` 생성·조회·편집·삭제·공유 endpoint, `docs/08` 8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
-| W1-04A | W1-04 구현 결과, `docs/01` FR-11, `docs/02` 8절, `docs/06` ADR-031, `docs/08` 6.9·8절, `docs/10` 14~15절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 고정 다운로드 템플릿·동작과 직접 대응 UI·브라우저 테스트; 완료 일정 조회 DTO가 계약을 표현하지 못하면 화면에서 우회하지 않고 별도 API 문서·백엔드 Task 제안 |
-| W1-06 | `docs/01` 관련 목표 계약, `docs/08` 8절, `docs/10` 14~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 발견한 문제의 책임 문서 |
+| W1-03A | W1-00 공통 골격, W1-02A 확정 메뉴·W1-03 추정 결과, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-03B | T1-06A의 422 응답, W1-03·W1-03A 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 표시 상태·정확한 구간 또는 날짜 단위 fallback과 직접 대응 UI 테스트; 완료 생성 요청 연결·재검증은 W1-04, API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
+| W1-04 | W1-00 공통 골격과 W1-03B 오류 표시 상태, `docs/04` 생성·상세 endpoint와 422 응답, `docs/08` 8절의 완료·오류 복구, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 실제 생성 422 연결·작성 상태 유지·오래된 응답 무시·사용자 조정 뒤 전체 재검증과 직접 대응 UI·브라우저 테스트; API 계약 오류 발견 시 문서 변경 제안 |
+| W1-04A | W1-04와 SEC1-01~06 결과, `docs/01` FR-11, `docs/02` 8절, `docs/06` ADR-031, `docs/08` 6.9·8절, `docs/10` 14~15절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 고정 다운로드 템플릿·동작과 직접 대응 UI·브라우저 테스트; 완료 일정 조회 DTO가 계약을 표현하지 못하면 화면에서 우회하지 않고 별도 API 문서·백엔드 Task 제안 |
+| W1-05 | W1-04A와 SEC1-04·06 결과, `docs/04`에서 확정한 목록·상세·PATCH·DELETE·공유 endpoint, `docs/08` 8절의 소유권·공유 흐름, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 목록·제한 편집·삭제·공유 직접 진입과 직접 대응 UI·브라우저 테스트; API 계약 오류 발견 시 문서 변경 제안 |
+| W1-06 | W1-05와 SEC1-01~06 결과, `docs/01` 관련 목표 계약, `docs/04`에서 확정한 인증·일정 제작 오류 응답, `docs/08` 6.11·8절, `docs/10` 13~15절, `Routy/INTEGRATION.md`의 현재 시안과 남은 검증 | 확정된 보안 응답의 기존 화면 반영과 직접 대응 UI·브라우저 테스트; 발견한 백엔드 문제의 책임 문서 |
+| SEC1-01 | `docs/06` ADR-045, `docs/09` 2~4·11~12절, `docs/10` 13절, 현재 로컬 Compose·프로필·배포 진입점, Render·Aiven 공식 네트워크·TLS·DB 문서 | 배포 설정 또는 보안 결정 변경 시 `docs/06` |
+| SEC1-02 | `docs/04` 가입·로그인·인증 오류, `docs/08` 6.1절, `docs/09` 3~5절, `docs/10` 4·13절 | 한도 저장 구조·JWT 계약 변경 시 `docs/03`·`docs/06` |
+| SEC1-03 | `docs/01` FR-14~15, `docs/04` AI·장소·호출 한도, `docs/08` 6.1·6.3·6.8절, `docs/09` 5~6절 | 서비스 한도·카운터 계약 변경 시 `docs/03`·`docs/06` |
+| SEC1-04 | `docs/04` estimate·생성·목록 endpoint, `docs/08` 6.6·6.8~6.9·8절, `docs/09` 5~6절, 기존 W1-04 제작 화면 결과 | 저장 상한·페이징 계약 변경 시 `docs/03`·`docs/06`; 후속 W1-05 목록 화면 계약 |
+| SEC1-05 | `docs/04` 해당 요청 DTO·공통 오류, `docs/08` 6.1·6.4·6.6~6.8절, `docs/09` 9·12절, Render의 요청 크기·timeout 문서 | 서버 설정과 검증 책임이 바뀔 때 `docs/06` |
+| SEC1-06 | `docs/04` 일정 상세·공유 endpoint, `docs/08` 6.9절, `docs/09` 4·12절, `docs/10` 11·13절, Render 접근 로그 문서 | 토큰 저장·공개 응답 계약 변경 시 `docs/03`·`docs/06` |
+| SEC1-07 | W1-06 결과, `docs/09` 3~4·12절, `docs/08` 8절, `docs/10` 13~14절, `Routy/INTEGRATION.md` 지도·인증 흐름 | 산출물 생성·키 제한 방식 결정 시 `docs/06` |
+| SEC1-08 | SEC1-01~07·W1-06 결과, `docs/08` 인증·장소·추정·완료·공유·브라우저 검증 절, `docs/09` 12절, `docs/10` 3~4·13~15절 | 미해결 발견 사항의 책임 Task·문서; Q1로 이월할 비보안 운영 항목 |
 | Q1-01~02 | `docs/09` 2~4·9절, `docs/10` 13절 | 발견한 계약 불일치의 책임 문서 |
 | Q1-03~04 | `docs/09` 4·8절, `docs/10` 13절 | dependency가 필요할 때 `build.gradle`과 관련 ADR |
 | Q1-05~06 | `docs/03` 13절, `docs/08` 10절, `docs/09` 2·10~12절 | 공식 제공자 계약 변경 시 `docs/04`·`docs/06` |

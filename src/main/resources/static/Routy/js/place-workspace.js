@@ -77,10 +77,13 @@
     let map = null;
     let markers = [];
     let ready = false;
+    let generation = 0;
     async function ensure() {
       if (ready) { map.relayout(); return true; }
+      const expected = generation;
       try {
         const maps = await loadMapSdk(window);
+        if (expected !== generation) return false;
         element.classList.remove('is-unavailable');
         element.replaceChildren();
         map = new maps.Map(element, {center: new maps.LatLng(36.5, 127.8), level: 12});
@@ -88,6 +91,7 @@
         status.textContent = '';
         return true;
       } catch (_) {
+        if (expected !== generation) return false;
         element.classList.add('is-unavailable');
         element.textContent = '지도를 표시할 수 없어요. 목록에서 장소를 선택해 주세요.';
         status.textContent = '지도를 불러오지 못했습니다. 목록에서 장소를 선택할 수 있습니다. 브라우저 지도 키와 등록 도메인을 확인해 주세요.';
@@ -123,7 +127,8 @@
       return {minLatitude: sw.getLat(), minLongitude: sw.getLng(), maxLatitude: ne.getLat(), maxLongitude: ne.getLng()};
     }
     function clear() { markers.forEach(marker => marker.setMap(null)); markers = []; }
-    return {ensure, render, center, bounds, clear};
+    function dispose() { generation++; clear(); map = null; ready = false; element.replaceChildren(); element.classList.remove('is-unavailable'); status.textContent = ''; }
+    return {ensure, render, center, bounds, clear, dispose};
   }
 
   function mount(document, window, client, onSummary) {
@@ -162,6 +167,7 @@
     }
     function reset() {
       cancelRequest(); cancelDistrict(); store.cancel(); region = null; generation = 0; district = null;
+      map.dispose(); hotelMap.dispose();
       draft = new Map(); role = ROLES.ATTRACTION; boundarySlot = BOUNDARY_SLOTS.START;
       $('#district-results').replaceChildren();
       clearSearch(); renderDistrict(); status('#district-status', ''); status('#place-status', ''); status('#hotel-status', '');
@@ -172,6 +178,7 @@
     function setRegion(nextRegion) {
       if (region?.regionId === nextRegion.regionId) return;
       cancelRequest(); cancelDistrict();
+      map.dispose(); hotelMap.dispose();
       region = nextRegion; generation = store.setContext(client.sessionContextId(), nextRegion.regionId).generation;
       district = null; draft = new Map(); role = ROLES.ATTRACTION; boundarySlot = BOUNDARY_SLOTS.START;
       document.querySelectorAll('[data-place-role]').forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.placeRole === role)));
@@ -429,5 +436,5 @@
     return {setRegion, showStep, canLeave, nextStep, summary, attractionContexts, estimatePlaces, reset, cancelRequest, selected: () => store.selected()};
   }
 
-  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, createMapView, mount});
+  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, loadMapSdk, createMapView, mount});
 });
