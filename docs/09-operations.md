@@ -312,7 +312,7 @@ F0-03에서는 아래 dependency만 DB 기반 목적으로 추가한다. 현재 
 | `testImplementation 'org.testcontainers:testcontainers-mysql'` | MySQL 8.4 컨테이너 제공 | H2와 외부 공용 DB는 제외 |
 | `testImplementation 'org.testcontainers:testcontainers-junit-jupiter'` | JUnit 생명주기에서 컨테이너 관리 | 수동 start·stop 코드로 생명주기를 분산하지 않음 |
 
-Testcontainers는 테스트 전용이며 production runtime에 포함하지 않는다. MySQL 컨테이너 이미지는 운영 Compose와 같은 `mysql:8.4` 계열로 맞춘다.
+Testcontainers는 테스트 전용이며 production runtime에 포함하지 않는다. 격리 테스트 이미지는 `mysql:8.4`를 사용한다. 웹 플랫폼의 운영 MySQL 버전이 목표 DB인 8.4와 일치하는지 SEC1-01에서 확인하고, 다르면 migration·driver·schema 검증 범위와 계약 변경 여부를 먼저 결정한다.
 
 1. 새 versioned migration을 추가한다.
 2. 빈 DB와 기존 검증 DB에 migration을 적용한다. 기존 V5 DB에 V6를 적용하기 전에는 `SELECT COUNT(*) FROM travel_plan_items WHERE item_type = 'STAY'`로 기존 행 수를 확인한다. 1건 이상이면 적용을 중단하고 데이터 처리 방안을 별도 결정하며 자동 삭제·변환하지 않는다.
@@ -328,10 +328,34 @@ Testcontainers는 테스트 전용이며 production runtime에 포함하지 않�
 
 ## 12. 배포 전후 체크리스트
 
+### 공개 웹 플랫폼 보안 실행 (SEC1)
+
+운영 대상은 Render 무료 Web Service에서 Docker로 실행하는 Spring Boot 앱과 Aiven 무료 MySQL이다. Render 무료 서비스와 Aiven 무료 MySQL은 같은 내부 네트워크가 아니므로 DB는 Aiven 공개 endpoint로 연결한다. 따라서 `Aiven private network`나 Render private service 연결을 전제로 하지 않으며, Aiven IP allowlist와 TLS로 공개 DB 연결을 제한한다. `docker-compose.yaml`의 `travel-mysql`은 로컬 개발용이며 운영 DB로 재사용하지 않는다. 아래 항목은 작업 순서와 완료 기준을 정하는 것이며 아직 구현·검증 완료를 뜻하지 않는다. 공개 API의 수치·응답 계약을 바꿀 때는 `docs/04-api-spec.md`, DB 계약은 `docs/03-database.md`, 설계 결정은 `docs/06-decisions.md`를 함께 갱신한다.
+
+실행 순서는 SEC1-01~06의 백엔드·배포 경계 보안, 남은 W1-04A~06 화면 연결·회귀, SEC1-07~08의 브라우저·공개 배포 보안 회귀다. 앞서 완료한 W1-00~04의 구현 상태를 되돌리지 않으며, 보안 작업에서 바뀐 응답은 W1-06에서 기존 화면에도 반영한다.
+
+SEC1-02~06은 기존 구현과 계약을 확인한 뒤 악용 시나리오에 필요한 정책·수치·응답을 해당 작업에서 결정한다. 보안을 위한 대기·차단·거절은 허용하되, 정당한 1~7일 여행과 하루 관광지 최대 5개 입력, 장소 직접 선택, 일정 계산·저장 결과, 기존 일정 전체 접근과 공유의 정상 흐름은 함께 검증한다. 보안 결정으로 API·화면 동작이 바뀌면 책임 문서와 복구 흐름을 먼저 정렬한다. 이 문단은 로그인 실패 횟수나 저장·입력 상한의 값을 미리 확정하지 않는다.
+
+| 작업 | 운영 실행 항목 |
+|---|---|
+| SEC1-01 | Render Docker Web Service의 build/start command, `PORT`, region과 Aiven MySQL 8.4 계열의 host·port·database·전용 계정을 확정한다. Aiven 기본 `0.0.0.0/0` allowlist를 그대로 두지 않고 Render 서비스의 공식 outbound CIDR만 등록하며, Render 무료 플랜의 outbound 범위가 바뀌면 allowlist를 다시 검증한다. Render의 공개 HTTPS와 Aiven 공개 endpoint의 TLS를 사용하고 JDBC `sslMode=VERIFY_IDENTITY` 또는 Aiven CA를 검증하는 동등한 설정으로 평문·호스트 위조 연결을 거절한다. Aiven은 Render 내부 DB가 아니므로 외부에서 DB 포트가 존재하는 것은 예상된 상태이며, 허용 범위·전용 계정·최소 권한·TLS를 검증한다. Render `SPRING_PROFILES_ACTIVE=prod`, 환경 변수/secret file 주입과 Docker build context·`.dockerignore`에서 비밀값 제외, 전달 프로토콜·클라이언트 IP 헤더의 신뢰 범위를 확인한다. 로컬 Compose의 공개 포트도 개발 PC에서 필요한 범위로 제한한다. |
+| SEC1-02 | 가입·로그인에 대한 IP·계정 기준 시도 제한을 플랫폼 경계와 MySQL 공유 상태 중 어디에서 강제할지 결정한다. 전달 헤더를 임의로 조작해 IP 제한을 우회하지 못하게 한다. 로그인 실패 뒤 대기·잠금·비밀번호 교체를 채택하면 실패 횟수와 창, 본인 확인, 해제·복구, 응답·화면 계약을 함께 확정한다. 등록 이메일 응답·시간 차이와 브라우저 로그아웃 뒤 JWT의 남은 수명을 기존 API 계약·ADR에 따라 재검토한다. 로그아웃 API나 토큰 철회가 필요하다고 결정하면 별도 공개 계약·저장 정책을 먼저 확정한다. |
+| SEC1-03 | 기존 사용자별 AI·장소·경로 한도와 OpenAI project hard spend limit을 계정 대량 생성 시나리오에 대조한다. 예산 소진으로 서비스가 중단되는 위험을 평가하고, 추가 서비스 전체 호출 차단이 필요하면 `docs/04`·이 문서의 한도 계약과 공유 카운터 방식을 먼저 결정한다. 외부 호출 전 차단과 기존 경로 쿼터 예약·반환 규칙을 보존한다. |
+| SEC1-04 | estimate 계산 요청, 완료 일정 생성 요청과 사용자별 저장 총량, 목록 응답 크기에 상한을 정한다. 서로 다른 `requestId`의 연속 생성도 포함한다. 허용된 여행 입력이 상한 때문에 거절되지 않는지 확인한다. 목록을 페이징하면 `docs/04`의 API와 후속 W1-05 목록 화면 계약을 함께 정렬하고, 이 단계에서 모든 기존 일정 접근·`createdAt DESC, id DESC` 정렬·중복 요청 처리의 백엔드 규칙을 검증한다. 실제 화면 이동은 W1-05에서 검증한다. |
+| SEC1-05 | Render의 요청 크기·timeout 한계를 확인하고 앱에서도 본문·DTO 문자열·목록·중첩 입력·JWT와 selection token의 상한을 강제한다. `selectionToken`은 서명 파싱 전에 길이를 검사한다. 초과 입력의 400/413 변환과 외부 호출·DB 저장 전 거절 순서를 정하고, 현행 API의 유효한 1~7일 여행·하루 관광지 최대 5개 요청은 통과하는지 확인한다. |
+| SEC1-06 | 공유 발급과 익명 조회의 호출 제한, 만료·재발급·삭제 시 링크 효력을 확인한다. 현행 `GET /api/shared/travel-plans/{shareToken}`은 토큰을 URL 경로에 사용하므로 URL 자체에서 원문을 없애는 조건을 두지 않는다. 활성화된 플랫폼·애플리케이션 접근 로그와 metric에 토큰·요청 URL 경로 원문이 기록되지 않는지 확인한다. Render 무료 플랜에는 HTTP request log가 제공되지 않는다는 공식 문서를 기준으로 실제 플랜에서 제공·활성화된 로그 종류, 보관·접근 범위를 확인한다. 원문을 기록하는 로그가 있으면 노출 방지책을 적용하고 다시 검증하기 전에는 통과시키지 않는다. 캐시·Referrer 헤더와 타인·없는 일정의 응답 차이는 현재 API 계약을 기준으로 평가한다. |
+| SEC1-07 | Routy 화면과 카카오 지도 SDK에 필요한 출처를 확인해 CSP를 보고 모드에서 검증한 뒤 적용한다. 적용 후 지도 SDK와 정상적인 제작·조회·공유 화면이 모두 동작하는지 브라우저에서 확인한다. 개발용 `map-config.json`이 운영 JAR·이미지에 섞이는지 검사한다. 운영용 브라우저 JavaScript 키는 서버 전용 키와 분리하고 등록 도메인·사용 API를 제한한다. |
+| SEC1-08 | `docs/08`의 서로 다른 메서드·경로 18개 API별 익명·본인·타인·만료/변조 JWT·과대 입력·반복 요청 결과를 표로 남기고, Render 보안 전용 Web Service와 Aiven 서비스에서 HTTPS·TLS DB 연결·allowlist·전달 헤더·응답 헤더·활성화된 로그·운영 키 범위를 확인한다. 의미상 적용할 수 없는 검사는 이유를 적은 `N/A`로만 처리한다. Render 무료 서비스의 유휴 절전·외부 DB traffic threshold·750시간 한도는 가용성 위험으로 기록하고 보안 통과와 혼동하지 않는다. 미해결 보안 문제는 Q1 완료나 공개 배포 준비 완료로 표시하지 않고 책임 Task로 되돌린다. |
+
+Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문서](https://render.com/docs/logging)를 SEC1-06 실행 시 다시 확인한다.
+
 ### 배포 전
 
+- [ ] SEC1-01~08의 웹 플랫폼 보안 실행·회귀 결과와 미해결 위험을 확인
 - [ ] 카카오 좌표의 일시 사용·즉시 폐기 조건이 구현과 테스트에서 검증됐는지 확인
 - [ ] 운영 비밀값이 코드·Git·이미지·로그 설정에 없는지 확인
+- [ ] Render 환경 변수/secret file만 운영 비밀값을 주입하고 Docker build args·이미지·`.dockerignore` 검사에서 DB 비밀번호·JWT/외부 키가 노출되지 않는지 확인
+- [ ] Aiven MySQL 전용 계정·최소 권한·TLS 인증서/호스트 검증·Render outbound CIDR allowlist를 확인하고 `0.0.0.0/0`을 제거
 - [ ] 키의 API·origin·도메인 제한과 교체 절차 확인
 - [ ] migration을 빈 DB와 검증 DB에 적용
 - [ ] 기존 V5 DB에 V6를 적용하기 전 STAY Item 행 수를 확인하고, 1건 이상이면 적용을 중단

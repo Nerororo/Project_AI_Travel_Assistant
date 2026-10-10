@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {buildRequest, validResult, errorText} = require('./estimate-workspace.js');
+const {buildRequest, validResult, errorText, routeFailure} = require('./estimate-workspace.js');
 
 const base = () => ({regionId: 'KR-26', summary: {days: 2, travelMode: 'CAR'},
   selected: {startBoundary: {selectionToken: 'start'}, endBoundary: {selectionToken: 'end'}, hotel: {selectionToken: 'hotel'}},
@@ -44,4 +44,18 @@ test('capacity error gives adjustment guidance without copying provider text', (
   const message = errorText({status: 422}, {code: 'PLAN_CAPACITY_EXCEEDED', message: 'raw', details: {date: '2026-10-01', plannedEndTime: '20:30', allowedEndTime: '20:00', exceededMinutes: 30}});
   assert.match(message, /30분 초과/);
   assert.doesNotMatch(message, /raw/);
+});
+
+test('route error identifies only an exact MOVE and its two neighbors', () => {
+  const items = [
+    {order: 1, type: 'VISIT'}, {order: 2, type: 'MOVE'}, {order: 3, type: 'MEAL'}
+  ];
+  const estimate = {days: [{date: '2026-10-01', items}]};
+  const error = {code: 'ROUTE_NOT_FOUND', details: {date: '2026-10-01', moveOrder: 2, travelMode: 'CAR', providerMessage: 'untrusted'}};
+  assert.deepEqual(routeFailure(error, estimate, 'CAR'), {date: '2026-10-01', orders: [1, 2, 3]});
+  assert.deepEqual(routeFailure({...error, details: {...error.details, moveOrder: 9}}, estimate, 'CAR'), {date: '2026-10-01', orders: []});
+  assert.deepEqual(routeFailure(error, estimate, 'PUBLIC_TRANSIT'), {date: '2026-10-01', orders: []});
+  assert.deepEqual(routeFailure(error, estimate, 'CAR', [{slot: '2026-10-01|LUNCH'}]), {date: '2026-10-01', orders: []});
+  assert.deepEqual(routeFailure(error, estimate, 'CAR', [{slot: '2026-10-02|LUNCH'}]), {date: '2026-10-01', orders: [1, 2, 3]});
+  assert.equal(routeFailure({...error, details: {...error.details, date: '2026-10-03'}}, estimate, 'CAR'), null);
 });

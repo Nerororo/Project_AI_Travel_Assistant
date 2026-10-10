@@ -66,7 +66,7 @@
     function setStatus(message, error = false) { status.textContent = message; status.dataset.error = String(error); if (error) status.focus({preventScroll: true}); else if (document.activeElement === status) status.blur(); }
     function cancel() { version++; pending?.abort(); pending = null; $('#restaurant-submit').disabled = false; }
     function clearResults() { results = []; references = null; pagination = null; map.clear(); render(); }
-    function reset() { cancel(); fingerprint = null; selections.clear(); slotInput.replaceChildren(); menuInput.replaceChildren(); referenceInput.replaceChildren(); clearResults(); setStatus(''); }
+    function reset() { cancel(); fingerprint = null; selections.clear(); slotInput.replaceChildren(); menuInput.replaceChildren(); referenceInput.replaceChildren(); map.dispose(); clearResults(); setStatus(''); }
     function selectedSlot(confirmed) { return confirmed?.slots.find(slot => slotKey(slot) === slotInput.value) || null; }
     function renderReferenceChoices(confirmed, menus) {
       const slot = selectedSlot(confirmed), menu = menus[Number(menuInput.value)];
@@ -82,7 +82,7 @@
       const data = context(), confirmed = data.confirmed, menus = data.menus;
       const nextFingerprint = confirmed ? JSON.stringify({request: confirmed.request, slots: confirmed.slots, menus}) : null;
       if (fingerprint === nextFingerprint) return;
-      cancel(); selections.clear(); clearResults(); fingerprint = nextFingerprint;
+      cancel(); selections.clear(); map.dispose(); clearResults(); fingerprint = nextFingerprint;
       slotInput.replaceChildren(); menuInput.replaceChildren();
       for (const slot of confirmed?.slots || []) {
         const option = document.createElement('option'); option.value = slotKey(slot);
@@ -143,15 +143,22 @@
       for (const [key, place] of selections) {
         const item = document.createElement('div'); item.className = 'selected-place';
         const label = document.createElement('strong'); label.textContent = `${key.replace('|LUNCH', ' 점심').replace('|DINNER', ' 저녁')} · ${place.providerDisplayName}`;
+        const nameLabel = document.createElement('label'); nameLabel.textContent = '저장할 음식점 이름';
+        const name = document.createElement('input'); name.type = 'text'; name.maxLength = 50; name.value = place.displayName;
+        name.placeholder = '직접 이름 입력';
+        name.addEventListener('input', () => { place.displayName = name.value; }); nameLabel.append(name);
+        const memoLabel = document.createElement('label'); memoLabel.textContent = '메모 (선택)';
+        const memo = document.createElement('textarea'); memo.maxLength = 1000; memo.value = place.memo;
+        memo.addEventListener('input', () => { place.memo = memo.value; }); memoLabel.append(memo);
         const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '선택 해제';
-        remove.addEventListener('click', () => { selections.delete(key); render(); }); item.append(label, remove); selected.append(item);
+        remove.addEventListener('click', () => { selections.delete(key); render(); }); item.append(label, nameLabel, memoLabel, remove); selected.append(item);
       }
       map.render([...mapPlaces(), ...results, ...(chosen && !results.some(place => place.kakaoPlaceId === chosen.kakaoPlaceId) ? [chosen] : [])], new Set(chosen ? [chosen.kakaoPlaceId] : []), choose);
     }
     function choose(id) {
       const place = results.find(item => item.kakaoPlaceId === id); if (!place) return;
       if (selections.get(slotInput.value)?.kakaoPlaceId === id) selections.delete(slotInput.value);
-      else selections.set(slotInput.value, place);
+      else selections.set(slotInput.value, {...place, displayName: '', memo: ''});
       render(); setStatus('음식점 선택을 현재 작성 흐름에 유지했습니다. 다른 검색 결과도 살펴볼 수 있습니다.');
     }
     async function search(page = 1, bounds = null) {
@@ -203,7 +210,12 @@
     }));
     window.addEventListener('pagehide', reset);
     render();
-    return {showStep, reset, selected: () => [...selections].map(([key, place]) => ({slot: key, selectionToken: place.selectionToken}))};
+    return {showStep, reset, selected: () => {
+      sync();
+      return [...selections].map(([key, place]) => ({slot: key, selectionToken: place.selectionToken,
+        displayName: place.displayName.trim(), memo: place.memo.trim() || null, kakaoPlaceId: place.kakaoPlaceId,
+        latitude: place.latitude, longitude: place.longitude}));
+    }};
   }
   return Object.freeze({searchBody, validResponse, errorText, mount});
 });
