@@ -367,11 +367,21 @@ Render 환경 변수에는 JWT·장소 선택 서명 키와 OpenAI·카카오 �
 
 2026-10-11 `ProdDeploymentConfigurationTest`, Gradle `bootJar`, Docker Desktop의 격리된 Testcontainers MySQL을 사용한 전체 `test.ps1`이 통과했다. 로컬 `docker build`도 성공했고, 생성된 이미지의 JAR 목록에는 `application-prod.yml`이 있으며 개발용 `map-config.json`·인증서·키 파일은 없었다. Aiven CA Secret File 없이 이미지를 실행하면 기동 전에 종료 코드 1로 실패했다. 운영 Dockerfile에는 비밀값을 받는 `ARG`가 없고 Render build log에서도 비밀값 출력은 발견하지 못했다. Render 원격 이미지의 파일 목록은 직접 열람하지 못했다.
 
-2026-10-11 Aiven 무료 MySQL 8.4.11 서비스와 `travel` DB를 확인하고 `routy_app`을 만들었다. 직접 JDBC 연결에서 `CURRENT_USER=routy_app@%`, `Ssl_cipher=TLS_AES_256_GCM_SHA384`를 확인했고, CA 기반 `VERIFY_IDENTITY` 연결이 성공했다. `SHOW GRANTS`에는 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`만 있으며 사용자 생성·권한 위임 권한은 없다. 다만 Aiven 관리 API가 부여한 범위는 `travel.*`이 아닌 `*.*`이고 시스템 DB에는 별도 `REVOKE`가 적용된다. 따라서 이 계정을 스키마 단위 최소 권한으로 설명하지 않는다.
+2026-10-11 Aiven 무료 MySQL 8.4.11 서비스와 `travel` DB를 확인하고 `routy_app`을 만들었다. 직접 JDBC 연결에서 `CURRENT_USER=routy_app@%`, `Ssl_cipher=TLS_AES_256_GCM_SHA384`를 확인했고, CA 기반 `VERIFY_IDENTITY` 연결이 성공했다. 최초 `SHOW GRANTS`에는 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`만 있으며 사용자 생성·권한 위임 권한은 없었지만 범위가 `*.*`였다. 2026-10-12에 아래처럼 `travel.*`로 좁혔다.
 
 Render `routy-sec1`은 통합된 `main`의 Docker 이미지로 Singapore Free 서비스에 배포했다. 첫 배포는 Secret File에 PEM 경계 줄이 빠져 `keytool` 단계에서 종료 코드 1로 실패했다. `aiven-ca.pem`에 `BEGIN/END CERTIFICATE` 줄을 복구한 뒤 재배포가 `Live`가 되었고, 기동 로그에서 CA truststore 가져오기, MySQL 8.4.11 TLS 연결, Flyway V1~V6 적용, 10000 포트 기동을 확인했다. HTTP 요청은 HTTPS로 301 전환되고 `https://routy-sec1.onrender.com/Routy/index.html`은 200을 반환했다. 존재하지 않는 유효 형식의 공유 토큰 조회는 예상한 404를 반환해 DB 조회 경로가 동작했다. 조작된 `Forwarded`·`X-Forwarded-*`를 넣은 같은 요청도 404이며 공격자 호스트로 전환되지 않았다. `forward-headers-strategy=none` 설정과 함께 전달 헤더를 신뢰하지 않는 구성을 확인했다.
 
-Render Connect에 표시된 Singapore outbound `74.220.52.0/24`, `74.220.60.0/24`만 Aiven IP allowlist에 남기고 `0.0.0.0/0`과 `::/0`을 제거했다. 변경 후 이 개발 PC에서 Aiven DB 포트 연결은 timeout으로 차단됐고 Render의 공유 조회 요청은 정상적으로 404를 반환했다. 이 CIDR은 Render 지역의 다른 서비스와 공유되므로 계정·TLS 검증도 유지한다. Render 지역 또는 outbound 범위가 바뀌면 두 CIDR을 다시 확인해야 한다. Render 원격 이미지 직접 검사와 잘못된 CA·호스트에 대한 운영 환경의 거절 실험은 수행하지 못했으므로 SEC1-01의 최종 완료 판정에는 이 검증 한계를 명시한다.
+Render Connect에 표시된 Singapore outbound `74.220.52.0/24`, `74.220.60.0/24`만 Aiven IP allowlist에 남기고 `0.0.0.0/0`과 `::/0`을 제거했다. 변경 후 이 개발 PC에서 Aiven DB 포트 연결은 timeout으로 차단됐고 Render의 공유 조회 요청은 정상적으로 404를 반환했다. 이 CIDR은 Render 지역의 다른 서비스와 공유되므로 계정·TLS 검증도 유지한다. Render 지역 또는 outbound 범위가 바뀌면 두 CIDR을 다시 확인해야 한다.
+
+2026-10-11 추가 점검에서 Live 배포의 원본 커밋 `2bf4636`과 Render BuildKit 로그의 `bootJar` 성공 및 최종 단계 `COPY --from=build /workspace/app.jar /app/app.jar`를 확인했다. 같은 Dockerfile의 로컬 실행 이미지에는 `/app/app.jar`만 있었고, JAR의 820개 항목에 운영 인증서·키 파일·개발용 `map-config.json`·`application-secret`이 없었다. 이미지 메타데이터에는 운영 비밀값 환경 변수가 없었다. Render Free는 Shell·SSH를 제공하지 않아 원격 이미지 파일의 직접 열람은 여전히 불가능하다.
+
+운영 `travel-mysql`과 별개로 생성한 일회용 MySQL 8.4 컨테이너와 MySQL Connector/J 9.7.0에서 운영 JDBC 옵션과 같은 전용 PKCS12 truststore·`fallbackToSystemTrustStore=false`를 시험했다. 올바른 CA의 `VERIFY_CA` 연결은 성공했고 잘못된 CA는 인증 경로 검증에서, 올바른 CA를 사용한 `VERIFY_IDENTITY`의 호스트명 불일치는 인증서 검증에서 각각 거절됐다. 시험 컨테이너는 종료했다.
+
+2026-10-12 Render 운영 서비스에서도 거절 동작을 확인했다. DB 호스트를 Aiven의 실제 IP가 가리키는 다른 DNS 이름으로 임시 변경하자 `VERIFY_IDENTITY`가 인증서 SAN 불일치로 연결을 거절했고 배포가 종료 코드 1로 실패했다. 실제 IP 자체는 인증서 SAN에 있어 실패 조건이 아니므로 이 시험의 근거로 사용하지 않았다. 원래 호스트명으로 복구한 뒤, `aiven-ca.pem`을 별도 CA로 임시 변경하자 인증 경로가 trust anchor에 연결되지 않아 TLS handshake가 실패하고 배포가 종료 코드 1로 실패했다. 원래 CA를 복구해 재배포했고 Render 상태가 `Live`로 돌아왔다. 두 변경은 각각 원복했다.
+
+같은 날 Aiven 관리자 연결로 `routy_app`에 `travel.*`의 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`를 부여한 뒤 기존 `*.*` 권한을 철회했다. 최종 `SHOW GRANTS`는 전역 `USAGE`와 위 `travel.*` 권한만 표시했다. 새 `routy_app` 연결에서 `CURRENT_USER=routy_app@%`, `TLS_AES_256_GCM_SHA384`, `travel` 조회 성공과 `defaultdb` 접근 거절을 확인했다. 시험을 위해 일시 추가한 개발 PC 공인 IPv4 `/32`는 제거했으며 Aiven allowlist에는 위 Render CIDR 두 개만 남아 있다. 이후 Render Free 인스턴스의 절전 해제 기동에서 Aiven TLS 연결·Flyway V1~V6 검증·`prod` 시작을 다시 확인했고, 공개 HTTPS의 `/Routy/index.html`이 정상 화면을 반환했다. Aiven 계정 또는 서비스 설정이 변경되면 권한과 allowlist를 다시 점검한다.
+
+같은 기동의 애플리케이션 로그에 Spring Security의 임시 개발용 자동 생성 비밀번호 안내가 출력됐다. 현재 `SecurityConfig`는 form login과 HTTP Basic을 모두 비활성화하고 JWT 필터를 사용하므로 이 자동 생성 계정은 공개 인증 경로에 쓰이지 않는다. 불필요한 비밀번호 로그와 자동 생성 계정 자체를 없앨지는 SEC1-02 인증 설정 작업에서 처리하고, SEC1-06 운영 로그 감사에서 재확인한다. 비밀번호 원문은 이 문서에 기록하지 않는다.
 
 ### 무료 플랜 가용성 점검과 복구 계약
 

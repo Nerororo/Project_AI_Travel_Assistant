@@ -201,7 +201,7 @@
 
 ## 13. 운영과 보안
 
-- [ ] Render Docker Web Service와 Aiven MySQL의 공개 연결 경계, HTTPS, Aiven TLS·CA/호스트 검증·allowlist, 신뢰된 전달 헤더와 운영 profile·키 분리를 검증했다.
+- [x] Render Docker Web Service와 Aiven MySQL의 공개 연결 경계, HTTPS, Aiven TLS·CA/호스트 검증·allowlist, 신뢰된 전달 헤더와 운영 profile·키 분리를 검증했다.
 - [ ] 가입·로그인, 외부 비용 기능, 일정 계산·저장·목록, 공유 발급·공개 조회에 승인한 남용·자원 상한을 적용하고 전체 API 보안 회귀를 통과했다.
 - [ ] 요청 본문·DTO·토큰 크기 제한과 브라우저 CSP, 운영 산출물의 개발용 지도 키 제외, 공유 URL 로그 정책을 검증했다.
 - [ ] 보안을 위한 대기·차단·거절과 복구 흐름은 확정한 API·화면 계약대로 동작하고, 기존 명세에서 유효하고 시간 예산을 충족하는 1~7일 여행·하루 관광지 최대 5개 입력과 사용자 장소 선택·일정 계산·완료 저장 결과는 유지된다.

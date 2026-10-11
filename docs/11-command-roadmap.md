@@ -276,10 +276,10 @@ SEC1-01은 보안 검증에 필요한 최소 `prod` 설정과 격리된 배포�
 
 ## 16. 지금 시작할 작업
 
-**SEC1-01 — Render·Aiven 배포·HTTPS·DB 경계**
+**SEC1-02 — 가입·로그인 남용과 세션 수명**
 
-- Render Docker Web Service의 `prod` 설정·기동·HTTPS와 전달 헤더의 신뢰 범위를 확인한다.
-- Aiven MySQL 버전·전용 계정·TLS 인증서와 호스트 검증·Render outbound CIDR 접근 제한을 확인한다.
-- 비밀값이 코드·Git·Docker image·build log에 포함되지 않는지 확인하고 배포·DB 경계의 검증 결과를 기록한다.
+- 가입·로그인에 IP·계정 기준 제한을 적용하고 다중 인스턴스 동시성을 확인한다.
+- 등록 이메일 노출과 로그아웃 뒤 JWT 유효기간 위험의 계약·대응을 확정한다.
+- 정상 인증 흐름과 대기·차단·복구 응답을 회귀 검증한다.
 
-세부 완료 기준은 13A절, 운영 실행은 `docs/09-operations.md` 12절, 수정 경계·필수 참조는 `docs/12-harness-boundaries.md`의 SEC1-01 행을 따른다.
+SEC1-01의 배포·DB 경계 검증은 `docs/09-operations.md` 12절과 `docs/07-implementation-readiness.md` 4절에 기록했다. SEC1-02의 세부 완료 기준은 13A절, 운영 실행은 `docs/09-operations.md` 12절, 수정 경계·필수 참조는 `docs/12-harness-boundaries.md`의 SEC1-02 행을 따른다.
