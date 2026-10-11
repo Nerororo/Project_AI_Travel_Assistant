@@ -1,10 +1,19 @@
+server:
+  address: 0.0.0.0
+  port: ${PORT:10000}
+  forward-headers-strategy: none
+
 spring:
   datasource:
-    url: ${DB_URL}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslMode=VERIFY_IDENTITY&trustCertificateKeyStoreUrl=file:/tmp/aiven-truststore.p12&trustCertificateKeyStoreType=PKCS12&trustCertificateKeyStorePassword=changeit&fallbackToSystemTrustStore=false
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
 routy:
+  jwt:
+    keys:
+      - id: ${JWT_ACTIVE_KEY_ID}
+        secret: ${JWT_ACTIVE_KEY_SECRET}
   place:
     selection-token:
       issuer: ${PLACE_SELECTION_TOKEN_ISSUER:routy}
