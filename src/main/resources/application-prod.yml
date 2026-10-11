@@ -4,6 +4,9 @@ server:
   forward-headers-strategy: none
 
 spring:
+  web:
+    resources:
+      static-locations: file:/tmp/routy-static/,classpath:/static/
   datasource:
     url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslMode=VERIFY_IDENTITY&trustCertificateKeyStoreUrl=file:/tmp/aiven-truststore.p12&trustCertificateKeyStoreType=PKCS12&trustCertificateKeyStorePassword=changeit&fallbackToSystemTrustStore=false
     username: ${DB_USERNAME}

@@ -363,9 +363,15 @@ Render 서비스의 **Connect → Outbound**에 표시되는 모든 CIDR을 Aive
 
 Render 환경 변수에는 JWT·장소 선택 서명 키와 OpenAI·카카오 서버 키를 런타임에만 넣는다. Dockerfile은 `ARG`로 비밀값을 읽지 않고, `.dockerignore`는 소스·Gradle wrapper 외 파일과 개발용 `map-config.json`·인증서·로컬 비밀 파일을 빌드 context에서 제외한다. 배포 뒤 이미지와 build log에 비밀값이 없는지 별도로 검사한다. 자동 배포는 실제 서비스와 격리된 보안 검증 환경에서 먼저 수행한다.
 
-현재 저장소에서는 설정 파일과 빌드 입력 경계를 준비했다. 2026-10-11 `ProdDeploymentConfigurationTest`, Gradle `bootJar`, Docker Desktop의 격리된 Testcontainers MySQL을 사용한 전체 `test.ps1`이 통과했다. 로컬 `docker build`도 성공했고, 생성된 이미지의 JAR 목록에는 `application-prod.yml`이 있으며 개발용 `map-config.json`·인증서·키 파일은 없었다. Aiven CA Secret File 없이 이미지를 실행하면 기동 전에 종료 코드 1로 실패했다. **CA를 주입한 이미지 기동, 공개 HTTPS, 실제 DB 계정 권한·CA/호스트 검증·allowlist·migration, 전달 헤더의 실제 요청 회귀, 운영 비밀값의 이미지·build log 부재**는 아직 확인하지 못했다. 각 항목의 실제 결과를 얻기 전에는 SEC1-01을 완료로 표시하지 않는다.
+지도 Web SDK는 서버용 REST API 키가 아니라 별도 JavaScript 키를 사용한다. Render 환경 변수 `KAKAO_MAP_JAVASCRIPT_KEY`에는 카카오디벨로퍼스의 JavaScript 키를 넣고, 해당 키의 JavaScript SDK 도메인에 `https://routy-sec1.onrender.com`을 등록하며 카카오맵 API 사용 상태를 확인한다. 운영 컨테이너는 기동 시 이 공개 키로 `/tmp/routy-static/Routy/js/map-config.json`을 생성한다. 개발용 `map-config.json`은 Git·이미지에 포함하지 않으며 JavaScript 키가 없거나 형식이 잘못되면 기동에 실패한다. 이 JSON과 SDK 요청의 키는 브라우저에 공개되므로 서버 전용 REST API 키를 이 변수에 넣지 않는다.
 
-2026-10-11 Aiven 콘솔에서 무료 MySQL 8.4.11 서비스가 Running이며, 전용 `travel` 데이터베이스를 생성해 목록에서 확인했다. 사용자 목록에는 아직 기본 `avnadmin`만 있으며 IP 허용 목록은 모든 출발지에 열려 있다. Render 콘솔에는 Routy 서비스가 없고 다른 Python 서비스만 있다. 새 Web Service 양식에서 공개 저장소·`main`·Docker·Singapore·Free($0/월)를 선택했으나 배포는 제출하지 않았다. 현재 작업 트리의 배포 파일은 Git `main`에 반영되지 않았다. Aiven 콘솔의 새 서비스 사용자는 기본적으로 관리자 수준 권한을 받으므로 최소 권한 계정은 공식 API의 `mysql_grants` 또는 별도 검증된 권한 부여 절차로 만들어야 한다. 이 콘솔 점검은 위의 실제 연결·TLS·allowlist·HTTPS 검증을 대체하지 않는다.
+2026-10-11 `ProdDeploymentConfigurationTest`, Gradle `bootJar`, Docker Desktop의 격리된 Testcontainers MySQL을 사용한 전체 `test.ps1`이 통과했다. 로컬 `docker build`도 성공했고, 생성된 이미지의 JAR 목록에는 `application-prod.yml`이 있으며 개발용 `map-config.json`·인증서·키 파일은 없었다. Aiven CA Secret File 없이 이미지를 실행하면 기동 전에 종료 코드 1로 실패했다. 운영 Dockerfile에는 비밀값을 받는 `ARG`가 없고 Render build log에서도 비밀값 출력은 발견하지 못했다. Render 원격 이미지의 파일 목록은 직접 열람하지 못했다.
+
+2026-10-11 Aiven 무료 MySQL 8.4.11 서비스와 `travel` DB를 확인하고 `routy_app`을 만들었다. 직접 JDBC 연결에서 `CURRENT_USER=routy_app@%`, `Ssl_cipher=TLS_AES_256_GCM_SHA384`를 확인했고, CA 기반 `VERIFY_IDENTITY` 연결이 성공했다. `SHOW GRANTS`에는 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`만 있으며 사용자 생성·권한 위임 권한은 없다. 다만 Aiven 관리 API가 부여한 범위는 `travel.*`이 아닌 `*.*`이고 시스템 DB에는 별도 `REVOKE`가 적용된다. 따라서 이 계정을 스키마 단위 최소 권한으로 설명하지 않는다.
+
+Render `routy-sec1`은 통합된 `main`의 Docker 이미지로 Singapore Free 서비스에 배포했다. 첫 배포는 Secret File에 PEM 경계 줄이 빠져 `keytool` 단계에서 종료 코드 1로 실패했다. `aiven-ca.pem`에 `BEGIN/END CERTIFICATE` 줄을 복구한 뒤 재배포가 `Live`가 되었고, 기동 로그에서 CA truststore 가져오기, MySQL 8.4.11 TLS 연결, Flyway V1~V6 적용, 10000 포트 기동을 확인했다. HTTP 요청은 HTTPS로 301 전환되고 `https://routy-sec1.onrender.com/Routy/index.html`은 200을 반환했다. 존재하지 않는 유효 형식의 공유 토큰 조회는 예상한 404를 반환해 DB 조회 경로가 동작했다. 조작된 `Forwarded`·`X-Forwarded-*`를 넣은 같은 요청도 404이며 공격자 호스트로 전환되지 않았다. `forward-headers-strategy=none` 설정과 함께 전달 헤더를 신뢰하지 않는 구성을 확인했다.
+
+Render Connect에 표시된 Singapore outbound `74.220.52.0/24`, `74.220.60.0/24`만 Aiven IP allowlist에 남기고 `0.0.0.0/0`과 `::/0`을 제거했다. 변경 후 이 개발 PC에서 Aiven DB 포트 연결은 timeout으로 차단됐고 Render의 공유 조회 요청은 정상적으로 404를 반환했다. 이 CIDR은 Render 지역의 다른 서비스와 공유되므로 계정·TLS 검증도 유지한다. Render 지역 또는 outbound 범위가 바뀌면 두 CIDR을 다시 확인해야 한다. Render 원격 이미지 직접 검사와 잘못된 CA·호스트에 대한 운영 환경의 거절 실험은 수행하지 못했으므로 SEC1-01의 최종 완료 판정에는 이 검증 한계를 명시한다.
 
 ### 무료 플랜 가용성 점검과 복구 계약
 
