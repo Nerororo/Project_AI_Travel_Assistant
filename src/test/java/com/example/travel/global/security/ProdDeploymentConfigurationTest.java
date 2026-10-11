@@ -32,6 +32,8 @@ class ProdDeploymentConfigurationTest {
         assertThat(properties.getProperty("server.address")).isEqualTo("0.0.0.0");
         assertThat(properties.getProperty("server.port")).isEqualTo("12400");
         assertThat(properties.getProperty("server.forward-headers-strategy")).isEqualTo("none");
+        assertThat(properties.getProperty("spring.web.resources.static-locations"))
+                .isEqualTo("file:/tmp/routy-static/,classpath:/static/");
         assertThat(properties.getProperty("routy.jwt.keys[0].id")).isEqualTo("current");
         assertThat(properties.getProperty("routy.jwt.keys[0].secret"))
                 .isEqualTo("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
