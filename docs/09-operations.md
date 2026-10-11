@@ -39,8 +39,8 @@
 
 | 범주 | 예시 이름 | 원칙 |
 |---|---|---|
-| DB | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | 환경 또는 secret manager에서 주입 |
-| JWT | `JWT_ACTIVE_KEY_ID`, key ID별 JWT secret, `JWT_ACCESS_TOKEN_TTL` | 최소 256-bit 무작위 secret, access token 1시간, 코드·Git 저장 금지 |
+| DB | `local`·`smoke`: `DB_URL`; `prod`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD` | 운영 JDBC URL은 `application-prod.yml`이 조립해 Aiven CA·호스트 검증을 강제하며, 비밀번호는 Render 환경 변수로 주입 |
+| JWT | `JWT_ACTIVE_KEY_ID`, `JWT_ACTIVE_KEY_SECRET`, `JWT_ACCESS_TOKEN_TTL` | 최소 256-bit 무작위 secret, access token 1시간, 코드·Git 저장 금지 |
 | OpenAI | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_CONNECT_TIMEOUT_MS`, `OPENAI_REQUEST_TIMEOUT_MS` | 서버 전용, ADR-039 기본값은 `gpt-5.6-luna`·3초·15초 |
 | 카카오 장소 | `KAKAO_LOCAL_API_KEY` | 서버 전용, 필요한 API만 허용 |
 | 카카오 자동차 | `KAKAO_MOBILITY_API_KEY` | 서버 전용, 필요한 API만 허용 |
@@ -156,6 +156,8 @@ OpenAI는 연결 timeout 3초, 재시도를 포함한 전체 요청 시간 예�
 - 최근 호출 결과와 내부 상태는 원문 없이 별도 metric으로 관찰한다.
 - Actuator가 필요하면 dependency 추가 이유와 endpoint 노출 범위를 먼저 설명한다.
 - 완료·공유 일정 조회는 모든 외부 제공자가 장애여도 동작해야 한다.
+
+Render·Aiven 무료 플랜의 정기 점검은 MySQL readiness를 포함하되 OpenAI·카카오·경로 API를 호출하지 않는다. UptimeRobot의 공개 HTTP 점검 경로는 최근 서버 내부 DB 점검 결과만 반환하고 요청마다 DB 쿼리를 실행하지 않는다. 경로·응답·보안 계약은 Q1-03에서 확정하고 Q1-04에서 구현·검증한다. 최근 DB `SELECT 1`이 실패했다면 운영 점검도 실패 상태를 반환하며, 응답에는 연결 정보·schema·비밀값을 노출하지 않는다.
 
 ## 9. 데이터 수명과 정책 준수
 
@@ -349,6 +351,30 @@ SEC1-02~06은 기존 구현과 계약을 확인한 뒤 악용 시나리오에 �
 
 Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문서](https://render.com/docs/logging)를 SEC1-06 실행 시 다시 확인한다.
 
+#### SEC1-01 배포 계약과 확인 상태 (2026-10-10)
+
+Render에서 작업 브랜치를 통합한 Git `main`의 저장소 루트 `Dockerfile`로 **Docker Web Service / Free**를 만든다. 별도 build/start command나 `render.yaml`은 사용하지 않는다. Dockerfile의 첫 단계가 Gradle `bootJar`를 만들고, 최종 단계는 JRE 21에서 실행한다. `PORT`는 Render 기본값 10000을 사용하며 `SPRING_PROFILES_ACTIVE=prod`를 환경 변수로 설정한다. `server.forward-headers-strategy=none`으로 외부 요청의 `Forwarded`·`X-Forwarded-*`를 애플리케이션의 프로토콜·IP 판단에 반영하지 않는다. HTTPS 종료와 HTTP→HTTPS 전환은 Render 경계에서 확인한다. 추후 SEC1-02에서 IP 기반 제한을 구현할 때는 신뢰할 수 있는 클라이언트 IP 전달 계약을 별도로 검증해야 한다.
+
+Aiven 무료 MySQL은 서비스 생성 시 8.4 계열을 명시하고, 콘솔에서 실제 버전을 확인한다. 무료 플랜의 클라우드·지역은 사용자가 지정할 수 없으므로 Aiven이 배정한 지역을 확인한 뒤 Render 지역을 선택한다. 별도 `travel` DB와 `avnadmin`이 아닌 전용 사용자를 만들고, Flyway V1~V6 실행에 필요한 권한과 사용자 생성 권한 부재를 `SHOW GRANTS` 및 실제 migration으로 확인한다. Render에는 Aiven 콘솔의 공개 endpoint **호스트명**을 `DB_HOST`, 포트를 `DB_PORT`, DB명을 `DB_NAME`, 전용 계정·비밀번호를 `DB_USERNAME`·`DB_PASSWORD`로 입력한다. `DB_URL`이나 `SPRING_DATASOURCE_URL`로 운영 연결 설정을 덮어쓰지 않는다.
+
+Aiven 프로젝트 CA PEM은 Render **Secret File** `aiven-ca.pem`으로 넣는다. 런타임 `/etc/secrets/aiven-ca.pem`을 기동 직전에 `/tmp/aiven-truststore.p12`로 가져오며, 파일이 없거나 가져오기에 실패하면 앱이 시작되지 않는다. 운영 JDBC URL은 `sslMode=VERIFY_IDENTITY`, 전용 truststore, `fallbackToSystemTrustStore=false`를 고정한다. `changeit`은 런타임에 생성하는 공개 CA truststore의 무결성 검사 암호이며 DB나 서비스 비밀값이 아니다. Aiven CA 교체 시 Secret File을 갱신하고 재배포한다.
+
+Render 서비스의 **Connect → Outbound**에 표시되는 모든 CIDR을 Aiven IP allowlist에 등록하고 기본 `0.0.0.0/0`을 제거한다. Render 지역·서비스 outbound 범위가 바뀌면 재확인한다. 무료 Aiven의 공개 포트가 존재하는 것은 예상된 상태이므로, 허용되지 않은 출발지의 연결 실패와 허용된 Render의 TLS 연결 성공을 각각 확인한다. 개발용 Compose만 `127.0.0.1:3306`으로 바인딩하며 운영 DB로 쓰지 않는다.
+
+Render 환경 변수에는 JWT·장소 선택 서명 키와 OpenAI·카카오 서버 키를 런타임에만 넣는다. Dockerfile은 `ARG`로 비밀값을 읽지 않고, `.dockerignore`는 소스·Gradle wrapper 외 파일과 개발용 `map-config.json`·인증서·로컬 비밀 파일을 빌드 context에서 제외한다. 배포 뒤 이미지와 build log에 비밀값이 없는지 별도로 검사한다. 자동 배포는 실제 서비스와 격리된 보안 검증 환경에서 먼저 수행한다.
+
+현재 저장소에서는 설정 파일과 빌드 입력 경계를 준비했다. 2026-10-11 `ProdDeploymentConfigurationTest`, Gradle `bootJar`, Docker Desktop의 격리된 Testcontainers MySQL을 사용한 전체 `test.ps1`이 통과했다. 로컬 `docker build`도 성공했고, 생성된 이미지의 JAR 목록에는 `application-prod.yml`이 있으며 개발용 `map-config.json`·인증서·키 파일은 없었다. Aiven CA Secret File 없이 이미지를 실행하면 기동 전에 종료 코드 1로 실패했다. **CA를 주입한 이미지 기동, 공개 HTTPS, 실제 DB 계정 권한·CA/호스트 검증·allowlist·migration, 전달 헤더의 실제 요청 회귀, 운영 비밀값의 이미지·build log 부재**는 아직 확인하지 못했다. 각 항목의 실제 결과를 얻기 전에는 SEC1-01을 완료로 표시하지 않는다.
+
+2026-10-11 Aiven 콘솔에서 무료 MySQL 8.4.11 서비스가 Running이며, 전용 `travel` 데이터베이스를 생성해 목록에서 확인했다. 사용자 목록에는 아직 기본 `avnadmin`만 있으며 IP 허용 목록은 모든 출발지에 열려 있다. Render 콘솔에는 Routy 서비스가 없고 다른 Python 서비스만 있다. 새 Web Service 양식에서 공개 저장소·`main`·Docker·Singapore·Free($0/월)를 선택했으나 배포는 제출하지 않았다. 현재 작업 트리의 배포 파일은 Git `main`에 반영되지 않았다. Aiven 콘솔의 새 서비스 사용자는 기본적으로 관리자 수준 권한을 받으므로 최소 권한 계정은 공식 API의 `mysql_grants` 또는 별도 검증된 권한 부여 절차로 만들어야 한다. 이 콘솔 점검은 위의 실제 연결·TLS·allowlist·HTTPS 검증을 대체하지 않는다.
+
+### 무료 플랜 가용성 점검과 복구 계약
+
+- Q1-03에서 UptimeRobot 무료 HTTP 모니터가 호출할 Render HTTPS 운영 점검 경로를 정한다. 무료 플랜의 공식 점검 간격은 5분이므로 기존 10분 외부 호출 가정을 적용하지 않는다. 서버는 시작 직후 한 번, 이후 실행 중 10분마다 Aiven MySQL에 읽기 전용 `SELECT 1`을 실행하고 최근 결과를 메모리에 보관한다. 공개 점검 경로는 요청마다 DB에 접속하지 않고 최근 결과에 따라 200 또는 503 상태만 반환한다. 시작 직후 결과가 없거나 마지막 DB 점검 뒤 20분이 지나 결과가 오래된 경우에도 503을 반환한다. UptimeRobot의 기본 HTTP 성공·실패 판정으로 이를 감지한다.
+- UptimeRobot 무료 플랜의 사용자 지정 인증 헤더에 의존하지 않는다. 점검 경로는 비밀값 없는 고정 URL로 공개하되 응답 본문·로그에 DB·환경 정보를 넣지 않고, 반복 요청이 DB 조회나 외부 API 호출을 늘리지 않도록 한다. Q1-03에서 경로와 공개 허용 목록을 함께 정렬하고 Q1-04에서 서버 내부 정기 실행, 상태 갱신·실패·회복, 실제 모니터 알림을 구현·검증한다. 구현 전에는 점검이 동작한다고 표시하지 않는다.
+- UptimeRobot 점검 실패는 운영자에게 알리도록 설정한다. Aiven의 무료 서비스 종료 사전 알림도 운영자가 받을 수 있도록 확인한다. 알림 뒤에는 Render 서비스 상태, Aiven 서비스 상태, TLS·allowlist·DB 연결을 구분해 확인한다. 단순 HTTP 성공이나 프로세스 liveness만으로 DB 정상 여부를 판단하지 않는다.
+- Aiven은 초기 사용 또는 지속적 활동 부족을 이유로 무료 서비스를 끌 수 있지만 이를 막는 활동량·시간 간격을 명시하지 않는다. 따라서 10분 DB 점검은 종료 가능성을 낮추기 위한 시도이며 가동 보증이 아니다. Render 역시 UptimeRobot 요청이 실패하거나 월 750 instance-hour를 소진하거나 외부 DB 트래픽 등 무료 플랜 제한에 걸리면 중단될 수 있다. 계속 실행되는 단일 서비스도 31일 기준 744시간을 사용하므로 같은 workspace의 다른 무료 서비스 사용량을 확인한다.
+- Aiven이 `Powered off`이면 운영자는 Aiven 콘솔의 **Services → 해당 MySQL 서비스 → Overview → Actions → Power on service**를 실행하고 `Running`을 기다린다. 복구에는 수분에서 수시간이 걸릴 수 있다. 백업과 binlog로 복구되는 범위를 확인하고 데이터 무손실을 가정하지 않는다. 서비스의 endpoint·CA·지역·네트워크 설정 변경 여부를 확인한 다음 Render에서 TLS 연결, Flyway·schema 상태와 기존 완료 일정 조회를 점검한다. Render가 DB 연결 실패로 기동하지 못했다면 Aiven이 `Running`이 된 후 Render를 재시작하거나 재배포한다. 점검이 다시 성공하고 핵심 조회가 정상일 때 장애를 종료한다.
+
 ### 배포 전
 
 - [ ] SEC1-01~08의 웹 플랫폼 보안 실행·회귀 결과와 미해결 위험을 확인
@@ -356,6 +382,8 @@ Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문�
 - [ ] 운영 비밀값이 코드·Git·이미지·로그 설정에 없는지 확인
 - [ ] Render 환경 변수/secret file만 운영 비밀값을 주입하고 Docker build args·이미지·`.dockerignore` 검사에서 DB 비밀번호·JWT/외부 키가 노출되지 않는지 확인
 - [ ] Aiven MySQL 전용 계정·최소 권한·TLS 인증서/호스트 검증·Render outbound CIDR allowlist를 확인하고 `0.0.0.0/0`을 제거
+- [ ] UptimeRobot 무료 HTTP 모니터의 5분 HTTPS 점검, 서버 내부 10분 DB `SELECT 1`, 공개 경로의 최소 200/503 응답, 실패 알림과 Aiven 종료 사전 알림 수신을 실제로 확인
+- [ ] Render workspace의 무료 instance-hour와 Aiven 무료 서비스 종료 시 운영자 재시작 절차를 확인
 - [ ] 키의 API·origin·도메인 제한과 교체 절차 확인
 - [ ] migration을 빈 DB와 검증 DB에 적용
 - [ ] 기존 V5 DB에 V6를 적용하기 전 STAY Item 행 수를 확인하고, 1건 이상이면 적용을 중단
@@ -369,6 +397,7 @@ Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문�
 ### 배포 직후
 
 - [ ] liveness, readiness와 지역 데이터 적재 확인
+- [ ] UptimeRobot 요청의 성공, DB 연결 실패·오래된 결과의 503과 알림, 회복 후 200을 확인하고 점검 경로에서 DB·외부 제공자 호출이 없는지 확인
 - [ ] 회원가입·로그인과 소유 일정 조회 확인
 - [ ] 완료·공유 일정 조회가 외부 호출 없이 동작하는지 확인
 - [ ] migration 버전과 schema validate 확인
@@ -378,6 +407,7 @@ Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문�
 
 ### 장애 대응
 
+- UptimeRobot 점검이 실패하면 Render와 Aiven 상태를 먼저 구분한다. Aiven이 꺼져 있으면 위 복구 계약에 따라 운영자가 전원을 켜고 DB 연결·데이터·Render 재기동 여부를 확인한다. 10분 DB 점검이 자동 종료를 확실히 막는다고 가정하지 않는다.
 - 제공자 장애 중에도 기존 완료·공유 일정 조회를 유지한다.
 - 키 유출은 키 폐기와 교체를 우선하며 원문 로그를 추가로 수집하지 않는다.
 - 호출 급증 시 사용자 한도와 서비스 전체 차단을 확인하고 원인을 endpoint·outcome 수준에서 조사한다.
