@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record MenuAnalysisRequest(
-		@NotBlank String regionId,
+		@NotBlank @Size(max = 100) String regionId,
 		@NotBlank @Size(max = 200) String request,
 		@NotNull @Size(max = 35) @Valid List<AttractionContext> attractions
 ) {

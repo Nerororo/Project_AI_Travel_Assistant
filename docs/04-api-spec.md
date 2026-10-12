@@ -59,6 +59,7 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 변환 대상 | 상태 | 코드 | 응답 규칙 |
 |---|---:|---|---|
 | DTO·메서드 validation, 잘못된 JSON·타입·필수 header | 400 | `VALIDATION_FAILED` | 필드 검증이면 `fieldErrors`, 그 밖에는 빈 배열 |
+| `/api/**` 요청 본문 64KiB 초과 | 413 | `REQUEST_TOO_LARGE` | JSON 파싱·인증·외부 호출 전에 공통 오류 형식으로 거절 |
 | Bearer token 없음·잘못됨·만료, 로그인 인증 실패 | 401 | `AUTHENTICATION_REQUIRED` | 원인을 구분하지 않는 같은 message, `WWW-Authenticate: Bearer` |
 | 인증됐지만 다른 사용자의 자원 또는 권한 없음 | 403 | `ACCESS_DENIED` | 대상 소유자와 권한 상세 비노출 |
 | 존재하지 않거나 공개적으로 숨겨야 하는 자원 | 404 | endpoint별 not-found 코드 | 현재 일정은 `TRAVEL_PLAN_NOT_FOUND`; 공유 토큰의 무효·만료도 같은 일정 not-found 응답 |
@@ -73,6 +74,8 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 예상하지 못한 서버 오류 | 500 | `INTERNAL_SERVER_ERROR` | 고정된 일반 message만 반환 |
 
 F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환하고, 비즈니스 예외는 자신이 가진 공통 오류 code와 상태로 변환한다. 이미 응답이 시작된 오류를 다시 쓰지 않으며 예상하지 못한 예외는 500으로 변환한다. 같은 원인에 Controller별 handler를 두지 않고 전역 handler 하나를 사용한다.
+
+SEC1-05 입력 상한: `/api/**` 본문은 UTF-8 바이트 기준 64KiB까지 허용한다. 요청 JSON 문자열은 최대 4,096자, 중첩 깊이는 최대 16이며 초과 시 400 `VALIDATION_FAILED`다. Bearer JWT는 2,048자 초과 시 기존 401, `selectionToken`은 2,048자 초과 시 기존 400 검증 오류다. 일정의 `places`는 최대 35개, 생성 `meals`는 최대 14개, 숙소 검색의 관광지 token은 최대 35개, 완료 일정 `placeEdits`는 최대 50개다. 각 문자열·목록의 세부 상한은 해당 endpoint의 기존 필드 계약을 유지한다.
 
 오류별 기본 message는 서버에서 code와 함께 관리한다. 사용자 입력값을 message에 이어 붙이지 않는다. `PLAN_CAPACITY_EXCEEDED`처럼 명세가 허용한 날짜·시각·분 값은 문자열 조합 대신 `details` DTO로 전달하며 message는 `일정이 허용 시간을 초과합니다.`로 고정한다.
 

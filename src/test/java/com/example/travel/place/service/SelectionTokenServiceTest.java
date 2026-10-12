@@ -138,6 +138,13 @@ class SelectionTokenServiceTest {
 	}
 
 	@Test
+	void rejectsOversizedTokenBeforeParsing() {
+		SelectionTokenService service = serviceAt(
+				ISSUED_AT, "active", keys(key("active", randomSecret())));
+		assertInvalid(() -> service.verify("x".repeat(2049), 42L, "KR-26", PlaceRole.ATTRACTION));
+	}
+
+	@Test
 	void rejectsAuthenticatedUserRegionAndRoleMismatch() {
 		SelectionTokenService service = serviceAt(
 				ISSUED_AT, "active", keys(key("active", randomSecret())));

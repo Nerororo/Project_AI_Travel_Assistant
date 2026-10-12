@@ -133,6 +133,34 @@ class SecurityIntegrationTest {
 	}
 
 	@Test
+	void rejectsOversizedBodyBeforeAuthenticationAndJsonParsing() throws Exception {
+		mockMvc.perform(post("/api/users")
+				.contentType("application/json")
+				.content("x".repeat(64 * 1024 + 1)))
+				.andExpect(status().isPayloadTooLarge())
+				.andExpect(jsonPath("$.code").value("REQUEST_TOO_LARGE"));
+	}
+
+	@Test
+	void rejectsDeepJsonAndOversizedBearerToken() throws Exception {
+		mockMvc.perform(post("/api/users")
+				.contentType("application/json")
+				.content("[".repeat(17) + "0" + "]".repeat(17)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+		mockMvc.perform(post("/api/users")
+				.contentType("application/vnd.routy+json")
+				.content("[".repeat(17) + "0" + "]".repeat(17)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+		mockMvc.perform(get("/api/protected-probe")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer " + "x".repeat(2049)))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+	}
+
+	@Test
 	void developmentHelloEndpointIsNotExposed() throws Exception {
 		mockMvc.perform(get("/hello"))
 				.andExpect(status().isNotFound())
