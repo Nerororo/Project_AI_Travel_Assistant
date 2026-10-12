@@ -37,19 +37,21 @@ public class AuthAttemptLimitService {
 	}
 
 	public void acquireRegistration(String clientIp, String email) {
-		acquire(List.of(bucket("REGISTER_IP", clientIp, HOUR, 5),
-				bucket("REGISTER_ACCOUNT", email.toLowerCase(Locale.ROOT), HOUR, 3)));
+		Instant now = clock.instant();
+		acquire(now, List.of(bucket("REGISTER_IP", clientIp, HOUR, 5, now),
+				bucket("REGISTER_ACCOUNT", email.toLowerCase(Locale.ROOT), HOUR, 3, now)));
 	}
 
 	public void acquireLogin(String clientIp, String email) {
-		acquire(List.of(bucket("LOGIN_IP", clientIp, TEN_MINUTES, 30),
-				bucket("LOGIN_ACCOUNT", email.toLowerCase(Locale.ROOT), TEN_MINUTES, 5)));
+		Instant now = clock.instant();
+		acquire(now, List.of(bucket("LOGIN_IP", clientIp, TEN_MINUTES, 30, now),
+				bucket("LOGIN_ACCOUNT", email.toLowerCase(Locale.ROOT), TEN_MINUTES, 5, now)));
 	}
 
-	private void acquire(List<AuthAttemptTransaction.Bucket> buckets) {
+	private void acquire(Instant now, List<AuthAttemptTransaction.Bucket> buckets) {
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			try {
-				transaction.acquire(clock.instant(), buckets);
+				transaction.acquire(now, buckets);
 				return;
 			} catch (CannotAcquireLockException exception) {
 				if (attempt == MAX_TRANSACTION_ATTEMPTS) {
@@ -61,8 +63,8 @@ public class AuthAttemptLimitService {
 		}
 	}
 
-	private AuthAttemptTransaction.Bucket bucket(String bucket, String identifier, long windowSeconds, int limit) {
-		Instant now = clock.instant();
+	private AuthAttemptTransaction.Bucket bucket(String bucket, String identifier, long windowSeconds, int limit,
+			Instant now) {
 		Instant start = Instant.ofEpochSecond(Math.floorDiv(now.getEpochSecond(), windowSeconds) * windowSeconds);
 		Instant expiresAt = start.plusSeconds(windowSeconds);
 		return new AuthAttemptTransaction.Bucket(bucket, hmac(bucket + ":" + identifier), start, expiresAt, limit);

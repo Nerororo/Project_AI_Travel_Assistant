@@ -2,6 +2,7 @@ package com.example.travel.user.service;
 
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
+import com.example.travel.global.security.JwtProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 @ActiveProfiles("test")
@@ -50,6 +52,53 @@ class AuthAttemptLimitIntegrationTest {
 
 	@Autowired
 	private AuthAttemptLimitService service;
+	@Autowired
+	private AuthAttemptTransaction transaction;
+	@Autowired
+	private JwtProperties jwtProperties;
+
+	@Test
+	void loginAndRegistrationEnforceBothIpAndAccountLimits() {
+		for (int index = 0; index < 5; index++) {
+			service.acquireLogin("203.0.113." + (index + 10), "login-account@example.test");
+		}
+		assertRateLimited(() -> service.acquireLogin("203.0.113.20", "login-account@example.test"));
+
+		for (int index = 0; index < 30; index++) {
+			service.acquireLogin("203.0.113.30", "login-ip-" + index + "@example.test");
+		}
+		assertRateLimited(() -> service.acquireLogin("203.0.113.30", "login-ip-extra@example.test"));
+
+		for (int index = 0; index < 3; index++) {
+			service.acquireRegistration("198.51.100." + (index + 10), "register-account@example.test");
+		}
+		assertRateLimited(() -> service.acquireRegistration("198.51.100.20", "register-account@example.test"));
+
+		for (int index = 0; index < 5; index++) {
+			service.acquireRegistration("198.51.100.30", "register-ip-" + index + "@example.test");
+		}
+		assertRateLimited(() -> service.acquireRegistration("198.51.100.30", "register-ip-extra@example.test"));
+	}
+
+	@Test
+	void nextWindowAllowsRetryAfterAccountLimit() {
+		Instant nearEnd = Instant.parse("2026-10-12T00:09:59Z");
+		AuthAttemptLimitService currentWindow = serviceAt(nearEnd);
+		for (int index = 0; index < 5; index++) {
+			currentWindow.acquireLogin("192.0.2." + (index + 10), "window@example.test");
+		}
+		assertRateLimited(() -> currentWindow.acquireLogin("192.0.2.20", "window@example.test"));
+		serviceAt(nearEnd.plusSeconds(1)).acquireLogin("192.0.2.20", "window@example.test");
+	}
+
+	private AuthAttemptLimitService serviceAt(Instant instant) {
+		return new AuthAttemptLimitService(transaction, Clock.fixed(instant, ZoneOffset.UTC), jwtProperties);
+	}
+
+	private static void assertRateLimited(Runnable action) {
+		assertThatThrownBy(action::run).isInstanceOfSatisfying(ApiException.class,
+				exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED));
+	}
 
 	@Test
 	void concurrentCallsAcrossTransactionsCannotExceedAccountLimit() throws Exception {

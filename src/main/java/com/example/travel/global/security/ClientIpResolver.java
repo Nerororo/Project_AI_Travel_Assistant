@@ -18,13 +18,13 @@ public class ClientIpResolver {
 
 	public String resolve(HttpServletRequest request) {
 		if (renderProxy) {
-			String forwarded = request.getHeader("X-Forwarded-For");
-			if (forwarded != null) {
-				String first = forwarded.split(",", 2)[0].trim();
-				if (first.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}")
-						|| (first.contains(":") && first.matches("[0-9a-fA-F:.]+"))) {
+			String cloudflareIp = request.getHeader("CF-Connecting-IP");
+			if (cloudflareIp != null) {
+				String address = cloudflareIp.trim();
+				if (address.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}")
+						|| (address.contains(":") && address.matches("[0-9a-fA-F:.]+"))) {
 					try {
-						return InetAddress.getByName(first).getHostAddress();
+						return InetAddress.getByName(address).getHostAddress();
 					} catch (UnknownHostException ignored) {
 						// Fall back to the socket address if the edge supplies an invalid value.
 					}
