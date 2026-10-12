@@ -65,6 +65,7 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 매핑되지 않은 URL·정적 리소스 | 404 | `RESOURCE_NOT_FOUND` | 요청 경로와 Spring 내부 오류 비노출 |
 | 이미 사용 중인 회원가입 이메일 | 409 | `EMAIL_ALREADY_EXISTS` | 이메일과 기존 사용자 정보 비노출 |
 | 같은 requestId가 처리 중·이미 성공 | 409 | `REQUEST_IN_PROGRESS`, `REQUEST_ALREADY_COMPLETED` | `request_executions` 상태에 따라 구분, 결과 ID 비노출 |
+| 사용자 완료 일정 저장 총량 초과 | 409 | `TRAVEL_PLAN_LIMIT_EXCEEDED` | 기존 일정 삭제 후 새 생성 가능, 결과 ID 비노출 |
 | 유효한 요청이지만 경로 없음·일정 시간 초과 | 422 | `ROUTE_NOT_FOUND`, `PLAN_CAPACITY_EXCEEDED` | 명세된 경우에만 `details`·`adjustments` 제공 |
 | 사용자 또는 서비스 호출 한도 초과 | 429 | `RATE_LIMIT_EXCEEDED` | `retryAfterSeconds`와 `Retry-After` 필수 |
 | 장소·경로·AI 제공자 기술 장애 | 503 | `PLACE_PROVIDER_UNAVAILABLE`, `ROUTE_PROVIDER_UNAVAILABLE`, `AI_UNAVAILABLE` | provider 상태·URL·payload 비노출 |
@@ -85,6 +86,7 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 | `EMAIL_ALREADY_EXISTS` | 이미 사용 중인 이메일입니다. |
 | `REQUEST_IN_PROGRESS` | 같은 요청을 처리 중입니다. |
 | `REQUEST_ALREADY_COMPLETED` | 이미 처리된 요청입니다. |
+| `TRAVEL_PLAN_LIMIT_EXCEEDED` | 저장할 수 있는 일정 수를 초과했습니다. |
 | `ROUTE_NOT_FOUND` | 이동 경로를 찾을 수 없습니다. |
 | `PLAN_CAPACITY_EXCEEDED` | 일정이 허용 시간을 초과합니다. |
 | `RATE_LIMIT_EXCEEDED` | 호출 한도를 초과했습니다. |
@@ -685,7 +687,7 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 ### GET /api/travel-plans
 
-현재 사용자의 일정 목록을 paging 없이 전체 반환하며 `createdAt DESC, id DESC`로 정렬한다. W1-05의 MVP 목록 화면은 이 응답을 그대로 사용하고 페이지 번호·더 보기·paging 요청을 제공하지 않는다. 목록 paging은 별도 요구사항과 API 계약이 정해질 때 후속 작업으로 다룬다.
+현재 사용자의 일정 목록을 `GET /api/travel-plans?page=0&size=20`으로 조회한다. `page`는 0부터 시작하며 기본 0, `size`는 기본 20이고 1~50만 허용한다. 음수 page 또는 범위 밖 size는 400 `VALIDATION_FAILED`다. 응답은 `{ "items": [...], "page": 0, "size": 20, "hasNext": false }`이며 `items`는 기존 목록 항목 구조를 사용한다. `createdAt DESC, id DESC`로 정렬하고, 마지막 페이지 다음은 빈 `items`와 `hasNext=false`를 반환한다. W1-05 화면은 다음 페이지를 요청해 기존 일정 전체에 접근한다.
 
 ### GET /api/travel-plans/{travelPlanId}
 
@@ -788,8 +790,12 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 | 대중교통 경로 | 60 | 120 |
 | AI 지역 추천 | 3 | 15 |
 | AI 메뉴 분석 | 3 | 15 |
+| 일정 추정 | 12 | 120 |
+| 완료 일정 생성 | 3 | 30 |
 
 - 하루는 Asia/Seoul 자정에 초기화한다.
+- 일정 추정은 `POST /api/travel-plans/estimate`에만 적용한다. 생성·음식점 검색 내부의 추정 계산은 추가 차감하지 않는다. 완료 일정 생성은 서로 다른 `requestId`라도 사용자 한도를 공유한다. 같은 `requestId`의 처리 중·성공 중복은 기존 409를 우선하며 추가 차감하지 않는다. 한도 초과는 계산·외부 호출·저장 전에 429와 `Retry-After`를 반환한다. 한도는 요청 시작에 차감하며 이후 계산·저장 실패에도 반환하지 않는다.
+- 사용자당 완료 일정은 최대 100개 저장한다. 100개 상태에서 새 생성은 계산이 끝난 뒤 저장 트랜잭션에서 409 `TRAVEL_PLAN_LIMIT_EXCEEDED`로 거절하며 기존 일정 삭제 후 다시 생성할 수 있다. 기존 일정이 100개를 초과해도 삭제하지 않고 목록 페이지로 모두 조회할 수 있다.
 - AI 지역 추천과 AI 메뉴 분석은 각각 서비스 전체 하루 30회에서 새 요청을 차단한다. 각 기능은 별도 카운터를 사용하고, 차단 시 기존 공통 429와 `retryAfterSeconds`·`Retry-After`를 반환한다.
 - 자동차와 대중교통 경로는 각각 사용자당 분당 60회·하루 120회이며 실제 제공자 요청과 재시도를 차감한다.
 - 대중교통은 카카오맵 REST API를 사용하고 서비스 전체 일일 900건에서 신규 호출을 차단한다.

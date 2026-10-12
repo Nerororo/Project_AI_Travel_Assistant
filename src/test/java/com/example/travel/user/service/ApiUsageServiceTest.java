@@ -62,6 +62,16 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
+	void policyAppliesPlanCalculationAndCreationLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+		assertThat(policy.windows(1L, UsageFeature.TRAVEL_PLAN_ESTIMATE))
+				.extracting(ApiUsagePolicy.UsageWindow::limit).containsExactly(12L, 120L);
+		assertThat(policy.windows(1L, UsageFeature.TRAVEL_PLAN_CREATE))
+				.extracting(ApiUsagePolicy.UsageWindow::limit).containsExactly(3L, 30L);
+	}
+
+	@Test
 	void policyAppliesExactPlaceUserAndServiceLimits() {
 		ApiUsagePolicy policy = new ApiUsagePolicy(
 				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));

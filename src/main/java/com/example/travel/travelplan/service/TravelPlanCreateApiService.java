@@ -22,6 +22,8 @@ import com.example.travel.travelplan.repository.TravelPlanDayRepository;
 import com.example.travel.travelplan.repository.TravelPlanItemRepository;
 import com.example.travel.travelplan.repository.TravelPlanRepository;
 import com.example.travel.user.dto.RequestExecutionLease;
+import com.example.travel.user.dto.RequestStartResult;
+import com.example.travel.user.dto.UsageFeature;
 import com.example.travel.user.service.RequestExecutionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -75,7 +77,10 @@ public class TravelPlanCreateApiService {
 
     public TravelPlanCreateApiResponse create(long userId, UUID requestId, TravelPlanCreateApiRequest request) {
         if (request == null || requestId == null || !text(request.title(), 100)) fail();
-        RequestExecutionLease lease = executions.startTravelPlanCreation(userId, requestId);
+		RequestStartResult start = executions.tryStart(userId, UsageFeature.TRAVEL_PLAN_CREATE, requestId, 1);
+		if (!start.started()) throw new ApiException(ErrorCode.RATE_LIMIT_EXCEEDED,
+				null, List.of(), start.retryAfterSeconds());
+		RequestExecutionLease lease = start.lease();
         try {
             EstimateCommand command = estimates.resolve(userId, request.estimate());
             if (request.places().stream().anyMatch(place -> place.day() == null)) fail();

@@ -20,6 +20,7 @@ import com.example.travel.travelplan.repository.TravelPlanDayRepository;
 import com.example.travel.travelplan.repository.TravelPlanItemRepository;
 import com.example.travel.travelplan.repository.TravelPlanRepository;
 import com.example.travel.user.dto.RequestExecutionLease;
+import com.example.travel.user.dto.RequestStartResult;
 import com.example.travel.user.dto.UsageFeature;
 import com.example.travel.user.service.RequestExecutionService;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,32 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TravelPlanCreateApiServiceTest {
+    @Test
+    void rateLimitedCreationDoesNotCalculateOrSave() {
+        var estimates = mock(TravelPlanEstimateApiService.class);
+        var saves = mock(TravelPlanCompletionSaveService.class);
+        var executions = mock(RequestExecutionService.class);
+        var service = new TravelPlanCreateApiService(estimates, mock(PlanningPlaceSelectionService.class),
+                mock(PlaceSearchRegionService.class), mock(TravelPlanCompletionCalculationService.class),
+                saves, mock(TransactionTemplate.class), executions, mock(TravelPlanRepository.class),
+                mock(TravelPlanDayRepository.class), mock(TravelPlanItemRepository.class),
+                mock(PlanPlaceRepository.class));
+        UUID key = new UUID(0, 3);
+        when(executions.tryStart(7, UsageFeature.TRAVEL_PLAN_CREATE, key, 1))
+                .thenReturn(RequestStartResult.rateLimited(20));
+
+        assertThatThrownBy(() -> service.create(7, key, new TravelPlanCreateApiRequest(
+                "Trip", "KR-30", TravelMode.CAR, LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 10, 1), "start", "end", List.of(), List.of(), null,
+                null, null, List.of(), List.of())))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
+                    assertThat(error.retryAfterSeconds()).isEqualTo(20);
+                });
+        verify(estimates, never()).resolve(eq(7L), any());
+        verify(saves, never()).save(any());
+    }
+
     @Test
     void missingRouteReleasesRequestAndNeverStartsPersistence() {
         var estimates = mock(TravelPlanEstimateApiService.class);
@@ -73,7 +100,8 @@ class TravelPlanCreateApiServiceTest {
         var failure = new ApiException(ErrorCode.ROUTE_NOT_FOUND,
                 new RouteNotFoundDetails(date, 1, TravelMode.CAR),
                 List.of("CHANGE_ORDER", "REMOVE_PLACE", "CHANGE_TRAVEL_MODE"), null);
-        when(executions.startTravelPlanCreation(7, key)).thenReturn(lease);
+		when(executions.tryStart(7, UsageFeature.TRAVEL_PLAN_CREATE, key, 1))
+				.thenReturn(RequestStartResult.started(lease));
         when(estimates.resolve(eq(7L), any())).thenReturn(command);
         when(regions.findById("KR-30")).thenReturn(Optional.of(new PlaceSearchRegion(
                 "KR-30", "대전광역시", null, true, false, null, null, null)));
@@ -112,7 +140,8 @@ class TravelPlanCreateApiServiceTest {
                 null, List.of("menu"), List.of());
         var lease = new RequestExecutionLease(7, UsageFeature.TRAVEL_PLAN_CREATE, key,
                 Instant.parse("2026-10-01T00:10:00Z"));
-        when(executions.startTravelPlanCreation(7, key)).thenReturn(lease);
+		when(executions.tryStart(7, UsageFeature.TRAVEL_PLAN_CREATE, key, 1))
+				.thenReturn(RequestStartResult.started(lease));
         when(transactions.execute(any())).thenAnswer(invocation ->
                 ((TransactionCallback<?>) invocation.getArgument(0)).doInTransaction(mock(TransactionStatus.class)));
         when(estimates.resolve(eq(7L), any())).thenReturn(command);
@@ -131,7 +160,7 @@ class TravelPlanCreateApiServiceTest {
         assertThat(response.travelPlanId()).isEqualTo(42);
         assertThat(response.warnings()).containsExactly("ESTIMATED_TRAVEL_TIMES_USED");
         var order = inOrder(calculations, saves, executions);
-        order.verify(executions).startTravelPlanCreation(7, key);
+		order.verify(executions).tryStart(7, UsageFeature.TRAVEL_PLAN_CREATE, key, 1);
         order.verify(calculations).calculate(eq(command), any());
         order.verify(saves).save(any());
         order.verify(executions).markSucceeded(lease);

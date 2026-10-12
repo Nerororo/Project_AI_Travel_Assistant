@@ -121,6 +121,18 @@ class ApiUsageConcurrencyIntegrationTest {
 	}
 
 	@Test
+	void planFeaturesStopAtTheirOwnMinuteBoundaries() {
+		assertThat(usageService.tryAcquire(77L, UsageFeature.TRAVEL_PLAN_ESTIMATE, 12).acquired()).isTrue();
+		assertThat(usageService.tryAcquire(77L, UsageFeature.TRAVEL_PLAN_ESTIMATE, 1).acquired()).isFalse();
+		assertThat(usageService.tryAcquire(77L, UsageFeature.TRAVEL_PLAN_CREATE, 3).acquired()).isTrue();
+		assertThat(usageService.tryAcquire(77L, UsageFeature.TRAVEL_PLAN_CREATE, 1).acquired()).isFalse();
+		assertThat(counter(UsageScopeType.USER, "77", UsageFeature.TRAVEL_PLAN_ESTIMATE,
+				UsageWindowType.DAY).usedCount()).isEqualTo(12L);
+		assertThat(counter(UsageScopeType.USER, "77", UsageFeature.TRAVEL_PLAN_CREATE,
+				UsageWindowType.DAY).usedCount()).isEqualTo(3L);
+	}
+
+	@Test
 	void newAccountsCannotPassTheAiServiceDailyLimit() throws Exception {
 		for (long userId = 1; userId <= 28; userId++) {
 			assertThat(usageService.tryAcquire(userId, UsageFeature.AI_MENU_ANALYSIS, 1).acquired()).isTrue();

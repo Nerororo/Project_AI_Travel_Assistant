@@ -1,5 +1,7 @@
 package com.example.travel.travelplan.service;
 
+import com.example.travel.global.exception.ApiException;
+import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.route.algorithm.TravelMode;
 import com.example.travel.travelplan.domain.DailyActivityWindow;
 import com.example.travel.travelplan.domain.MealType;
@@ -8,6 +10,7 @@ import com.example.travel.travelplan.dto.CompletedPlanSaveCommand;
 import com.example.travel.travelplan.dto.EstimatedDay;
 import com.example.travel.travelplan.dto.EstimatedItem;
 import com.example.travel.travelplan.dto.TravelConditions;
+import com.example.travel.travelplan.domain.TravelPlan;
 import com.example.travel.travelplan.repository.FoodPreferenceRepository;
 import com.example.travel.travelplan.repository.PlanPlaceRepository;
 import com.example.travel.travelplan.repository.TravelPlanDayRepository;
@@ -35,6 +38,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,6 +123,39 @@ class TravelPlanCompletionSaveServiceTest {
         assertThat(items.count()).isEqualTo(itemCount);
         assertThat(places.count()).isEqualTo(placeCount);
         assertThat(foods.count()).isEqualTo(foodCount);
+    }
+
+    @Test
+    void concurrentCreationStopsAtOneHundredAndDeletionRestoresCapacity() throws Exception {
+        long userId = user();
+        long removable = 0;
+        for (int index = 0; index < 99; index++) {
+            long id = plans.save(new TravelPlan(userId, "Existing", "region-1", "Region snapshot",
+                    DATE, DATE, TravelMode.CAR, 15)).id();
+            if (index == 0) removable = id;
+        }
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var create = (java.util.concurrent.Callable<ErrorCode>) () -> {
+                start.await();
+                try {
+                    service.save(command(userId, false));
+                    return null;
+                } catch (ApiException exception) {
+                    return exception.errorCode();
+                }
+            };
+            var first = executor.submit(create);
+            var second = executor.submit(create);
+            start.countDown();
+            assertThat(java.util.Arrays.asList(first.get(10, TimeUnit.SECONDS), second.get(10, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(null, ErrorCode.TRAVEL_PLAN_LIMIT_EXCEEDED);
+        }
+        assertThat(plans.countByUserId(userId)).isEqualTo(100);
+        long removeId = removable;
+        plans.deleteById(removeId);
+        assertThat(service.save(command(userId, false))).isPositive();
+        assertThat(plans.countByUserId(userId)).isEqualTo(100);
     }
 
     private long user() {

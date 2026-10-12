@@ -2,14 +2,14 @@ package com.example.travel.travelplan.controller;
 
 import com.example.travel.global.security.AuthenticatedUser;
 import com.example.travel.travelplan.dto.TravelPlanDetailResponse;
-import com.example.travel.travelplan.dto.TravelPlanListItemResponse;
+import com.example.travel.travelplan.dto.TravelPlanListPageResponse;
 import com.example.travel.travelplan.service.TravelPlanReadService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/travel-plans")
@@ -21,8 +21,9 @@ public class TravelPlanReadController {
     }
 
     @GetMapping
-    public List<TravelPlanListItemResponse> list(@AuthenticationPrincipal AuthenticatedUser user) {
-        return service.list(user.userId());
+    public TravelPlanListPageResponse list(@AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return service.list(user.userId(), page, size);
     }
 
     @GetMapping("/{travelPlanId}")
