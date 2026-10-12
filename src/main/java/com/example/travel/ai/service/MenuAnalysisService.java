@@ -77,12 +77,12 @@ public class MenuAnalysisService {
 		}
 	}
 
-	public MenuAnalysisResponse analyze(MenuAnalysisRequest request) {
+	MenuAnalysisResponse analyze(MenuAnalysisRequest request, Runnable beforeRetry) {
 		AiClient.MenuAnalysisResult result = aiClient.analyzeMenus(new AiClient.MenuAnalysisPrompt(
 				request.regionId(),
 				request.request(),
 				request.attractions()
-		));
+		), beforeRetry);
 		validateResult(result, request.attractions());
 
 		List<MenuAnalysisResponse.Menu> menus = result.menus().stream()
@@ -100,14 +100,15 @@ public class MenuAnalysisService {
 			long userId,
 			MenuAnalysisRequest request
 	) {
+		Runnable beforeRetry = () -> apiUsageService.acquireOrThrow(userId, UsageFeature.AI_MENU_ANALYSIS, 1);
 		try {
-			return analyze(request);
+			return analyze(request, beforeRetry);
 		} catch (ApiException exception) {
 			if (exception.errorCode() != ErrorCode.AI_RESPONSE_INVALID) {
 				throw exception;
 			}
 			apiUsageService.acquireOrThrow(userId, UsageFeature.AI_MENU_ANALYSIS, 1);
-			return analyze(request);
+			return analyze(request, beforeRetry);
 		}
 	}
 

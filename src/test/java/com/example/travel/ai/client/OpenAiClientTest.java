@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -77,7 +78,7 @@ class OpenAiClientTest {
 						new RegionCandidate("region-b", "지역 B", null),
 						new RegionCandidate("region-c", "지역 C", null)
 				)
-		));
+		), () -> {});
 
 		assertThat(result.regions()).extracting(AiClient.RecommendedRegion::regionId)
 				.containsExactly("region-a", "region-b", "region-c");
@@ -110,7 +111,7 @@ class OpenAiClientTest {
 				"region-a",
 				"음식 요청",
 				List.of(new AttractionContext("place-a", "사용자 장소 A"))
-		));
+		), () -> {});
 
 		assertThat(result.menus()).hasSize(1);
 		assertThat(result.menus().get(0).targetClientPlaceId()).isEqualTo("place-a");
@@ -126,20 +127,48 @@ class OpenAiClientTest {
 				Map.of("regionId", "region-c", "reason", "이유 C")
 		))));
 
-		client.recommendRegions(regionPrompt());
+		AtomicInteger retryCharges = new AtomicInteger();
+		client.recommendRegions(regionPrompt(), () -> {
+			assertThat(requests).hasSize(1);
+			retryCharges.incrementAndGet();
+		});
 
 		assertThat(requests).hasSize(2);
+		assertThat(retryCharges).hasValue(1);
 	}
 
 	@Test
-	void doesNotRetryBadRequestOrExhaustedQuota() {
+	void deniedMenuRetryDoesNotSendSecondHttpRequest() {
+		responses.add(new StubResponse(503, "{}", Map.of()));
+		AtomicInteger retryCharges = new AtomicInteger();
+		var prompt = new AiClient.MenuAnalysisPrompt("region-a", "음식 요청", List.of());
+
+		assertThatThrownBy(() -> client.analyzeMenus(prompt, () -> {
+			retryCharges.incrementAndGet();
+			throw new ApiException(ErrorCode.RATE_LIMIT_EXCEEDED, null, List.of(), 23L);
+		})).isInstanceOfSatisfying(ApiException.class, exception -> {
+			assertThat(exception.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
+			assertThat(exception.retryAfterSeconds()).isEqualTo(23L);
+		});
+		assertThat(requests).hasSize(1);
+		assertThat(retryCharges).hasValue(1);
+	}
+
+	@Test
+	void doesNotRetryBadRequestOrExhaustedQuotaOrProjectSpendLimit() {
 		responses.add(new StubResponse(400, "{}", Map.of()));
-		assertUnavailable(() -> client.recommendRegions(regionPrompt()));
+		assertUnavailable(() -> client.recommendRegions(regionPrompt(), () -> {}));
 		assertThat(requests).hasSize(1);
 
 		requests.clear();
 		responses.add(new StubResponse(429, "{\"error\":{\"code\":\"insufficient_quota\"}}", Map.of()));
-		assertUnavailable(() -> client.recommendRegions(regionPrompt()));
+		assertUnavailable(() -> client.recommendRegions(regionPrompt(), () -> {}));
+		assertThat(requests).hasSize(1);
+
+		requests.clear();
+		responses.add(new StubResponse(429,
+				"{\"error\":{\"code\":\"project_spend_limit_exceeded\"}}", Map.of()));
+		assertUnavailable(() -> client.recommendRegions(regionPrompt(), () -> {}));
 		assertThat(requests).hasSize(1);
 	}
 
@@ -159,7 +188,7 @@ class OpenAiClientTest {
 				timeoutProperties
 		);
 
-		assertUnavailable(() -> client.recommendRegions(regionPrompt()));
+		assertUnavailable(() -> client.recommendRegions(regionPrompt(), () -> {}));
 		assertThat(requestCaptured.await(1, TimeUnit.SECONDS)).isTrue();
 		assertThat(requests).hasSize(1);
 	}
@@ -173,17 +202,17 @@ class OpenAiClientTest {
 						"content", List.of(Map.of("type", "refusal", "refusal", "provider text"))
 				))
 		)), Map.of()));
-		assertInvalid(() -> client.recommendRegions(regionPrompt()));
+		assertInvalid(() -> client.recommendRegions(regionPrompt(), () -> {}));
 
 		responses.add(new StubResponse(200, json(Map.of(
 				"status", "incomplete",
 				"incomplete_details", Map.of("reason", "max_output_tokens"),
 				"output", List.of()
 		)), Map.of()));
-		assertInvalid(() -> client.recommendRegions(regionPrompt()));
+		assertInvalid(() -> client.recommendRegions(regionPrompt(), () -> {}));
 
 		responses.add(okResponse(Map.of("unexpected", true)));
-		assertInvalid(() -> client.recommendRegions(regionPrompt()));
+		assertInvalid(() -> client.recommendRegions(regionPrompt(), () -> {}));
 	}
 
 	private AiClient.RegionRecommendationPrompt regionPrompt() {

@@ -111,31 +111,65 @@ class ApiUsageConcurrencyIntegrationTest {
 					acquired++;
 				}
 			}
-			assertThat(acquired).isEqualTo(2);
+			assertThat(acquired).isEqualTo(3);
 		}
 
 		assertThat(counter(UsageScopeType.USER, "77", UsageFeature.AI_REGION_RECOMMENDATION,
-				UsageWindowType.MINUTE).usedCount()).isEqualTo(2L);
+				UsageWindowType.MINUTE).usedCount()).isEqualTo(3L);
 		assertThat(counter(UsageScopeType.USER, "77", UsageFeature.AI_REGION_RECOMMENDATION,
-				UsageWindowType.DAY).usedCount()).isEqualTo(2L);
+				UsageWindowType.DAY).usedCount()).isEqualTo(3L);
 	}
 
 	@Test
-	void regionAiAllowsTwoPerMinuteAndTenPerDayThenRejectsTheNextCall() {
-		assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 2);
+	void newAccountsCannotPassTheAiServiceDailyLimit() throws Exception {
+		for (long userId = 1; userId <= 28; userId++) {
+			assertThat(usageService.tryAcquire(userId, UsageFeature.AI_MENU_ANALYSIS, 1).acquired()).isTrue();
+		}
+		CountDownLatch ready = new CountDownLatch(8);
+		CountDownLatch start = new CountDownLatch(1);
+		List<Future<Boolean>> futures = new ArrayList<>();
+		try (var executor = Executors.newFixedThreadPool(8)) {
+			for (long userId = 29; userId <= 36; userId++) {
+				long accountId = userId;
+				futures.add(executor.submit(() -> {
+					ready.countDown();
+					start.await();
+					return usageService.tryAcquire(accountId, UsageFeature.AI_MENU_ANALYSIS, 1).acquired();
+				}));
+			}
+			ready.await();
+			start.countDown();
+			int acquired = 0;
+			for (Future<Boolean> future : futures) {
+				if (future.get()) acquired++;
+			}
+			assertThat(acquired).isEqualTo(2);
+		}
+		var denied = usageService.tryAcquire(37L, UsageFeature.AI_MENU_ANALYSIS, 1);
+		assertThat(denied.deniedScopes()).containsExactly(UsageDenialScope.SERVICE);
+		assertThat(counter(UsageScopeType.SERVICE, "GLOBAL", UsageFeature.AI_MENU_ANALYSIS,
+				UsageWindowType.DAY).usedCount()).isEqualTo(30L);
+		assertThat(counterRepository.findAll().stream()
+				.filter(counter -> counter.scopeType() == UsageScopeType.USER)
+				.filter(counter -> counter.scopeId().equals("37"))).isEmpty();
+	}
+
+	@Test
+	void regionAiAllowsThreePerMinuteAndFifteenPerDayThenRejectsTheNextCall() {
+		assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 3);
 		assertThat(usageService.tryAcquire(41L, UsageFeature.AI_REGION_RECOMMENDATION, 1).acquired())
 				.isFalse();
 
 		for (int minute = 1; minute < 5; minute++) {
 			clock.set(Instant.parse("2026-09-16T00:0" + minute + ":00Z"));
-			assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 2);
+			assertCallsAllowed(41L, UsageFeature.AI_REGION_RECOMMENDATION, 3);
 		}
 		clock.set(Instant.parse("2026-09-16T00:05:00Z"));
 
 		assertThat(usageService.tryAcquire(41L, UsageFeature.AI_REGION_RECOMMENDATION, 1).acquired())
 				.isFalse();
 		assertThat(counter(UsageScopeType.USER, "41", UsageFeature.AI_REGION_RECOMMENDATION,
-				UsageWindowType.DAY).usedCount()).isEqualTo(10L);
+				UsageWindowType.DAY).usedCount()).isEqualTo(15L);
 	}
 
 	@Test

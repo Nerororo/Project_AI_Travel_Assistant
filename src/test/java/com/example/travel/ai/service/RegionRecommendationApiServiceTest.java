@@ -10,6 +10,7 @@ import com.example.travel.region.service.AiAllowedRegionService;
 import com.example.travel.user.dto.RequestExecutionLease;
 import com.example.travel.user.dto.RequestStartResult;
 import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.service.ApiUsageService;
 import com.example.travel.user.service.RequestExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,13 +31,14 @@ class RegionRecommendationApiServiceTest {
 
 	private final AiAllowedRegionService allowedRegionService = mock(AiAllowedRegionService.class);
 	private final RequestExecutionService requestExecutionService = mock(RequestExecutionService.class);
+	private final ApiUsageService apiUsageService = mock(ApiUsageService.class);
 	private FakeAiClient client;
 	private RegionRecommendationService service;
 
 	@BeforeEach
 	void setUp() {
 		client = new FakeAiClient();
-		service = new RegionRecommendationService(client, allowedRegionService, requestExecutionService);
+		service = new RegionRecommendationService(client, allowedRegionService, requestExecutionService, apiUsageService);
 	}
 
 	@Test
@@ -100,6 +103,27 @@ class RegionRecommendationApiServiceTest {
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.AI_UNAVAILABLE));
 		verify(requestExecutionService).releaseAfterFailure(lease);
 		verify(requestExecutionService, never()).markSucceeded(lease);
+	}
+
+	@Test
+	void technicalRetryUsesTheRegionQuotaBeforeTheClientContinues() {
+		UUID requestId = UUID.randomUUID();
+		RequestExecutionLease lease = lease(requestId);
+		AiClient retryClient = mock(AiClient.class);
+		RegionRecommendationService retryService = new RegionRecommendationService(
+				retryClient, allowedRegionService, requestExecutionService, apiUsageService);
+		when(requestExecutionService.tryStart(7L, UsageFeature.AI_REGION_RECOMMENDATION, requestId, 1))
+				.thenReturn(RequestStartResult.started(lease));
+		when(allowedRegionService.findAll()).thenReturn(allowedRegions());
+		when(retryClient.recommendRegions(any(), any(Runnable.class))).thenAnswer(invocation -> {
+			invocation.getArgument(1, Runnable.class).run();
+			return result();
+		});
+		when(requestExecutionService.markSucceeded(lease)).thenReturn(true);
+
+		assertThat(retryService.recommend(7L, requestId, new RegionRecommendationRequest("여행"))
+				.regions()).hasSize(3);
+		verify(apiUsageService).acquireOrThrow(7L, UsageFeature.AI_REGION_RECOMMENDATION, 1);
 	}
 
 	private static RequestExecutionLease lease(UUID requestId) {

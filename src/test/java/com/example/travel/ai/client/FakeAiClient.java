@@ -21,7 +21,7 @@ public class FakeAiClient implements AiClient {
 	}
 
 	@Override
-	public RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt) {
+	public RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt, Runnable beforeRetry) {
 		lastRegionPrompt = prompt;
 		if (regionFailure != null) {
 			throw regionFailure;
@@ -30,7 +30,7 @@ public class FakeAiClient implements AiClient {
 	}
 
 	@Override
-	public MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt) {
+	public MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt, Runnable beforeRetry) {
 		lastMenuPrompt = prompt;
 		return menuResult;
 	}

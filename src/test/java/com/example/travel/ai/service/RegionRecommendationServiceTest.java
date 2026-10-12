@@ -7,6 +7,7 @@ import com.example.travel.ai.dto.RegionRecommendationRequest;
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.region.service.AiAllowedRegionService;
+import com.example.travel.user.service.ApiUsageService;
 import com.example.travel.user.service.RequestExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class RegionRecommendationServiceTest {
 		service = new RegionRecommendationService(
 				client,
 				mock(AiAllowedRegionService.class),
-				mock(RequestExecutionService.class));
+				mock(RequestExecutionService.class),
+				mock(ApiUsageService.class));
 	}
 
 	@Test
@@ -44,7 +46,8 @@ class RegionRecommendationServiceTest {
 
 		var response = service.recommend(
 				new RegionRecommendationRequest("  조용한 여행  "),
-				ALLOWED_REGIONS
+				ALLOWED_REGIONS,
+				() -> {}
 		);
 
 		assertThat(client.lastRegionPrompt().request()).isEqualTo("조용한 여행");
@@ -97,7 +100,8 @@ class RegionRecommendationServiceTest {
 	private void assertInvalidCurrentResult() {
 		assertThatThrownBy(() -> service.recommend(
 				new RegionRecommendationRequest("여행 요청"),
-				ALLOWED_REGIONS
+				ALLOWED_REGIONS,
+				() -> {}
 		))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));

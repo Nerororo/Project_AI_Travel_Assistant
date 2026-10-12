@@ -22,7 +22,7 @@ class ProfileFakeAiClientTest {
 		);
 
 		var result = client.recommendRegions(
-				new AiClient.RegionRecommendationPrompt("테스트 요청", allowedRegions)
+				new AiClient.RegionRecommendationPrompt("테스트 요청", allowedRegions), () -> {}
 		);
 
 		assertThat(result.regions())
@@ -36,7 +36,7 @@ class ProfileFakeAiClientTest {
 				"region-a",
 				"테스트 요청",
 				List.of(new AttractionContext("place-a", "사용자 장소 A"))
-		));
+		), () -> {});
 
 		assertThat(result.menus()).hasSize(1);
 		assertThat(result.menus().get(0).targetClientPlaceId()).isNull();
