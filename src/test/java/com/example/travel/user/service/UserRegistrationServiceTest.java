@@ -22,7 +22,8 @@ class UserRegistrationServiceTest {
 
 	private final UserRepository userRepository = mock(UserRepository.class);
 	private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-	private final UserRegistrationService service = new UserRegistrationService(userRepository, passwordEncoder);
+	private final AuthAttemptLimitService attemptLimits = mock(AuthAttemptLimitService.class);
+	private final UserRegistrationService service = new UserRegistrationService(userRepository, passwordEncoder, attemptLimits);
 
 	@Test
 	void normalizesEmailAndStoresOnlyEncodedPassword() {
@@ -30,7 +31,7 @@ class UserRegistrationServiceTest {
 		when(passwordEncoder.encode(password)).thenReturn("encoded-password-value");
 		when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		service.register("MEMBER@EXAMPLE.TEST", password);
+		service.register("MEMBER@EXAMPLE.TEST", password, "127.0.0.1");
 
 		verify(userRepository).existsByEmail("member@example.test");
 		verify(userRepository).saveAndFlush(any(User.class));
@@ -38,14 +39,14 @@ class UserRegistrationServiceTest {
 	}
 
 	@Test
-	void rejectsKnownDuplicateBeforeHashing() {
+	void hashesBeforeCheckingDuplicateToReduceEmailTimingDifference() {
 		when(userRepository.existsByEmail("member@example.test")).thenReturn(true);
 
-		assertThatThrownBy(() -> service.register("MEMBER@EXAMPLE.TEST", validPassword()))
+		assertThatThrownBy(() -> service.register("MEMBER@EXAMPLE.TEST", validPassword(), "127.0.0.1"))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 
-		verify(passwordEncoder, never()).encode(any());
+		verify(passwordEncoder).encode(any());
 		verify(userRepository, never()).saveAndFlush(any());
 	}
 
@@ -57,7 +58,7 @@ class UserRegistrationServiceTest {
 						"database detail must not escape",
 						new SQLIntegrityConstraintViolationException("duplicate", "23000", 1062)));
 
-		assertThatThrownBy(() -> service.register("member@example.test", validPassword()))
+		assertThatThrownBy(() -> service.register("member@example.test", validPassword(), "127.0.0.1"))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS));
 	}
@@ -70,7 +71,7 @@ class UserRegistrationServiceTest {
 				new SQLIntegrityConstraintViolationException("other constraint", "23000", 3819));
 		when(userRepository.saveAndFlush(any(User.class))).thenThrow(failure);
 
-		assertThatThrownBy(() -> service.register("member@example.test", validPassword()))
+		assertThatThrownBy(() -> service.register("member@example.test", validPassword(), "127.0.0.1"))
 				.isSameAs(failure);
 	}
 

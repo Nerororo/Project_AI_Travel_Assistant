@@ -81,7 +81,7 @@ class SecurityIntegrationTest {
 
 	@Test
 	void acceptsValidTokenForExistingUserAndRejectsChangedSignature() throws Exception {
-		registrationService.register("security-member@example.test", "p".repeat(12));
+		registrationService.register("security-member@example.test", "p".repeat(12), "127.0.0.1");
 		User user = userRepository.findByEmail("security-member@example.test").orElseThrow();
 		String token = jwtService.issue(user.id());
 
@@ -101,7 +101,7 @@ class SecurityIntegrationTest {
 
 	@Test
 	void rejectsValidlySignedTokenAfterUserNoLongerExists() throws Exception {
-		registrationService.register("deleted-member@example.test", "p".repeat(12));
+		registrationService.register("deleted-member@example.test", "p".repeat(12), "127.0.0.1");
 		User user = userRepository.findByEmail("deleted-member@example.test").orElseThrow();
 		String token = jwtService.issue(user.id());
 		userRepository.delete(user);

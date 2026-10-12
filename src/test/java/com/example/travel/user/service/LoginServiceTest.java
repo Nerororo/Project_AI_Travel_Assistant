@@ -23,7 +23,8 @@ class LoginServiceTest {
 	private final UserRepository userRepository = mock(UserRepository.class);
 	private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 	private final JwtService jwtService = mock(JwtService.class);
-	private final LoginService loginService = new LoginService(userRepository, passwordEncoder, jwtService);
+	private final AuthAttemptLimitService attemptLimits = mock(AuthAttemptLimitService.class);
+	private final LoginService loginService = new LoginService(userRepository, passwordEncoder, jwtService, attemptLimits);
 
 	@Test
 	void normalizesEmailAndReturnsBearerTokenForMatchingPassword() throws Exception {
@@ -33,7 +34,7 @@ class LoginServiceTest {
 		when(jwtService.issue(7L)).thenReturn("issued-token");
 		when(jwtService.expiresInSeconds()).thenReturn(3600L);
 
-		var response = loginService.login("MEMBER@EXAMPLE.TEST", "submitted-password");
+		var response = loginService.login("MEMBER@EXAMPLE.TEST", "submitted-password", "127.0.0.1");
 
 		assertThat(response.accessToken()).isEqualTo("issued-token");
 		assertThat(response.tokenType()).isEqualTo("Bearer");
@@ -44,10 +45,10 @@ class LoginServiceTest {
 	void hidesWhetherEmailOrPasswordWasWrong() {
 		when(userRepository.findByEmail("missing@example.test")).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> loginService.login("missing@example.test", "submitted-password"))
+		assertThatThrownBy(() -> loginService.login("missing@example.test", "submitted-password", "127.0.0.1"))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.AUTHENTICATION_REQUIRED));
-		verify(passwordEncoder, never()).matches(org.mockito.ArgumentMatchers.anyString(),
+		verify(passwordEncoder).matches(org.mockito.ArgumentMatchers.eq("submitted-password"),
 				org.mockito.ArgumentMatchers.anyString());
 		verify(jwtService, never()).issue(org.mockito.ArgumentMatchers.anyLong());
 	}

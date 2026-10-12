@@ -149,6 +149,10 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 
 access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 endpoint는 MVP에서 제공하지 않으며 브라우저는 token을 메모리에서 제거해 로그아웃한다. 서버는 보호 API마다 JWT와 token의 User 존재 여부를 확인하므로 탈퇴한 사용자의 기존 token도 401로 거부한다.
 
+SEC1-02에서는 유효한 가입 요청을 IP당 1시간에 5회, 정규화한 이메일당 1시간에 3회로 제한한다. 로그인 요청은 IP당 10분에 30회, 정규화한 이메일당 10분에 5회로 제한한다. 성공·실패 요청 모두 횟수를 사용하며 초과 요청은 비밀번호 해시 검사나 회원 생성 전에 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`·`retryAfterSeconds`를 반환한다. 고정 창이 끝나면 자동으로 다시 시도할 수 있으며 별도 잠금·비밀번호 교체 절차는 없다. IP를 바꾸더라도 이메일 한도를 공유하고 이메일을 바꾸더라도 IP 한도를 공유한다.
+
+가입 중복은 기존 409 `EMAIL_ALREADY_EXISTS`를 유지한다. 따라서 이 응답으로 이메일 등록 여부를 확인할 수 있다는 잔여 위험이 있다. 가입·로그인 한도로 대량 조회를 제한하고, 가입은 중복 여부 조회 전에도 같은 BCrypt 해시 작업을 수행한다. 존재하지 않는 이메일 로그인도 실제 계정과 같은 BCrypt 검증을 수행하고 같은 401 응답을 사용한다. 브라우저 로그아웃은 메모리 token을 폐기하지만 이미 복사된 JWT는 남은 유효기간(최대 1시간) 동안 서버에서 유효하다. 현재 대응은 브라우저 메모리 보관과 1시간 TTL이며 복사된 JWT를 서버에서 철회하지 못한다. User 레코드가 삭제되면 기존 User 존재 검증으로 JWT가 거절되지만 계정 삭제 endpoint는 현재 구현되지 않았다. 서버 철회·refresh token·로그아웃 endpoint는 이 작업에 추가하지 않는다.
+
 로그인 자격 증명 불일치, 존재하지 않는 이메일과 보호 API의 누락·잘못된·만료 Bearer token은 모두 401 `AUTHENTICATION_REQUIRED`의 같은 message를 사용한다. 이메일 존재 여부와 token 실패 원인을 Response에서 구분하지 않는다. 인증은 성공했지만 소유권 또는 권한이 없으면 403 `ACCESS_DENIED`다.
 
 ### DELETE /api/users/me

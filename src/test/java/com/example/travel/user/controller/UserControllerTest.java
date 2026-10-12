@@ -4,6 +4,7 @@ import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
 import com.example.travel.global.exception.GlobalExceptionHandler;
 import com.example.travel.user.service.UserRegistrationService;
+import com.example.travel.global.security.ClientIpResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -23,12 +24,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserControllerTest {
 
 	private UserRegistrationService userRegistrationService;
+	private ClientIpResolver clientIpResolver;
 	private MockMvc mockMvc;
 
 	@BeforeEach
 	void setUp() {
 		userRegistrationService = mock(UserRegistrationService.class);
-		mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userRegistrationService))
+		clientIpResolver = mock(ClientIpResolver.class);
+		org.mockito.Mockito.when(clientIpResolver.resolve(org.mockito.ArgumentMatchers.any())).thenReturn("127.0.0.1");
+		mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userRegistrationService, clientIpResolver))
 				.setControllerAdvice(new GlobalExceptionHandler())
 				.build();
 	}
@@ -43,7 +47,7 @@ class UserControllerTest {
 				.andExpect(status().isCreated())
 				.andExpect(content().string(""));
 
-		verify(userRegistrationService).register("MEMBER@EXAMPLE.TEST", password);
+		verify(userRegistrationService).register("MEMBER@EXAMPLE.TEST", password, "127.0.0.1");
 	}
 
 	@Test
@@ -93,7 +97,7 @@ class UserControllerTest {
 	@Test
 	void returnsConflictWithoutExposingSubmittedValuesForDuplicateEmail() throws Exception {
 		doThrow(new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS))
-				.when(userRegistrationService).register(anyString(), anyString());
+				.when(userRegistrationService).register(anyString(), anyString(), anyString());
 
 		mockMvc.perform(post("/api/users")
 						.contentType(MediaType.APPLICATION_JSON)
