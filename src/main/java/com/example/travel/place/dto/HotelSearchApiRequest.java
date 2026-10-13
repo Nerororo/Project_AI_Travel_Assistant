@@ -12,8 +12,8 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record HotelSearchApiRequest(
-		@NotBlank String regionId,
-		@NotNull @Size(min = 1, max = 35) List<@NotBlank String> attractionSelectionTokens,
+		@NotBlank @Size(max = 100) String regionId,
+		@NotNull @Size(min = 1, max = 35) List<@NotBlank @Size(max = 2048) String> attractionSelectionTokens,
 		@NotNull Mode mode,
 		Integer radiusMeters,
 		@Valid Bounds bounds,

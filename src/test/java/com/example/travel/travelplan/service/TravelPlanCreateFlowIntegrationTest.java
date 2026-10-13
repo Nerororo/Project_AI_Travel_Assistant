@@ -141,6 +141,26 @@ class TravelPlanCreateFlowIntegrationTest {
     }
 
     @Test
+    void distinctRequestIdsShareCreationLimit() {
+        long userId = user();
+        TravelPlanCreateApiRequest request = request(userId, LocalTime.of(11, 0));
+        UUID first = UUID.randomUUID();
+        service.create(userId, first, request);
+        service.create(userId, UUID.randomUUID(), request);
+        service.create(userId, UUID.randomUUID(), request);
+
+        assertThatThrownBy(() -> service.create(userId, first, request))
+                .isInstanceOfSatisfying(ApiException.class, error ->
+                        assertThat(error.errorCode()).isEqualTo(ErrorCode.REQUEST_ALREADY_COMPLETED));
+        assertThatThrownBy(() -> service.create(userId, UUID.randomUUID(), request))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
+                    assertThat(error.retryAfterSeconds()).isPositive();
+                });
+        assertThat(plans.countByUserId(userId)).isEqualTo(3);
+    }
+
+    @Test
     void capacityFailureDoesNotSaveAndCanRetryWithTheSameRequestId() {
         long userId = user();
         UUID requestId = UUID.randomUUID();

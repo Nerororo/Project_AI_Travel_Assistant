@@ -9,9 +9,9 @@ import java.util.List;
 
 public interface AiClient {
 
-	RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt);
+	RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt, Runnable beforeRetry);
 
-	MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt);
+	MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt, Runnable beforeRetry);
 
 	record RegionRecommendationPrompt(String request, List<RegionCandidate> allowedRegions) {
 

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class OpenAiClient implements AiClient {
@@ -37,7 +38,7 @@ public class OpenAiClient implements AiClient {
 	}
 
 	@Override
-	public RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt) {
+	public RegionRecommendationResult recommendRegions(RegionRecommendationPrompt prompt, Runnable beforeRetry) {
 		Map<String, Object> input = Map.of(
 				"request", prompt.request(),
 				"allowedRegions", prompt.allowedRegions()
@@ -47,7 +48,8 @@ public class OpenAiClient implements AiClient {
 				"Select exactly three distinct regionId values only from allowedRegions and explain each choice in Korean.",
 				input,
 				regionSchema(),
-				REGION_MAX_OUTPUT_TOKENS
+				REGION_MAX_OUTPUT_TOKENS,
+				beforeRetry
 		);
 		try {
 			RegionPayload payload = objectMapper.readValue(providerResult.outputText(), RegionPayload.class);
@@ -65,7 +67,7 @@ public class OpenAiClient implements AiClient {
 	}
 
 	@Override
-	public MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt) {
+	public MenuAnalysisResult analyzeMenus(MenuAnalysisPrompt prompt, Runnable beforeRetry) {
 		Map<String, Object> input = Map.of(
 				"regionId", prompt.regionId(),
 				"request", prompt.request(),
@@ -76,7 +78,8 @@ public class OpenAiClient implements AiClient {
 				"Create one to five distinct Korean menu ideas and Kakao place search queries. A targetClientPlaceId must be null or come from attractions.",
 				input,
 				menuSchema(),
-				MENU_MAX_OUTPUT_TOKENS
+				MENU_MAX_OUTPUT_TOKENS,
+				beforeRetry
 		);
 		try {
 			MenuPayload payload = objectMapper.readValue(providerResult.outputText(), MenuPayload.class);
@@ -99,8 +102,10 @@ public class OpenAiClient implements AiClient {
 			String instructions,
 			Object input,
 			Map<String, Object> schema,
-			int maxOutputTokens
+			int maxOutputTokens,
+			Runnable beforeRetry
 	) {
+		Objects.requireNonNull(beforeRetry, "beforeRetry must not be null");
 		long deadline = System.nanoTime() + properties.requestTimeout().toNanos();
 		for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 			Duration remaining = remaining(deadline);
@@ -108,8 +113,12 @@ public class OpenAiClient implements AiClient {
 				throw unavailable();
 			}
 			try {
+				HttpRequest request = buildRequest(schemaName, instructions, input, schema, maxOutputTokens, remaining);
+				if (attempt > 1) {
+					beforeRetry.run();
+				}
 				HttpResponse<String> response = httpClient.send(
-						buildRequest(schemaName, instructions, input, schema, maxOutputTokens, remaining),
+						request,
 						HttpResponse.BodyHandlers.ofString()
 				);
 				if (response.statusCode() >= 200 && response.statusCode() < 300) {
@@ -208,7 +217,15 @@ public class OpenAiClient implements AiClient {
 		}
 		try {
 			ProviderErrorEnvelope error = objectMapper.readValue(response.body(), ProviderErrorEnvelope.class);
-			return error.error() == null || !"insufficient_quota".equals(error.error().code());
+			if (error.error() == null || error.error().code() == null) {
+				return true;
+			}
+			return switch (error.error().code()) {
+				case "insufficient_quota", "project_spend_limit_exceeded",
+						"organization_spend_limit_exceeded", "organization_usage_limit_exceeded",
+						"credit_balance_exhausted" -> false;
+				default -> true;
+			};
 		}
 		catch (RuntimeException exception) {
 			return true;

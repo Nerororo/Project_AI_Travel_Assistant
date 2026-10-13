@@ -14,17 +14,17 @@ import java.util.UUID;
 
 /** HTTP input. Selection tokens are resolved before building the calculation command. */
 public record TravelPlanEstimateApiRequest(
-		@NotBlank String regionId,
+		@NotBlank @Size(max = 100) String regionId,
 		@NotNull TravelMode travelMode,
 		@NotNull @JsonFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
 		@NotNull @JsonFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
-		@NotBlank String startBoundarySelectionToken,
-		@NotBlank String endBoundarySelectionToken,
+		@NotBlank @Size(max = 2048) String startBoundarySelectionToken,
+		@NotBlank @Size(max = 2048) String endBoundarySelectionToken,
 		@NotNull @Size(min = 1, max = 7) List<@Valid Day> days,
-		@NotNull List<@Valid Place> places,
-		String hotelSelectionToken,
+		@NotNull @Size(max = 35) List<@Valid Place> places,
+		@Size(max = 2048) String hotelSelectionToken,
 		Integer mealTravelBufferMinutes,
-		@NotNull @Size(min = 1, max = 5) List<String> foods
+		@NotNull @Size(min = 1, max = 5) List<@Size(max = 50) String> foods
 ) {
 	public record Day(
 			@NotNull @JsonFormat(pattern = "yyyy-MM-dd") LocalDate date,
@@ -35,8 +35,8 @@ public record TravelPlanEstimateApiRequest(
 
 	public record Place(
 			@NotNull UUID clientPlaceId,
-			@NotBlank String selectionToken,
-			@NotBlank String displayName,
+			@NotBlank @Size(max = 2048) String selectionToken,
+			@NotBlank @Size(max = 50) String displayName,
 			@NotNull Integer stayMinutes,
 			@JsonFormat(pattern = "yyyy-MM-dd") LocalDate day,
 			Integer order

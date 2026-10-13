@@ -38,6 +38,17 @@ class JwtServiceTest {
 	}
 
 	@Test
+	void tokenRemainsValidUntilTheInstantBeforeExpiry() {
+		String secret = randomSecret();
+		String token = serviceAt(ISSUED_AT, secret).issue(42L);
+
+		assertThat(serviceAt(ISSUED_AT.plus(Duration.ofHours(1)).minusMillis(1), secret)
+				.verify(token).userId()).isEqualTo(42L);
+		assertThatThrownBy(() -> serviceAt(ISSUED_AT.plus(Duration.ofHours(1)), secret).verify(token))
+				.isInstanceOf(JwtService.InvalidJwtException.class);
+	}
+
+	@Test
 	void rejectsTokenWithChangedSignature() {
 		JwtService service = serviceAt(ISSUED_AT, randomSecret());
 		String token = service.issue(42L);

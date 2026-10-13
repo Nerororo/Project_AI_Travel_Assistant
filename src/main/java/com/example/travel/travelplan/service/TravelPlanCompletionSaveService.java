@@ -33,6 +33,7 @@ import java.util.UUID;
 @Service
 public class TravelPlanCompletionSaveService {
     private static final String DEFAULT_HOTEL_DISPLAY_NAME = "숙소";
+    private static final int MAX_SAVED_PLANS = 100;
 
     private final TransactionTemplate transactions;
     private final TravelPlanRepository plans;
@@ -59,6 +60,11 @@ public class TravelPlanCompletionSaveService {
     }
 
     private long persist(CompletedPlanSaveCommand command) {
+        plans.ensureCreationLock(command.userId());
+        plans.lockForCreation(command.userId());
+        if (plans.countByUserId(command.userId()) >= MAX_SAVED_PLANS) {
+            throw new ApiException(ErrorCode.TRAVEL_PLAN_LIMIT_EXCEEDED);
+        }
         var conditions = command.conditions();
         long planId = plans.save(new TravelPlan(command.userId(), command.title().trim(),
                 command.regionId(), command.regionDisplayName(), conditions.period().startDate(),

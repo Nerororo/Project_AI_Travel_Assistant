@@ -19,6 +19,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 	private static final String PREFIX = "Bearer ";
+	private static final int MAX_TOKEN_LENGTH = 2048;
 
 	private final JwtService jwtService;
 	private final LoginService loginService;
@@ -49,7 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		}
 
 		try {
-			if (!authorization.startsWith(PREFIX) || authorization.length() == PREFIX.length()) {
+			if (!authorization.startsWith(PREFIX) || authorization.length() == PREFIX.length()
+					|| authorization.length() > PREFIX.length() + MAX_TOKEN_LENGTH) {
 				throw new JwtService.InvalidJwtException();
 			}
 			AuthenticatedUser principal = jwtService.verify(authorization.substring(PREFIX.length()));

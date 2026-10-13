@@ -51,7 +51,7 @@ class UserRegistrationIntegrationTest {
 	void storesNormalizedEmailAndBcryptHashInMySql() {
 		String password = "p".repeat(12);
 
-		userRegistrationService.register("MEMBER@EXAMPLE.TEST", password);
+		userRegistrationService.register("MEMBER@EXAMPLE.TEST", password, "127.0.0.1");
 
 		User saved = userRepository.findByEmail("member@example.test").orElseThrow();
 		assertThat(saved.passwordHash()).isNotEqualTo(password);

@@ -20,6 +20,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -49,13 +51,13 @@ class MenuAnalysisApiServiceTest {
 		MenuAnalysisRequest request = request();
 		when(requestExecutionService.tryStart(7L, UsageFeature.AI_MENU_ANALYSIS, requestId, 1))
 				.thenReturn(RequestStartResult.started(lease));
-		when(client.analyzeMenus(prompt(request))).thenReturn(validResult());
+		when(client.analyzeMenus(eq(prompt(request)), any(Runnable.class))).thenReturn(validResult());
 		when(requestExecutionService.markSucceeded(lease)).thenReturn(true);
 
 		var response = service.analyze(7L, requestId, request);
 
 		assertThat(response.menus()).hasSize(1);
-		verify(client).analyzeMenus(prompt(request));
+		verify(client).analyzeMenus(eq(prompt(request)), any(Runnable.class));
 		verify(requestExecutionService).markSucceeded(lease);
 		verifyNoInteractions(apiUsageService);
 	}
@@ -67,7 +69,7 @@ class MenuAnalysisApiServiceTest {
 		MenuAnalysisRequest request = request();
 		when(requestExecutionService.tryStart(7L, UsageFeature.AI_MENU_ANALYSIS, requestId, 1))
 				.thenReturn(RequestStartResult.started(lease));
-		when(client.analyzeMenus(prompt(request)))
+		when(client.analyzeMenus(eq(prompt(request)), any(Runnable.class)))
 				.thenReturn(new AiClient.MenuAnalysisResult(List.of()))
 				.thenReturn(validResult());
 		when(requestExecutionService.markSucceeded(lease)).thenReturn(true);
@@ -76,8 +78,31 @@ class MenuAnalysisApiServiceTest {
 
 		assertThat(response.menus()).hasSize(1);
 		verify(apiUsageService).acquireOrThrow(7L, UsageFeature.AI_MENU_ANALYSIS, 1);
-		verify(client, times(2)).analyzeMenus(prompt(request));
+		verify(client, times(2)).analyzeMenus(eq(prompt(request)), any(Runnable.class));
 		verify(requestExecutionService).markSucceeded(lease);
+	}
+
+	@Test
+	void technicalAndInvalidStructureRetriesEachAcquireOneMoreCall() {
+		UUID requestId = UUID.randomUUID();
+		RequestExecutionLease lease = lease(requestId);
+		MenuAnalysisRequest request = request();
+		when(requestExecutionService.tryStart(7L, UsageFeature.AI_MENU_ANALYSIS, requestId, 1))
+				.thenReturn(RequestStartResult.started(lease));
+		when(client.analyzeMenus(eq(prompt(request)), any(Runnable.class)))
+				.thenAnswer(invocation -> {
+					invocation.getArgument(1, Runnable.class).run();
+					return new AiClient.MenuAnalysisResult(List.of());
+				})
+				.thenAnswer(invocation -> {
+					invocation.getArgument(1, Runnable.class).run();
+					return validResult();
+				});
+		when(requestExecutionService.markSucceeded(lease)).thenReturn(true);
+
+		assertThat(service.analyze(7L, requestId, request).menus()).hasSize(1);
+		verify(apiUsageService, times(3)).acquireOrThrow(7L, UsageFeature.AI_MENU_ANALYSIS, 1);
+		verify(client, times(2)).analyzeMenus(eq(prompt(request)), any(Runnable.class));
 	}
 
 	@Test
@@ -87,13 +112,13 @@ class MenuAnalysisApiServiceTest {
 		MenuAnalysisRequest request = request();
 		when(requestExecutionService.tryStart(7L, UsageFeature.AI_MENU_ANALYSIS, requestId, 1))
 				.thenReturn(RequestStartResult.started(lease));
-		when(client.analyzeMenus(prompt(request)))
+		when(client.analyzeMenus(eq(prompt(request)), any(Runnable.class)))
 				.thenReturn(new AiClient.MenuAnalysisResult(List.of()));
 
 		assertThatThrownBy(() -> service.analyze(7L, requestId, request))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
-		verify(client, times(2)).analyzeMenus(prompt(request));
+		verify(client, times(2)).analyzeMenus(eq(prompt(request)), any(Runnable.class));
 		verify(apiUsageService).acquireOrThrow(7L, UsageFeature.AI_MENU_ANALYSIS, 1);
 		verify(requestExecutionService).releaseAfterFailure(lease);
 		verify(requestExecutionService, never()).markSucceeded(lease);
@@ -106,7 +131,8 @@ class MenuAnalysisApiServiceTest {
 		MenuAnalysisRequest request = request();
 		when(requestExecutionService.tryStart(7L, UsageFeature.AI_MENU_ANALYSIS, requestId, 1))
 				.thenReturn(RequestStartResult.started(lease));
-		when(client.analyzeMenus(prompt(request))).thenReturn(new AiClient.MenuAnalysisResult(List.of()));
+		when(client.analyzeMenus(eq(prompt(request)), any(Runnable.class)))
+				.thenReturn(new AiClient.MenuAnalysisResult(List.of()));
 		doThrow(new ApiException(ErrorCode.RATE_LIMIT_EXCEEDED, null, List.of(), 22L))
 				.when(apiUsageService).acquireOrThrow(7L, UsageFeature.AI_MENU_ANALYSIS, 1);
 
@@ -115,7 +141,7 @@ class MenuAnalysisApiServiceTest {
 					assertThat(exception.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
 					assertThat(exception.retryAfterSeconds()).isEqualTo(22L);
 				});
-		verify(client).analyzeMenus(prompt(request));
+		verify(client).analyzeMenus(eq(prompt(request)), any(Runnable.class));
 		verify(requestExecutionService).releaseAfterFailure(lease);
 	}
 
