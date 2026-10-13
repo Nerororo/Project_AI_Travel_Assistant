@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
+    REQUEST_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "요청 본문이 너무 큽니다."),
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
@@ -12,6 +13,7 @@ public enum ErrorCode {
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     REQUEST_IN_PROGRESS(HttpStatus.CONFLICT, "같은 요청을 처리 중입니다."),
     REQUEST_ALREADY_COMPLETED(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),
+    TRAVEL_PLAN_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "저장할 수 있는 일정 수를 초과했습니다."),
     ROUTE_NOT_FOUND(HttpStatus.UNPROCESSABLE_CONTENT, "이동 경로를 찾을 수 없습니다."),
     PLAN_CAPACITY_EXCEEDED(HttpStatus.UNPROCESSABLE_CONTENT, "일정이 허용 시간을 초과합니다."),
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "호출 한도를 초과했습니다."),

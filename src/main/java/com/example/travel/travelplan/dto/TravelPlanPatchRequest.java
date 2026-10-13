@@ -22,7 +22,7 @@ public record TravelPlanPatchRequest(String title, List<PlaceEdit> placeEdits) {
         }
         List<PlaceEdit> edits = new ArrayList<>();
         if (body.containsKey("placeEdits")) {
-            if (!(body.get("placeEdits") instanceof List<?> values)) throw invalid();
+            if (!(body.get("placeEdits") instanceof List<?> values) || values.size() > 50) throw invalid();
             for (Object value : values) {
                 if (!(value instanceof Map<?, ?> map) || !PLACE_FIELDS.containsAll(map.keySet())
                         || !map.containsKey("planPlaceId")

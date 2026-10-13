@@ -46,19 +46,29 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
-	void policyKeepsAiServiceBudgetUnconfiguredWhileApplyingExactUserLimits() {
+	void policyAppliesAiUserAndServiceDailyLimits() {
 		ApiUsagePolicy policy = new ApiUsagePolicy(
 				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
 
 		var regionWindows = policy.windows(1L, UsageFeature.AI_REGION_RECOMMENDATION);
 		var menuWindows = policy.windows(1L, UsageFeature.AI_MENU_ANALYSIS);
 
-		assertThat(regionWindows).hasSize(2);
+		assertThat(regionWindows).hasSize(3);
 		assertThat(regionWindows).extracting(ApiUsagePolicy.UsageWindow::limit)
-				.containsExactly(2L, 10L);
-		assertThat(menuWindows).hasSize(2);
+				.containsExactly(3L, 15L, 30L);
+		assertThat(menuWindows).hasSize(3);
 		assertThat(menuWindows).extracting(ApiUsagePolicy.UsageWindow::limit)
-				.containsExactly(3L, 15L);
+				.containsExactly(3L, 15L, 30L);
+	}
+
+	@Test
+	void policyAppliesPlanCalculationAndCreationLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+		assertThat(policy.windows(1L, UsageFeature.TRAVEL_PLAN_ESTIMATE))
+				.extracting(ApiUsagePolicy.UsageWindow::limit).containsExactly(12L, 120L);
+		assertThat(policy.windows(1L, UsageFeature.TRAVEL_PLAN_CREATE))
+				.extracting(ApiUsagePolicy.UsageWindow::limit).containsExactly(3L, 30L);
 	}
 
 	@Test

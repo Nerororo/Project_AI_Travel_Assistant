@@ -50,7 +50,7 @@ class MenuAnalysisServiceTest {
 				" region-a ",
 				"  매운 음식  ",
 				ATTRACTIONS
-		));
+		), () -> {});
 
 		assertThat(client.lastMenuPrompt().regionId()).isEqualTo(" region-a ");
 		assertThat(client.lastMenuPrompt().request()).isEqualTo("매운 음식");
@@ -66,7 +66,7 @@ class MenuAnalysisServiceTest {
 				new AiClient.MenuSuggestion(" 메뉴 A ", " 검색어 A ", " 이유 A ", null)
 		)));
 
-		var response = service.analyze(new MenuAnalysisRequest("region-a", "음식 요청", ATTRACTIONS));
+		var response = service.analyze(new MenuAnalysisRequest("region-a", "음식 요청", ATTRACTIONS), () -> {});
 
 		assertThat(response.menus().getFirst().name()).isEqualTo("메뉴 A");
 		assertThat(response.menus().getFirst().searchQuery()).isEqualTo("검색어 A");
@@ -119,7 +119,7 @@ class MenuAnalysisServiceTest {
 				"region-a",
 				"음식 요청",
 				ATTRACTIONS
-		)))
+		), () -> {}))
 				.isInstanceOfSatisfying(ApiException.class,
 						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.AI_RESPONSE_INVALID));
 	}

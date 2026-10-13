@@ -39,10 +39,6 @@ public class RequestExecutionService {
 		}
 	}
 
-	public RequestExecutionLease startTravelPlanCreation(long userId, UUID requestId) {
-		return beginWithDeadlockRetry(userId, UsageFeature.TRAVEL_PLAN_CREATE, requestId);
-	}
-
 	public boolean markSucceeded(RequestExecutionLease lease) {
 		return executionTransaction.markSucceeded(lease);
 	}

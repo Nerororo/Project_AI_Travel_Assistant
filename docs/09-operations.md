@@ -88,7 +88,7 @@ metric label에는 사용자 ID, 장소 ID, 검색어처럼 cardinality가 큰 �
 |---|---:|---:|
 | 장소 검색 | 20 | 300 |
 | 자동차 경로 | 60 | 120 |
-| AI 지역 추천 | 2 | 10 |
+| AI 지역 추천 | 3 | 15 |
 | AI 메뉴 분석 | 3 | 15 |
 | 대중교통 경로 | 60 | 120 |
 
@@ -101,7 +101,7 @@ metric label에는 사용자 ID, 장소 ID, 검색어처럼 cardinality가 큰 �
 - 카카오맵 대중교통 경로는 공식 일일 1,000건을 기준으로 900건에서 신규 호출을 차단한다.
 - 공식 무료 쿼터 제공 조건은 카카오 디벨로퍼스에서 해당 기능을 처음 활성화한 앱인지 운영 전에 확인한다.
 - 유료 초과 사용을 자동 승인하지 않는다.
-- OpenAI 월 계획 예산은 USD 5이며 전용 project의 월 hard spend limit을 USD 4로 설정한다. 비용 차단은 OpenAI project가 담당하고 Routy는 비용·token usage와 서비스 전체 일일 호출량을 별도 저장하지 않는다.
+- OpenAI 월 계획 예산은 USD 5이며 전용 project의 월 hard spend limit을 USD 4로 설정한다. 알림만 켜면 요청이 계속 처리되므로 `Enforce a hard limit`을 활성화한다. 제공자 차단은 즉시 적용되지 않아 기록 비용이 설정액을 조금 넘을 수 있다. Routy는 AI 지역 추천과 AI 메뉴 분석을 각각 서비스 전체 하루 30회에서 MySQL 공유 카운터로 먼저 차단하고 비용·token usage는 저장하지 않는다.
 - 가격 기준은 2026-09-17 `gpt-5.6-luna` short-context standard의 입력 USD 0.20/1M tokens, cached input USD 0.02/1M tokens, cache write USD 0.25/1M tokens, 출력 USD 1.20/1M tokens다. 배포 전과 월 1회 공식 가격과 Costs 대시보드를 대조한다.
 
 완료 생성은 최초 호출 전에 인접 구간 수를 계산하고 사용자·서비스 쿼터를 원자적으로 확보한다. 최초 확보에 실패하면 외부 경로 API 호출을 0건으로 유지한 채 전체 구간을 Haversine 기반 예상시간으로 계산한다. 기술 장애 재시도는 1회분을 별도로 확보한 뒤에만 호출하며, 추가 확보에 실패하면 두 번째 호출을 보내지 않고 앞선 일부 성공 결과를 폐기해 전체 fallback한다. 이 fallback은 응답 warning과 metric에 남긴다.
@@ -336,18 +336,29 @@ Testcontainers는 테스트 전용이며 production runtime에 포함하지 않�
 
 실행 순서는 SEC1-01~06의 백엔드·배포 경계 보안, 남은 W1-04A~06 화면 연결·회귀, SEC1-07~08의 브라우저·공개 배포 보안 회귀다. 앞서 완료한 W1-00~04의 구현 상태를 되돌리지 않으며, 보안 작업에서 바뀐 응답은 W1-06에서 기존 화면에도 반영한다.
 
+SEC1-02~07에서는 해당 Render·Aiven 공식 문서와 운영 계약을 확인하고 자동·로컬 검증을 먼저 마친다. 아래 운영 실행 항목 중 실제 플랫폼 접속이 필요한 점검은 작업마다 배포하지 않고 SEC1-08의 보안 전용 배포에서 합쳐 확인한다. 플랫폼 확인 전에는 각 작업의 로컬 검증 결과와 실환경 대기 항목을 분리해 기록한다. SEC1-01에서 이미 확인한 배포·DB 경계는 그대로 유지한다.
+
 SEC1-02~06은 기존 구현과 계약을 확인한 뒤 악용 시나리오에 필요한 정책·수치·응답을 해당 작업에서 결정한다. 보안을 위한 대기·차단·거절은 허용하되, 정당한 1~7일 여행과 하루 관광지 최대 5개 입력, 장소 직접 선택, 일정 계산·저장 결과, 기존 일정 전체 접근과 공유의 정상 흐름은 함께 검증한다. 보안 결정으로 API·화면 동작이 바뀌면 책임 문서와 복구 흐름을 먼저 정렬한다. 이 문단은 로그인 실패 횟수나 저장·입력 상한의 값을 미리 확정하지 않는다.
 
 | 작업 | 운영 실행 항목 |
 |---|---|
 | SEC1-01 | Render Docker Web Service의 build/start command, `PORT`, region과 Aiven MySQL 8.4 계열의 host·port·database·전용 계정을 확정한다. Aiven 기본 `0.0.0.0/0` allowlist를 그대로 두지 않고 Render 서비스의 공식 outbound CIDR만 등록하며, Render 무료 플랜의 outbound 범위가 바뀌면 allowlist를 다시 검증한다. Render의 공개 HTTPS와 Aiven 공개 endpoint의 TLS를 사용하고 JDBC `sslMode=VERIFY_IDENTITY` 또는 Aiven CA를 검증하는 동등한 설정으로 평문·호스트 위조 연결을 거절한다. Aiven은 Render 내부 DB가 아니므로 외부에서 DB 포트가 존재하는 것은 예상된 상태이며, 허용 범위·전용 계정·최소 권한·TLS를 검증한다. Render `SPRING_PROFILES_ACTIVE=prod`, 환경 변수/secret file 주입과 Docker build context·`.dockerignore`에서 비밀값 제외, 전달 프로토콜·클라이언트 IP 헤더의 신뢰 범위를 확인한다. 로컬 Compose의 공개 포트도 개발 PC에서 필요한 범위로 제한한다. |
 | SEC1-02 | 가입·로그인에 대한 IP·계정 기준 시도 제한을 플랫폼 경계와 MySQL 공유 상태 중 어디에서 강제할지 결정한다. 전달 헤더를 임의로 조작해 IP 제한을 우회하지 못하게 한다. 로그인 실패 뒤 대기·잠금·비밀번호 교체를 채택하면 실패 횟수와 창, 본인 확인, 해제·복구, 응답·화면 계약을 함께 확정한다. 등록 이메일 응답·시간 차이와 브라우저 로그아웃 뒤 JWT의 남은 수명을 기존 API 계약·ADR에 따라 재검토한다. 로그아웃 API나 토큰 철회가 필요하다고 결정하면 별도 공개 계약·저장 정책을 먼저 확정한다. |
-| SEC1-03 | 기존 사용자별 AI·장소·경로 한도와 OpenAI project hard spend limit을 계정 대량 생성 시나리오에 대조한다. 예산 소진으로 서비스가 중단되는 위험을 평가하고, 추가 서비스 전체 호출 차단이 필요하면 `docs/04`·이 문서의 한도 계약과 공유 카운터 방식을 먼저 결정한다. 외부 호출 전 차단과 기존 경로 쿼터 예약·반환 규칙을 보존한다. |
+
+SEC1-02 계약: MySQL `auth_attempt_counters`가 가입·로그인의 IP·정규화 이메일 고정 창을 공유한다. 수치는 `docs/04-api-spec.md` 2절을 따른다. 차단은 HTTP 429와 남은 창을 올림한 `Retry-After`로 알리고 창이 끝나면 자동 복구된다. IP·이메일은 활성 JWT 키의 HMAC 식별자로만 저장하며 원문·시도 비밀번호·토큰은 저장하거나 로그에 남기지 않는다. 키 교체 시 한도 창이 초기화되므로 배포 중 관찰한다. Render `prod` 공개 Web Service는 Cloudflare가 덮어쓰는 `CF-Connecting-IP`의 단일 유효 IP를 사용하고, 헤더가 없거나 잘못되면 소켓 주소로 묶어 제한한다. `X-Forwarded-For`의 첫 주소는 사용하지 않으며 다른 profile은 소켓 주소를 사용한다. Render 밖에서 `prod`를 직접 공개하지 않는다. 허위 전달 헤더를 넣은 실제 Render 요청의 카운터 분리 여부는 SEC1-08 보안 배포에서 확인한다. 실제 IP와 이메일을 모두 바꿔 한도 창을 새로 사용하는 시도, 중복 가입 409의 이메일 존재 노출, 브라우저 로그아웃 뒤 복사된 JWT의 최대 1시간 유효성은 현재 수용한 잔여 위험이다. 계정 대량 생성에 따른 제공자 비용은 SEC1-03에서 별도 방어를 검토한다. 브라우저 메모리 전용 보관과 JWT TTL이 현재 세션 대응이며, 복사된 토큰의 서버 철회와 계정 삭제 endpoint는 구현되지 않았다.
+| SEC1-03·03A·03B | AI 지역 추천·메뉴 분석의 사용자별 3회/분·15회/일과 각 기능의 서비스 전체 30회/일을 MySQL에서 외부 호출 전에 확보한다. OpenAI 기술 재시도는 두 번째 HTTP 요청 직전에 1회분을 추가 확보하고 차단되면 요청을 보내지 않는다. 장소 검색 90,000회/일과 경로 9,000·900회/일 차단은 유지한다. OpenAI 전용 project의 USD 4 월 hard spend limit이 실제로 강제되는지 SEC1-08 보안 배포에서 콘솔로 확인한다. |
 | SEC1-04 | estimate 계산 요청, 완료 일정 생성 요청과 사용자별 저장 총량, 목록 응답 크기에 상한을 정한다. 서로 다른 `requestId`의 연속 생성도 포함한다. 허용된 여행 입력이 상한 때문에 거절되지 않는지 확인한다. 목록을 페이징하면 `docs/04`의 API와 후속 W1-05 목록 화면 계약을 함께 정렬하고, 이 단계에서 모든 기존 일정 접근·`createdAt DESC, id DESC` 정렬·중복 요청 처리의 백엔드 규칙을 검증한다. 실제 화면 이동은 W1-05에서 검증한다. |
+
+SEC1-04 로컬 운영 계약: 일정 추정 12회/분·120회/일, 생성 3회/분·30회/일은 사용자별 MySQL 공유 창으로 집계한다. 429는 `Retry-After`가 지나면 재시도하며, 저장 100개 초과 409는 기존 일정 삭제 뒤 새 요청으로 복구한다. 목록은 기본 20개·최대 50개씩 조회하고 `hasNext`로 이어 읽는다. 한도 거절량과 저장 개수를 관찰해 수치를 변경할 때는 `docs/04`와 ADR-049를 먼저 갱신한다. Render·Aiven 실환경의 다중 요청과 목록 이동 확인은 SEC1-08 및 W1-05에서 수행한다.
 | SEC1-05 | Render의 요청 크기·timeout 한계를 확인하고 앱에서도 본문·DTO 문자열·목록·중첩 입력·JWT와 selection token의 상한을 강제한다. `selectionToken`은 서명 파싱 전에 길이를 검사한다. 초과 입력의 400/413 변환과 외부 호출·DB 저장 전 거절 순서를 정하고, 현행 API의 유효한 1~7일 여행·하루 관광지 최대 5개 요청은 통과하는지 확인한다. |
+
 | SEC1-06 | 공유 발급과 익명 조회의 호출 제한, 만료·재발급·삭제 시 링크 효력을 확인한다. 현행 `GET /api/shared/travel-plans/{shareToken}`은 토큰을 URL 경로에 사용하므로 URL 자체에서 원문을 없애는 조건을 두지 않는다. 활성화된 플랫폼·애플리케이션 접근 로그와 metric에 토큰·요청 URL 경로 원문이 기록되지 않는지 확인한다. Render 무료 플랜에는 HTTP request log가 제공되지 않는다는 공식 문서를 기준으로 실제 플랜에서 제공·활성화된 로그 종류, 보관·접근 범위를 확인한다. 원문을 기록하는 로그가 있으면 노출 방지책을 적용하고 다시 검증하기 전에는 통과시키지 않는다. 캐시·Referrer 헤더와 타인·없는 일정의 응답 차이는 현재 API 계약을 기준으로 평가한다. |
 | SEC1-07 | Routy 화면과 카카오 지도 SDK에 필요한 출처를 확인해 CSP를 보고 모드에서 검증한 뒤 적용한다. 적용 후 지도 SDK와 정상적인 제작·조회·공유 화면이 모두 동작하는지 브라우저에서 확인한다. 개발용 `map-config.json`이 운영 JAR·이미지에 섞이는지 검사한다. 운영용 브라우저 JavaScript 키는 서버 전용 키와 분리하고 등록 도메인·사용 API를 제한한다. |
 | SEC1-08 | `docs/08`의 서로 다른 메서드·경로 18개 API별 익명·본인·타인·만료/변조 JWT·과대 입력·반복 요청 결과를 표로 남기고, Render 보안 전용 Web Service와 Aiven 서비스에서 HTTPS·TLS DB 연결·allowlist·전달 헤더·응답 헤더·활성화된 로그·운영 키 범위를 확인한다. 의미상 적용할 수 없는 검사는 이유를 적은 `N/A`로만 처리한다. Render 무료 서비스의 유휴 절전·외부 DB traffic threshold·750시간 한도는 가용성 위험으로 기록하고 보안 통과와 혼동하지 않는다. 미해결 보안 문제는 Q1 완료나 공개 배포 준비 완료로 표시하지 않고 책임 Task로 되돌린다. |
+
+SEC1-06 로컬 운영 계약: 발급은 사용자별 10회/시간, 익명 조회는 IP별 60회/분 고정 창이며 무효 요청도 차감한다. 기존 MySQL `auth_attempt_counters`의 별도 HMAC 버킷을 사용한다. 차단 시 429와 `Retry-After`를 반환하고 공유 토큰은 변경하지 않는다. 같은 IP를 쓰는 이용자는 조회 한도를 공유하고, JWT 활성 키 교체 시 유효 창의 HMAC 식별자가 바뀌어 한도가 초기화될 수 있다. 애플리케이션의 Tomcat 접근 로그는 현재 설정에서 활성화하지 않았고, 공유 서비스는 URL·토큰을 로그·metric에 기록하지 않는다. Render 공식 [로그 문서](https://render.com/docs/logging)에 따르면 Pro 이상 워크스페이스에서 요청 URL을 포함하는 HTTP request log를 제공하고 Hobby는 7일간 애플리케이션 로그를 보관한다. 실제 계정의 워크스페이스 플랜, 로그 스트림·접근 권한, 활성 로그 내용과 보관 범위는 SEC1-08에서 확인한다. Pro로 변경하거나 접근 로그를 켜면 공유 경로 원문이 기록될 수 있으므로 노출 방지책을 적용하고 재검증하기 전에는 통과시키지 않는다.
+
+SEC1-05 로컬 운영 계약: 앱의 `/api/**` 본문 64KiB 초과는 요청 길이 헤더 또는 최대 64KiB+1바이트 읽기 단계에서 413으로 거절한다. 요청 전용 JSON 파싱 깊이 16·문자열 4,096자, DTO 목록·필드 길이 위반은 400, Bearer JWT 2,048자 초과는 401이다. selection token 2,048자 초과는 서명 파싱 전에 기존 400 검증 오류로 거절한다. 공용 Jackson 파서는 변경하지 않으므로 외부 제공자 응답과 지역 기준 데이터 로딩에는 이 JSON 깊이·문자열 한도를 적용하지 않는다. Render Web Service 문서에는 이 배포 구성에 적용할 고정된 본문 한도 수치가 확인되지 않아, 실제 edge의 응답·timeout과 앱 413의 도달 여부는 SEC1-08 보안 전용 배포에서 확인한다.
 
 Render HTTP request log의 플랜별 제공 범위는 [Render 공식 로그 문서](https://render.com/docs/logging)를 SEC1-06 실행 시 다시 확인한다.
 
@@ -367,11 +378,21 @@ Render 환경 변수에는 JWT·장소 선택 서명 키와 OpenAI·카카오 �
 
 2026-10-11 `ProdDeploymentConfigurationTest`, Gradle `bootJar`, Docker Desktop의 격리된 Testcontainers MySQL을 사용한 전체 `test.ps1`이 통과했다. 로컬 `docker build`도 성공했고, 생성된 이미지의 JAR 목록에는 `application-prod.yml`이 있으며 개발용 `map-config.json`·인증서·키 파일은 없었다. Aiven CA Secret File 없이 이미지를 실행하면 기동 전에 종료 코드 1로 실패했다. 운영 Dockerfile에는 비밀값을 받는 `ARG`가 없고 Render build log에서도 비밀값 출력은 발견하지 못했다. Render 원격 이미지의 파일 목록은 직접 열람하지 못했다.
 
-2026-10-11 Aiven 무료 MySQL 8.4.11 서비스와 `travel` DB를 확인하고 `routy_app`을 만들었다. 직접 JDBC 연결에서 `CURRENT_USER=routy_app@%`, `Ssl_cipher=TLS_AES_256_GCM_SHA384`를 확인했고, CA 기반 `VERIFY_IDENTITY` 연결이 성공했다. `SHOW GRANTS`에는 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`만 있으며 사용자 생성·권한 위임 권한은 없다. 다만 Aiven 관리 API가 부여한 범위는 `travel.*`이 아닌 `*.*`이고 시스템 DB에는 별도 `REVOKE`가 적용된다. 따라서 이 계정을 스키마 단위 최소 권한으로 설명하지 않는다.
+2026-10-11 Aiven 무료 MySQL 8.4.11 서비스와 `travel` DB를 확인하고 `routy_app`을 만들었다. 직접 JDBC 연결에서 `CURRENT_USER=routy_app@%`, `Ssl_cipher=TLS_AES_256_GCM_SHA384`를 확인했고, CA 기반 `VERIFY_IDENTITY` 연결이 성공했다. 최초 `SHOW GRANTS`에는 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`만 있으며 사용자 생성·권한 위임 권한은 없었지만 범위가 `*.*`였다. 2026-10-12에 아래처럼 `travel.*`로 좁혔다.
 
 Render `routy-sec1`은 통합된 `main`의 Docker 이미지로 Singapore Free 서비스에 배포했다. 첫 배포는 Secret File에 PEM 경계 줄이 빠져 `keytool` 단계에서 종료 코드 1로 실패했다. `aiven-ca.pem`에 `BEGIN/END CERTIFICATE` 줄을 복구한 뒤 재배포가 `Live`가 되었고, 기동 로그에서 CA truststore 가져오기, MySQL 8.4.11 TLS 연결, Flyway V1~V6 적용, 10000 포트 기동을 확인했다. HTTP 요청은 HTTPS로 301 전환되고 `https://routy-sec1.onrender.com/Routy/index.html`은 200을 반환했다. 존재하지 않는 유효 형식의 공유 토큰 조회는 예상한 404를 반환해 DB 조회 경로가 동작했다. 조작된 `Forwarded`·`X-Forwarded-*`를 넣은 같은 요청도 404이며 공격자 호스트로 전환되지 않았다. `forward-headers-strategy=none` 설정과 함께 전달 헤더를 신뢰하지 않는 구성을 확인했다.
 
-Render Connect에 표시된 Singapore outbound `74.220.52.0/24`, `74.220.60.0/24`만 Aiven IP allowlist에 남기고 `0.0.0.0/0`과 `::/0`을 제거했다. 변경 후 이 개발 PC에서 Aiven DB 포트 연결은 timeout으로 차단됐고 Render의 공유 조회 요청은 정상적으로 404를 반환했다. 이 CIDR은 Render 지역의 다른 서비스와 공유되므로 계정·TLS 검증도 유지한다. Render 지역 또는 outbound 범위가 바뀌면 두 CIDR을 다시 확인해야 한다. Render 원격 이미지 직접 검사와 잘못된 CA·호스트에 대한 운영 환경의 거절 실험은 수행하지 못했으므로 SEC1-01의 최종 완료 판정에는 이 검증 한계를 명시한다.
+Render Connect에 표시된 Singapore outbound `74.220.52.0/24`, `74.220.60.0/24`만 Aiven IP allowlist에 남기고 `0.0.0.0/0`과 `::/0`을 제거했다. 변경 후 이 개발 PC에서 Aiven DB 포트 연결은 timeout으로 차단됐고 Render의 공유 조회 요청은 정상적으로 404를 반환했다. 이 CIDR은 Render 지역의 다른 서비스와 공유되므로 계정·TLS 검증도 유지한다. Render 지역 또는 outbound 범위가 바뀌면 두 CIDR을 다시 확인해야 한다.
+
+2026-10-11 추가 점검에서 Live 배포의 원본 커밋 `2bf4636`과 Render BuildKit 로그의 `bootJar` 성공 및 최종 단계 `COPY --from=build /workspace/app.jar /app/app.jar`를 확인했다. 같은 Dockerfile의 로컬 실행 이미지에는 `/app/app.jar`만 있었고, JAR의 820개 항목에 운영 인증서·키 파일·개발용 `map-config.json`·`application-secret`이 없었다. 이미지 메타데이터에는 운영 비밀값 환경 변수가 없었다. Render Free는 Shell·SSH를 제공하지 않아 원격 이미지 파일의 직접 열람은 여전히 불가능하다.
+
+운영 `travel-mysql`과 별개로 생성한 일회용 MySQL 8.4 컨테이너와 MySQL Connector/J 9.7.0에서 운영 JDBC 옵션과 같은 전용 PKCS12 truststore·`fallbackToSystemTrustStore=false`를 시험했다. 올바른 CA의 `VERIFY_CA` 연결은 성공했고 잘못된 CA는 인증 경로 검증에서, 올바른 CA를 사용한 `VERIFY_IDENTITY`의 호스트명 불일치는 인증서 검증에서 각각 거절됐다. 시험 컨테이너는 종료했다.
+
+2026-10-12 Render 운영 서비스에서도 거절 동작을 확인했다. DB 호스트를 Aiven의 실제 IP가 가리키는 다른 DNS 이름으로 임시 변경하자 `VERIFY_IDENTITY`가 인증서 SAN 불일치로 연결을 거절했고 배포가 종료 코드 1로 실패했다. 실제 IP 자체는 인증서 SAN에 있어 실패 조건이 아니므로 이 시험의 근거로 사용하지 않았다. 원래 호스트명으로 복구한 뒤, `aiven-ca.pem`을 별도 CA로 임시 변경하자 인증 경로가 trust anchor에 연결되지 않아 TLS handshake가 실패하고 배포가 종료 코드 1로 실패했다. 원래 CA를 복구해 재배포했고 Render 상태가 `Live`로 돌아왔다. 두 변경은 각각 원복했다.
+
+같은 날 Aiven 관리자 연결로 `routy_app`에 `travel.*`의 `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `REFERENCES`, `INDEX`, `ALTER`를 부여한 뒤 기존 `*.*` 권한을 철회했다. 최종 `SHOW GRANTS`는 전역 `USAGE`와 위 `travel.*` 권한만 표시했다. 새 `routy_app` 연결에서 `CURRENT_USER=routy_app@%`, `TLS_AES_256_GCM_SHA384`, `travel` 조회 성공과 `defaultdb` 접근 거절을 확인했다. 시험을 위해 일시 추가한 개발 PC 공인 IPv4 `/32`는 제거했으며 Aiven allowlist에는 위 Render CIDR 두 개만 남아 있다. 이후 Render Free 인스턴스의 절전 해제 기동에서 Aiven TLS 연결·Flyway V1~V6 검증·`prod` 시작을 다시 확인했고, 공개 HTTPS의 `/Routy/index.html`이 정상 화면을 반환했다. Aiven 계정 또는 서비스 설정이 변경되면 권한과 allowlist를 다시 점검한다.
+
+같은 기동의 애플리케이션 로그에 Spring Security의 임시 개발용 자동 생성 비밀번호 안내가 출력됐다. 현재 `SecurityConfig`는 form login과 HTTP Basic을 모두 비활성화하고 JWT 필터를 사용하므로 이 자동 생성 계정은 공개 인증 경로에 쓰이지 않는다. 불필요한 비밀번호 로그와 자동 생성 계정 자체를 없앨지는 SEC1-02 인증 설정 작업에서 처리하고, SEC1-06 운영 로그 감사에서 재확인한다. 비밀번호 원문은 이 문서에 기록하지 않는다.
 
 ### 무료 플랜 가용성 점검과 복구 계약
 

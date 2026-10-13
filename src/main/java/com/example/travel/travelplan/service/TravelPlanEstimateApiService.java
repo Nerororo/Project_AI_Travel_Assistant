@@ -16,6 +16,8 @@ import com.example.travel.travelplan.dto.ResolvedEstimate;
 import com.example.travel.travelplan.dto.TravelConditions;
 import com.example.travel.travelplan.dto.TravelPlanEstimateApiRequest;
 import com.example.travel.travelplan.dto.TravelPlanEstimateApiResponse;
+import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.service.ApiUsageService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -37,14 +39,17 @@ public class TravelPlanEstimateApiService {
 
 	private final PlanningPlaceSelectionService placeSelectionService;
 	private final TravelPlanEstimateService estimateService;
+	private final ApiUsageService usageService;
 
 	public TravelPlanEstimateApiService(PlanningPlaceSelectionService placeSelectionService,
-			TravelPlanEstimateService estimateService) {
+			TravelPlanEstimateService estimateService, ApiUsageService usageService) {
 		this.placeSelectionService = Objects.requireNonNull(placeSelectionService);
 		this.estimateService = Objects.requireNonNull(estimateService);
+		this.usageService = Objects.requireNonNull(usageService);
 	}
 
 	public TravelPlanEstimateApiResponse estimate(long userId, TravelPlanEstimateApiRequest request) {
+		usageService.acquireOrThrow(userId, UsageFeature.TRAVEL_PLAN_ESTIMATE, 1);
 		return toResponse(resolveAndEstimate(userId, request).result());
 	}
 

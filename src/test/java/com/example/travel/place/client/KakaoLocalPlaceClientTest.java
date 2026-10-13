@@ -43,7 +43,7 @@ class KakaoLocalPlaceClientTest {
 	void sendsAuthenticatedRadiusRequestAndMapsProviderResponse() throws Exception {
 		willRespond(200, """
 				{"meta":{"is_end":false},"documents":[{
-				  "id":"123","place_url":"https://place.map.kakao.com/123",
+				  "id":"123","place_url":"http://place.map.kakao.com/123",
 				  "place_name":"provider display","address_name":"parcel address",
 				  "road_address_name":"road address","x":"129.1604","y":"35.1587",
 				  "category_name":"culture > museum"
@@ -66,6 +66,7 @@ class KakaoLocalPlaceClientTest {
 		assertThat(result.hasNext()).isTrue();
 		assertThat(result.places()).singleElement().satisfies(place -> {
 			assertThat(place.kakaoPlaceId()).isEqualTo("123");
+			assertThat(place.placeUrl()).isEqualTo(URI.create("https://place.map.kakao.com/123"));
 			assertThat(place.address()).isEqualTo("road address");
 			assertThat(place.latitude()).isEqualTo(35.1587);
 			assertThat(place.longitude()).isEqualTo(129.1604);

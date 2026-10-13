@@ -9,11 +9,13 @@ import com.example.travel.travelplan.domain.TravelPlanItem;
 import com.example.travel.travelplan.dto.TravelPlanCreateApiResponse;
 import com.example.travel.travelplan.dto.TravelPlanDetailResponse;
 import com.example.travel.travelplan.dto.TravelPlanListItemResponse;
+import com.example.travel.travelplan.dto.TravelPlanListPageResponse;
 import com.example.travel.travelplan.repository.PlanPlaceRepository;
 import com.example.travel.travelplan.repository.TravelPlanDayRepository;
 import com.example.travel.travelplan.repository.TravelPlanItemRepository;
 import com.example.travel.travelplan.repository.TravelPlanRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -38,11 +40,14 @@ public class TravelPlanReadService {
     }
 
     @Transactional(readOnly = true)
-    public List<TravelPlanListItemResponse> list(long userId) {
-        return plans.findByUserIdOrderByCreatedAtDescIdDesc(userId).stream()
+    public TravelPlanListPageResponse list(long userId, int page, int size) {
+        if (page < 0 || size < 1 || size > 50) throw new ApiException(ErrorCode.VALIDATION_FAILED);
+        var slice = plans.findByUserIdOrderByCreatedAtDescIdDesc(userId, PageRequest.of(page, size));
+        var entries = slice.getContent().stream()
                 .map(plan -> new TravelPlanListItemResponse(plan.id(), plan.title(), region(plan),
                         plan.travelMode(), plan.startDate(), plan.endDate(), plan.createdAt()))
                 .toList();
+        return new TravelPlanListPageResponse(entries, page, size, slice.hasNext());
     }
 
     @Transactional(readOnly = true)

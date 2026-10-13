@@ -95,7 +95,7 @@ class RegionControllerSecurityIntegrationTest {
 	}
 
 	private String authenticatedToken() {
-		registrationService.register("region-member@example.test", "p".repeat(12));
+		registrationService.register("region-member@example.test", "p".repeat(12), "127.0.0.1");
 		User user = userRepository.findByEmail("region-member@example.test").orElseThrow();
 		return jwtService.issue(user.id());
 	}

@@ -116,10 +116,11 @@ class TravelPlanReadIntegrationTest {
         mvc.perform(get("/api/travel-plans")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/travel-plans").header(HttpHeaders.AUTHORIZATION, bearer(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].travelPlanId").value(latest))
-                .andExpect(jsonPath("$[1].travelPlanId").value(first))
-                .andExpect(jsonPath("$[2]").doesNotExist())
-                .andExpect(jsonPath("$[0].days").doesNotExist());
+                .andExpect(jsonPath("$.items[0].travelPlanId").value(latest))
+                .andExpect(jsonPath("$.items[1].travelPlanId").value(first))
+                .andExpect(jsonPath("$.items[2]").doesNotExist())
+                .andExpect(jsonPath("$.hasNext").value(false))
+                .andExpect(jsonPath("$.items[0].days").doesNotExist());
         mvc.perform(get("/api/travel-plans/{id}", latest).header(HttpHeaders.AUTHORIZATION, bearer(owner)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.region.displayName").value("Region snapshot"))
@@ -139,6 +140,48 @@ class TravelPlanReadIntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRAVEL_PLAN_NOT_FOUND"));
+    }
+
+    @Test
+    void listPagesPreserveOrderAndAccessToEveryExistingPlan() throws Exception {
+        long owner = user();
+        long other = user();
+        long first = plan(owner, "First");
+        long middle = plan(owner, "Middle");
+        long last = plan(owner, "Last");
+        plan(other, "Foreign");
+
+        mvc.perform(get("/api/travel-plans?page=0&size=2")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].travelPlanId").value(last))
+                .andExpect(jsonPath("$.items[1].travelPlanId").value(middle))
+                .andExpect(jsonPath("$.hasNext").value(true));
+        mvc.perform(get("/api/travel-plans?page=0&size=1")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasNext").value(true));
+        mvc.perform(get("/api/travel-plans?page=0&size=50")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.hasNext").value(false));
+        mvc.perform(get("/api/travel-plans?page=1&size=2")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].travelPlanId").value(first))
+                .andExpect(jsonPath("$.hasNext").value(false));
+        mvc.perform(get("/api/travel-plans?page=2&size=2")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty());
+        mvc.perform(get("/api/travel-plans?page=-1")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/travel-plans?size=51")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -388,6 +431,44 @@ class TravelPlanReadIntegrationTest {
                 .digest(token.getBytes(StandardCharsets.US_ASCII)),
                 Instant.now().minusSeconds(60), Instant.now().minusSeconds(1)));
         missingShare(token);
+    }
+
+    @Test
+    void shareIssueLimitsOwnerWithoutRotatingOnDenial() throws Exception {
+        long owner = user();
+        long planId = plan(owner, "Limited issue");
+        String latest = null;
+        for (int count = 0; count < 10; count++) {
+            latest = issue(owner, planId);
+        }
+        mvc.perform(post("/api/travel-plans/{id}/shares", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMIT_EXCEEDED"));
+        mvc.perform(get("/api/shared/travel-plans/{token}", latest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicShareReadLimitsClientIpAndKeepsErrorHeaders() throws Exception {
+        long owner = user();
+        String token = issue(owner, plan(owner, "Limited read"));
+        for (int count = 0; count < 60; count++) {
+            mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                            .with(request -> { request.setRemoteAddr("192.0.2.30"); return request; }))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                        .with(request -> { request.setRemoteAddr("192.0.2.30"); return request; }))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMIT_EXCEEDED"));
+        mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                        .with(request -> { request.setRemoteAddr("192.0.2.31"); return request; }))
+                .andExpect(status().isOk());
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.example.travel.region.service.AiAllowedRegionService;
 import com.example.travel.user.dto.RequestExecutionLease;
 import com.example.travel.user.dto.RequestStartResult;
 import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.service.ApiUsageService;
 import com.example.travel.user.service.RequestExecutionService;
 import org.springframework.stereotype.Service;
 
@@ -30,15 +31,18 @@ public class RegionRecommendationService {
 	private final AiClient aiClient;
 	private final AiAllowedRegionService allowedRegionService;
 	private final RequestExecutionService requestExecutionService;
+	private final ApiUsageService apiUsageService;
 
 	public RegionRecommendationService(
 			AiClient aiClient,
 			AiAllowedRegionService allowedRegionService,
-			RequestExecutionService requestExecutionService
+			RequestExecutionService requestExecutionService,
+			ApiUsageService apiUsageService
 	) {
 		this.aiClient = aiClient;
 		this.allowedRegionService = allowedRegionService;
 		this.requestExecutionService = requestExecutionService;
+		this.apiUsageService = apiUsageService;
 	}
 
 	public RegionRecommendationResponse recommend(
@@ -57,7 +61,8 @@ public class RegionRecommendationService {
 			List<RegionCandidate> allowedRegions = allowedRegionService.findAll().stream()
 					.map(this::toCandidate)
 					.toList();
-			RegionRecommendationResponse response = recommend(request, allowedRegions);
+			RegionRecommendationResponse response = recommend(request, allowedRegions,
+					() -> apiUsageService.acquireOrThrow(userId, UsageFeature.AI_REGION_RECOMMENDATION, 1));
 			if (!requestExecutionService.markSucceeded(lease)) {
 				throw new IllegalStateException("Request execution could not be completed");
 			}
@@ -68,9 +73,10 @@ public class RegionRecommendationService {
 		}
 	}
 
-	public RegionRecommendationResponse recommend(
+	RegionRecommendationResponse recommend(
 			RegionRecommendationRequest request,
-			List<RegionCandidate> allowedRegions
+			List<RegionCandidate> allowedRegions,
+			Runnable beforeRetry
 	) {
 		Map<String, RegionCandidate> candidatesById = indexCandidates(allowedRegions);
 		if (candidatesById.size() < REQUIRED_RECOMMENDATION_COUNT) {
@@ -78,7 +84,7 @@ public class RegionRecommendationService {
 		}
 
 		AiClient.RegionRecommendationResult result = aiClient.recommendRegions(
-				new AiClient.RegionRecommendationPrompt(request.request(), allowedRegions)
+				new AiClient.RegionRecommendationPrompt(request.request(), allowedRegions), beforeRetry
 		);
 		validateResult(result, candidatesById);
 

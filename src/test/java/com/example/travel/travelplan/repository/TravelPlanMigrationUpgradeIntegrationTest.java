@@ -57,7 +57,7 @@ class TravelPlanMigrationUpgradeIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM travel_plan_items WHERE item_type = 'STAY'", Integer.class))
                 .isZero();
 
-        Flyway.configure().dataSource(dataSource).load().migrate();
+        Flyway.configure().dataSource(dataSource).target(MigrationVersion.fromVersion("6")).load().migrate();
 
         assertThat(jdbc.queryForObject("SELECT MAX(version) FROM flyway_schema_history WHERE success = 1", String.class))
                 .isEqualTo("6");

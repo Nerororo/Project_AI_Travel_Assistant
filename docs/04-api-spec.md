@@ -59,12 +59,14 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 변환 대상 | 상태 | 코드 | 응답 규칙 |
 |---|---:|---|---|
 | DTO·메서드 validation, 잘못된 JSON·타입·필수 header | 400 | `VALIDATION_FAILED` | 필드 검증이면 `fieldErrors`, 그 밖에는 빈 배열 |
+| `/api/**` 요청 본문 64KiB 초과 | 413 | `REQUEST_TOO_LARGE` | JSON 파싱·인증·외부 호출 전에 공통 오류 형식으로 거절 |
 | Bearer token 없음·잘못됨·만료, 로그인 인증 실패 | 401 | `AUTHENTICATION_REQUIRED` | 원인을 구분하지 않는 같은 message, `WWW-Authenticate: Bearer` |
 | 인증됐지만 다른 사용자의 자원 또는 권한 없음 | 403 | `ACCESS_DENIED` | 대상 소유자와 권한 상세 비노출 |
 | 존재하지 않거나 공개적으로 숨겨야 하는 자원 | 404 | endpoint별 not-found 코드 | 현재 일정은 `TRAVEL_PLAN_NOT_FOUND`; 공유 토큰의 무효·만료도 같은 일정 not-found 응답 |
 | 매핑되지 않은 URL·정적 리소스 | 404 | `RESOURCE_NOT_FOUND` | 요청 경로와 Spring 내부 오류 비노출 |
 | 이미 사용 중인 회원가입 이메일 | 409 | `EMAIL_ALREADY_EXISTS` | 이메일과 기존 사용자 정보 비노출 |
 | 같은 requestId가 처리 중·이미 성공 | 409 | `REQUEST_IN_PROGRESS`, `REQUEST_ALREADY_COMPLETED` | `request_executions` 상태에 따라 구분, 결과 ID 비노출 |
+| 사용자 완료 일정 저장 총량 초과 | 409 | `TRAVEL_PLAN_LIMIT_EXCEEDED` | 기존 일정 삭제 후 새 생성 가능, 결과 ID 비노출 |
 | 유효한 요청이지만 경로 없음·일정 시간 초과 | 422 | `ROUTE_NOT_FOUND`, `PLAN_CAPACITY_EXCEEDED` | 명세된 경우에만 `details`·`adjustments` 제공 |
 | 사용자 또는 서비스 호출 한도 초과 | 429 | `RATE_LIMIT_EXCEEDED` | `retryAfterSeconds`와 `Retry-After` 필수 |
 | 장소·경로·AI 제공자 기술 장애 | 503 | `PLACE_PROVIDER_UNAVAILABLE`, `ROUTE_PROVIDER_UNAVAILABLE`, `AI_UNAVAILABLE` | provider 상태·URL·payload 비노출 |
@@ -72,6 +74,8 @@ JSON 파싱처럼 신뢰할 수 있는 필드 경로를 얻을 수 없는 오류
 | 예상하지 못한 서버 오류 | 500 | `INTERNAL_SERVER_ERROR` | 고정된 일반 message만 반환 |
 
 F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환하고, 비즈니스 예외는 자신이 가진 공통 오류 code와 상태로 변환한다. 이미 응답이 시작된 오류를 다시 쓰지 않으며 예상하지 못한 예외는 500으로 변환한다. 같은 원인에 Controller별 handler를 두지 않고 전역 handler 하나를 사용한다.
+
+SEC1-05 입력 상한: `/api/**` 본문은 UTF-8 바이트 기준 64KiB까지 허용한다. 요청 JSON 문자열은 최대 4,096자, 중첩 깊이는 최대 16이며 초과 시 400 `VALIDATION_FAILED`다. Bearer JWT는 2,048자 초과 시 기존 401, `selectionToken`은 2,048자 초과 시 기존 400 검증 오류다. 일정의 `places`는 최대 35개, 생성 `meals`는 최대 14개, 숙소 검색의 관광지 token은 최대 35개, 완료 일정 `placeEdits`는 최대 50개다. 각 문자열·목록의 세부 상한은 해당 endpoint의 기존 필드 계약을 유지한다.
 
 오류별 기본 message는 서버에서 code와 함께 관리한다. 사용자 입력값을 message에 이어 붙이지 않는다. `PLAN_CAPACITY_EXCEEDED`처럼 명세가 허용한 날짜·시각·분 값은 문자열 조합 대신 `details` DTO로 전달하며 message는 `일정이 허용 시간을 초과합니다.`로 고정한다.
 
@@ -85,6 +89,7 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 | `EMAIL_ALREADY_EXISTS` | 이미 사용 중인 이메일입니다. |
 | `REQUEST_IN_PROGRESS` | 같은 요청을 처리 중입니다. |
 | `REQUEST_ALREADY_COMPLETED` | 이미 처리된 요청입니다. |
+| `TRAVEL_PLAN_LIMIT_EXCEEDED` | 저장할 수 있는 일정 수를 초과했습니다. |
 | `ROUTE_NOT_FOUND` | 이동 경로를 찾을 수 없습니다. |
 | `PLAN_CAPACITY_EXCEEDED` | 일정이 허용 시간을 초과합니다. |
 | `RATE_LIMIT_EXCEEDED` | 호출 한도를 초과했습니다. |
@@ -148,6 +153,10 @@ F0-04B Exception Handler는 Spring/Jackson validation 예외만 400으로 변환
 비밀번호는 8~64 Unicode code point, UTF-8 기준 72바이트 이하이며 제어 문자를 허용하지 않는다. 서버는 앞뒤 공백 제거 또는 Unicode 정규화 없이 입력 그대로 검증·해시한다. 길이·바이트 수 위반은 `password`의 `INVALID_SIZE`, 제어 문자는 `INVALID_FORMAT`으로 반환한다. 비밀번호 문자 종류 조합 규칙은 두지 않는다.
 
 access JWT는 발급 후 1시간 유효하다. refresh token과 로그아웃 endpoint는 MVP에서 제공하지 않으며 브라우저는 token을 메모리에서 제거해 로그아웃한다. 서버는 보호 API마다 JWT와 token의 User 존재 여부를 확인하므로 탈퇴한 사용자의 기존 token도 401로 거부한다.
+
+SEC1-02에서는 유효한 가입 요청을 IP당 1시간에 5회, 정규화한 이메일당 1시간에 3회로 제한한다. 로그인 요청은 IP당 10분에 30회, 정규화한 이메일당 10분에 5회로 제한한다. 성공·실패 요청 모두 횟수를 사용하며 초과 요청은 비밀번호 해시 검사나 회원 생성 전에 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`·`retryAfterSeconds`를 반환한다. 고정 창이 끝나면 자동으로 다시 시도할 수 있으며 별도 잠금·비밀번호 교체 절차는 없다. IP를 바꾸더라도 이메일 한도를 공유하고 이메일을 바꾸더라도 IP 한도를 공유한다. 실제 IP와 이메일을 모두 바꾸는 시도는 별도 한도로 묶이지 않으며 SEC1-02의 수용 위험이다.
+
+가입 중복은 기존 409 `EMAIL_ALREADY_EXISTS`를 유지한다. 따라서 이 응답으로 이메일 등록 여부를 확인할 수 있다는 잔여 위험이 있다. 가입·로그인 한도로 대량 조회를 제한하고, 가입은 중복 여부 조회 전에도 같은 BCrypt 해시 작업을 수행한다. 존재하지 않는 이메일 로그인도 실제 계정과 같은 BCrypt 검증을 수행하고 같은 401 응답을 사용한다. 브라우저 로그아웃은 메모리 token을 폐기하지만 이미 복사된 JWT는 남은 유효기간(최대 1시간) 동안 서버에서 유효하다. 현재 대응은 브라우저 메모리 보관과 1시간 TTL이며 복사된 JWT를 서버에서 철회하지 못한다. User 레코드가 삭제되면 기존 User 존재 검증으로 JWT가 거절되지만 계정 삭제 endpoint는 현재 구현되지 않았다. 서버 철회·refresh token·로그아웃 endpoint는 이 작업에 추가하지 않는다.
 
 로그인 자격 증명 불일치, 존재하지 않는 이메일과 보호 API의 누락·잘못된·만료 Bearer token은 모두 401 `AUTHENTICATION_REQUIRED`의 같은 message를 사용한다. 이메일 존재 여부와 token 실패 원인을 Response에서 구분하지 않는다. 인증은 성공했지만 소유권 또는 권한이 없으면 403 `ACCESS_DENIED`다.
 
@@ -681,7 +690,7 @@ Response에는 좌표·주소·카테고리·카카오 장소명·경로 원문�
 
 ### GET /api/travel-plans
 
-현재 사용자의 일정 목록을 paging 없이 전체 반환하며 `createdAt DESC, id DESC`로 정렬한다. W1-05의 MVP 목록 화면은 이 응답을 그대로 사용하고 페이지 번호·더 보기·paging 요청을 제공하지 않는다. 목록 paging은 별도 요구사항과 API 계약이 정해질 때 후속 작업으로 다룬다.
+현재 사용자의 일정 목록을 `GET /api/travel-plans?page=0&size=20`으로 조회한다. `page`는 0부터 시작하며 기본 0, `size`는 기본 20이고 1~50만 허용한다. 음수 page 또는 범위 밖 size는 400 `VALIDATION_FAILED`다. 응답은 `{ "items": [...], "page": 0, "size": 20, "hasNext": false }`이며 `items`는 기존 목록 항목 구조를 사용한다. `createdAt DESC, id DESC`로 정렬하고, 마지막 페이지 다음은 빈 `items`와 `hasNext=false`를 반환한다. W1-05 화면은 다음 페이지를 요청해 기존 일정 전체에 접근한다.
 
 ### GET /api/travel-plans/{travelPlanId}
 
@@ -753,6 +762,8 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 
 인증된 소유자가 읽기 전용 공유 토큰을 발급한다. 일정당 토큰은 하나이며 재발급은 이전 토큰을 같은 트랜잭션에서 즉시 무효화한다. 다른 사용자의 일정은 403, 없는 일정은 404다. 성공 시 201과 `Cache-Control: no-store`를 반환하며 원문은 이 Response에서만 제공한다.
 
+발급 시도는 인증 사용자별 1시간 고정 창에서 10회까지 허용한다. 초과하면 토큰을 교체하지 않고 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`를 반환한다. 대기 후 다시 요청할 수 있으며, 403·404 시도도 창에 포함한다.
+
 ~~~json
 {
   "shareToken": "base64url-encoded-random-token",
@@ -765,6 +776,8 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 ### GET /api/shared/travel-plans/{shareToken}
 
 인증 없이 저장된 완료 일정의 읽기 전용 Response를 반환한다.
+
+조회 시도는 클라이언트 IP별 1분 고정 창에서 60회까지 허용한다. 무효·만료 토큰 시도도 포함하며, 초과하면 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`를 반환한다. 같은 IP를 쓰는 이용자는 창을 공유한다. 유효한 링크는 대기 후 다시 조회할 수 있다.
 
 - 형식이 유효하고 해시가 일치하며 만료 전인 토큰만 허용한다. 조회는 만료 시각을 연장하지 않는다.
 - 카카오 API를 호출하지 않는다.
@@ -782,10 +795,15 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 | 장소 검색 | 20 | 300 |
 | 자동차 경로 | 60 | 120 |
 | 대중교통 경로 | 60 | 120 |
-| AI 지역 추천 | 2 | 10 |
+| AI 지역 추천 | 3 | 15 |
 | AI 메뉴 분석 | 3 | 15 |
+| 일정 추정 | 12 | 120 |
+| 완료 일정 생성 | 3 | 30 |
 
 - 하루는 Asia/Seoul 자정에 초기화한다.
+- 일정 추정은 `POST /api/travel-plans/estimate`에만 적용한다. 생성·음식점 검색 내부의 추정 계산은 추가 차감하지 않는다. 완료 일정 생성은 서로 다른 `requestId`라도 사용자 한도를 공유한다. 같은 `requestId`의 처리 중·성공 중복은 기존 409를 우선하며 추가 차감하지 않는다. 한도 초과는 계산·외부 호출·저장 전에 429와 `Retry-After`를 반환한다. 한도는 요청 시작에 차감하며 이후 계산·저장 실패에도 반환하지 않는다.
+- 사용자당 완료 일정은 최대 100개 저장한다. 100개 상태에서 새 생성은 계산이 끝난 뒤 저장 트랜잭션에서 409 `TRAVEL_PLAN_LIMIT_EXCEEDED`로 거절하며 기존 일정 삭제 후 다시 생성할 수 있다. 기존 일정이 100개를 초과해도 삭제하지 않고 목록 페이지로 모두 조회할 수 있다.
+- AI 지역 추천과 AI 메뉴 분석은 각각 서비스 전체 하루 30회에서 새 요청을 차단한다. 각 기능은 별도 카운터를 사용하고, 차단 시 기존 공통 429와 `retryAfterSeconds`·`Retry-After`를 반환한다.
 - 자동차와 대중교통 경로는 각각 사용자당 분당 60회·하루 120회이며 실제 제공자 요청과 재시도를 차감한다.
 - 대중교통은 카카오맵 REST API를 사용하고 서비스 전체 일일 900건에서 신규 호출을 차단한다.
 - 분할 경로 요청과 재시도는 각각 집계한다.

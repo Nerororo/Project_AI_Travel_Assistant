@@ -58,6 +58,8 @@
 | SEC1-01 배포·네트워크 | `application-prod.yml`, 직접 대응 설정 검증 | Render Docker 배포를 위해 실제 파일을 Change Envelope에 명시한 `Dockerfile`·`.dockerignore`·`render.yaml` 중 필요한 파일; Aiven TLS/allowlist·Render outbound CIDR·환경 변수는 플랫폼 콘솔 증거와 `docs/09` 계약으로 기록; 로컬 포트 제한이 필요할 때만 `docker-compose.yaml`; `global/security/**`, `.env.example` | 미선택 플랫폼 설정 파일, 운영 서버·프록시 Compose 신설, 도메인 비즈니스 코드, migration, 정적 화면, 원본 템플릿 |
 | SEC1-02 인증·세션 | `user` 인증 Controller·Service, `global/security/**`, 직접 대응 테스트 | `user` 한도 저장소, 새 versioned migration, `global/exception/**`, 인증 API·DB·ADR·운영 문서 | AI·장소·경로·일정 비즈니스 코드, 정적 화면, 기존 migration |
 | SEC1-03 외부 비용 | `user` 호출 한도 정책·Service, 직접 대응 테스트 | `ai` 공개 Service, 새 versioned migration, `global/exception/**`, 한도 API·DB·운영 문서 | 외부 Client 구현, 경로 알고리즘, 완료 일정 Aggregate, 정적 화면, 기존 migration |
+| SEC1-03A AI 재시도 차감 | `ai/client/AiClient.java`, `ai/client/OpenAiClient.java`, `ai/service/RegionRecommendationService.java`, `ai/service/MenuAnalysisService.java`, 직접 대응 AI 테스트 | `ai/client/ProfileFakeAiClient.java`, 테스트 Fake, AI 재시도 계약·운영·상태 문서 | 장소·경로 Client, 한도 저장 구조·migration, 완료 일정 Aggregate, 정적 화면, 기존 migration |
+| SEC1-03B 지역 추천 사용자 한도 | `user/service/ApiUsagePolicy.java`, 직접 대응 사용자 한도 테스트 | 요구사항·API·ADR·테스트·운영·DoD·상태·로드맵 문서 | AI·장소·경로 Client, 한도 저장 구조·migration, 서비스 전체 한도, 완료 일정 Aggregate, 정적 화면 |
 | SEC1-04 일정 자원 | `travelplan` 계산·생성·목록의 Controller·DTO·Service·Repository, 직접 대응 테스트 | `user` 공개 한도 Service·DTO, 후속 W1-05 화면 계약 문서, 새 versioned migration, API·DB·운영 문서 | 외부 Client 내부 구현, 경로 알고리즘, 정적 화면, 원본 템플릿, 기존 migration |
 | SEC1-05 입력 상한 | `global` 웹·security 설정, 해당 요청 DTO, `place/service/SelectionTokenService.java`, 직접 대응 테스트 | 선택한 Render 요청 크기 설정, `global/exception/**`, API·운영 문서 | 도메인 알고리즘·Repository·migration, 원본 템플릿 |
 | SEC1-06 공유 링크 | `travelplan` 공유·조회 Controller·Service, 직접 대응 테스트 | 활성화된 플랫폼 접근 로그 설정, 후속 W1-05 공유 화면 계약 문서, `user` 공개 한도 계약, `global/exception/**`, 새 versioned migration, 공유 API·운영 문서 | AI·장소·경로 구현, 정적 화면, 기존 migration |
@@ -180,6 +182,8 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | SEC1-01 | `docs/06` ADR-045, `docs/09` 2~4·11~12절, `docs/10` 13절, 현재 로컬 Compose·프로필·배포 진입점, Render·Aiven 공식 네트워크·TLS·DB 문서 | 배포 설정 또는 보안 결정 변경 시 `docs/06` |
 | SEC1-02 | `docs/04` 가입·로그인·인증 오류, `docs/08` 6.1절, `docs/09` 3~5절, `docs/10` 4·13절 | 한도 저장 구조·JWT 계약 변경 시 `docs/03`·`docs/06` |
 | SEC1-03 | `docs/01` FR-14~15, `docs/04` AI·장소·호출 한도, `docs/08` 6.1·6.3·6.8절, `docs/09` 5~6절 | 서비스 한도·카운터 계약 변경 시 `docs/03`·`docs/06` |
+| SEC1-03A | SEC1-03 결과와 `docs/04` AI 재시도·429, `docs/06` ADR-044·047, `docs/08` 6.3·6.8·6.11절, `docs/09` 5~7·12절, `docs/10` 6·10절, 기존 OpenAI Client·Service·Fake 호출자 | 실제 호출 전 확보·차단 검증과 SEC1-03 로컬 완료 상태 기록 |
+| SEC1-03B | SEC1-03·03A 결과, `docs/01` FR-14, `docs/04` 호출 한도, `docs/06` ADR-044·047, `docs/08` 6.3·6.8절, `docs/09` 5절, `docs/10` 6절, 현재 정책과 직접 대응 테스트 | 사용자 한도 변경을 새 ADR로 기록하고 서비스 전체 한도 유지 확인 |
 | SEC1-04 | `docs/04` estimate·생성·목록 endpoint, `docs/08` 6.6·6.8~6.9·8절, `docs/09` 5~6절, 기존 W1-04 제작 화면 결과 | 저장 상한·페이징 계약 변경 시 `docs/03`·`docs/06`; 후속 W1-05 목록 화면 계약 |
 | SEC1-05 | `docs/04` 해당 요청 DTO·공통 오류, `docs/08` 6.1·6.4·6.6~6.8절, `docs/09` 9·12절, Render의 요청 크기·timeout 문서 | 서버 설정과 검증 책임이 바뀔 때 `docs/06` |
 | SEC1-06 | `docs/04` 일정 상세·공유 endpoint, `docs/08` 6.9절, `docs/09` 4·12절, `docs/10` 11·13절, Render 접근 로그 문서 | 토큰 저장·공개 응답 계약 변경 시 `docs/03`·`docs/06` |

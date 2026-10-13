@@ -204,6 +204,10 @@ TravelPlan은 완료된 일정만 표현한다. DRAFT 상태나 제작 중 좌�
 
 `request_executions`는 `user_id`, `feature`, `request_id` 조합을 UNIQUE로 두고 처리 상태와 `expires_at`만 저장한다. 처리 중 상태의 동일 요청은 `REQUEST_IN_PROGRESS`, 성공 상태의 동일 요청은 `REQUEST_ALREADY_COMPLETED`로 차단하며 외부 호출·저장 로직을 반복하지 않는다. 보관 시간은 10분이며 결과 리소스 ID, payload·response·좌표·외부 원문은 저장하지 않는다.
 
+SEC1-04의 `travel_plan_creation_locks`는 `user_id` PK와 User FK만 가진다. 완료 일정 저장 트랜잭션에서 이 행을 잠근 뒤 실제 `travel_plans` 개수를 세어 사용자당 100개 상한을 검사한다. 카운터를 중복 보관하지 않으므로 기존 일정과 삭제도 실제 개수에 반영된다. 100개를 넘는 기존 일정은 보존한다. 목록은 `created_at DESC, id DESC`로 1~50개씩 조회할 수 있도록 복합 인덱스를 추가한다.
+
+SEC1-02의 `auth_attempt_counters`는 V7에서 만든다. `(bucket_type, identifier_hash, window_start)`가 PK이며 `used_count`, `expires_at`을 저장한다. IP·정규화 이메일 원문은 저장하지 않고 활성 JWT 키로 만든 HMAC-SHA256 식별자만 저장한다. 가입 IP·이메일 창은 1시간, 로그인 IP·이메일 창은 10분이다. SEC1-06의 공유 발급 사용자 ID는 1시간, 공개 조회 IP는 1분 창을 별도 `bucket_type`으로 같은 테이블에 저장하며 공유 토큰·URL·조회 이력은 저장하지 않는다. INSERT IGNORE와 조건부 UPDATE를 짧은 트랜잭션에서 실행해 인스턴스 간 한도를 공유한다. 요청마다 만료 행을 최대 100개씩 정리하고, 정리가 늦어도 창 시작값이 달라져 현재 판정에 영향을 주지 않는다. JWT 키 교체 시 이전 창의 식별자는 달라지므로 카운터가 새로 시작된다.
+
 만료 행은 묶어서 정리하되 모든 판정은 `expires_at`을 확인하므로 삭제 지연이 현재 한도에 영향을 주지 않아야 한다. 외부 호출 전에 카운터 확보 트랜잭션을 끝내며 실제 외부 호출을 DB 트랜잭션 안에서 수행하지 않는다.
 
 ---

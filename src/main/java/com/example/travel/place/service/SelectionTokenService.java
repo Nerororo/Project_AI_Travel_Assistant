@@ -35,6 +35,7 @@ public final class SelectionTokenService {
 	private static final JOSEObjectType TYPE = new JOSEObjectType("place-selection+jwt");
 	private static final String AUDIENCE = "place-selection";
 	private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
+	private static final int MAX_TOKEN_LENGTH = 2048;
 	private static final Set<String> CLAIM_NAMES = Set.of(
 			"iss", "aud", "sub", "iat", "exp", "regionId", "placeRole",
 			"kakaoPlaceId", "placeUrl", "latitude", "longitude");
@@ -86,6 +87,9 @@ public final class SelectionTokenService {
 
 	public SelectionTokenPlace verify(String serializedToken, long authenticatedUserId,
 			String expectedRegionId, PlaceRole expectedRole) {
+		if (serializedToken == null || serializedToken.length() > MAX_TOKEN_LENGTH) {
+			throw new InvalidSelectionTokenException();
+		}
 		try {
 			SignedJWT token = SignedJWT.parse(serializedToken);
 			JWSHeader header = token.getHeader();

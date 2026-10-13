@@ -10,6 +10,8 @@ import com.example.travel.travelplan.dto.EstimateResult;
 import com.example.travel.travelplan.dto.EstimatedDay;
 import com.example.travel.travelplan.dto.EstimatedItem;
 import com.example.travel.travelplan.dto.TravelPlanEstimateApiRequest;
+import com.example.travel.user.dto.UsageFeature;
+import com.example.travel.user.service.ApiUsageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,18 +40,31 @@ class TravelPlanEstimateApiServiceTest {
 
 	private PlanningPlaceSelectionService places;
 	private TravelPlanEstimateService estimator;
+	private ApiUsageService usage;
 	private TravelPlanEstimateApiService service;
 
 	@BeforeEach
 	void setUp() {
 		places = mock(PlanningPlaceSelectionService.class);
 		estimator = mock(TravelPlanEstimateService.class);
-		service = new TravelPlanEstimateApiService(places, estimator);
+		usage = mock(ApiUsageService.class);
+		service = new TravelPlanEstimateApiService(places, estimator, usage);
 		when(places.verifyAttraction("attraction-token", 7L, "KR-30"))
 				.thenReturn(selection("1", 36.0, 127.0));
 		when(places.verifyHotel("hotel-token", 7L, "KR-30"))
 				.thenReturn(selection("2", 36.1, 127.1));
 		when(estimator.estimate(any())).thenReturn(result());
+	}
+
+	@Test
+	void estimateReservesUsageBeforeTokenVerification() {
+		org.mockito.Mockito.doThrow(new ApiException(ErrorCode.RATE_LIMIT_EXCEEDED,
+				null, List.of(), 10L)).when(usage)
+				.acquireOrThrow(7L, UsageFeature.TRAVEL_PLAN_ESTIMATE, 1);
+		assertThatThrownBy(() -> service.estimate(7L, request(1, "attraction-token", null)))
+				.isInstanceOfSatisfying(ApiException.class, error ->
+						assertThat(error.errorCode()).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED));
+		verifyNoInteractions(places, estimator);
 	}
 
 	@Test

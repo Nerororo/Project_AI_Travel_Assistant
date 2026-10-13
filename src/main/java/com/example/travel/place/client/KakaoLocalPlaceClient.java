@@ -158,7 +158,9 @@ public final class KakaoLocalPlaceClient implements KakaoPlaceClient {
 			throw failure(PlaceClientFailure.INVALID_RESPONSE);
 		}
 		URI placeUrl = URI.create(document.placeUrl());
-		if (!URI.create("https://place.map.kakao.com/" + document.id()).equals(placeUrl)) {
+		URI canonicalPlaceUrl = URI.create("https://place.map.kakao.com/" + document.id());
+		if (!canonicalPlaceUrl.equals(placeUrl)
+				&& !URI.create("http://place.map.kakao.com/" + document.id()).equals(placeUrl)) {
 			throw failure(PlaceClientFailure.INVALID_RESPONSE);
 		}
 		double latitude = Double.parseDouble(document.y());
@@ -172,7 +174,7 @@ public final class KakaoLocalPlaceClient implements KakaoPlaceClient {
 				: document.addressName();
 		return new PlaceCandidate(
 				document.id(),
-				placeUrl,
+				canonicalPlaceUrl,
 				document.placeName(),
 				address,
 				latitude,

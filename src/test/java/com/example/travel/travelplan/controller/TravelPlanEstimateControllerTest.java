@@ -10,6 +10,7 @@ import com.example.travel.place.service.PlanningPlaceSelectionService;
 import com.example.travel.place.service.TravelBoundarySelectionService;
 import com.example.travel.travelplan.service.TravelPlanEstimateApiService;
 import com.example.travel.travelplan.service.TravelPlanEstimateService;
+import com.example.travel.user.service.ApiUsageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
@@ -43,7 +44,7 @@ class TravelPlanEstimateControllerTest {
 		places = mock(PlanningPlaceSelectionService.class);
 		boundaries = mock(TravelBoundarySelectionService.class);
 		TravelPlanEstimateApiService apiService = new TravelPlanEstimateApiService(
-				places, new TravelPlanEstimateService(boundaries));
+				places, new TravelPlanEstimateService(boundaries), mock(ApiUsageService.class));
 		mockMvc = MockMvcBuilders.standaloneSetup(new TravelPlanEstimateController(apiService))
 				.setCustomArgumentResolvers(authenticatedUser(7L))
 				.setControllerAdvice(new GlobalExceptionHandler())
