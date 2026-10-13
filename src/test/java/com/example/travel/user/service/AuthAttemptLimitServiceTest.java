@@ -72,4 +72,24 @@ class AuthAttemptLimitServiceTest {
 						bucket.start().equals(Instant.parse("2026-10-12T00:00:00Z"))
 								&& bucket.expiresAt().equals(Instant.parse("2026-10-12T00:10:00Z")))));
 	}
+
+	@Test
+	void shareBucketsUseSeparateHashedUserAndIpWindows() {
+		AuthAttemptTransaction transaction = mock(AuthAttemptTransaction.class);
+		AuthAttemptLimitService limits = new AuthAttemptLimitService(transaction, clock, properties);
+
+		limits.acquireShareIssue(42);
+		limits.acquireShareRead("203.0.113.4");
+
+		verify(transaction).acquire(eq(clock.instant()), org.mockito.ArgumentMatchers.argThat(buckets ->
+				buckets.size() == 1 && buckets.getFirst().type().equals("SHARE_ISSUE_USER")
+						&& buckets.getFirst().hash().matches("[0-9a-f]{64}")
+						&& buckets.getFirst().limit() == 10
+						&& buckets.getFirst().expiresAt().equals(Instant.parse("2026-10-12T01:00:00Z"))));
+		verify(transaction).acquire(eq(clock.instant()), org.mockito.ArgumentMatchers.argThat(buckets ->
+				buckets.size() == 1 && buckets.getFirst().type().equals("SHARE_READ_IP")
+						&& buckets.getFirst().hash().matches("[0-9a-f]{64}")
+						&& buckets.getFirst().limit() == 60
+						&& buckets.getFirst().expiresAt().equals(Instant.parse("2026-10-12T00:01:00Z"))));
+	}
 }

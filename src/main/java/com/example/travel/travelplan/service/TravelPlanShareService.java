@@ -2,6 +2,7 @@ package com.example.travel.travelplan.service;
 
 import com.example.travel.global.exception.ApiException;
 import com.example.travel.global.exception.ErrorCode;
+import com.example.travel.user.service.AuthAttemptLimitService;
 import com.example.travel.travelplan.domain.TravelPlanShare;
 import com.example.travel.travelplan.dto.TravelPlanDetailResponse;
 import com.example.travel.travelplan.dto.TravelPlanShareResponse;
@@ -26,18 +27,21 @@ public class TravelPlanShareService {
     private final TravelPlanShareRepository shares;
     private final TravelPlanReadService reads;
     private final Clock clock;
+    private final AuthAttemptLimitService limits;
     private final SecureRandom random = new SecureRandom();
 
     public TravelPlanShareService(TravelPlanRepository plans, TravelPlanShareRepository shares,
-            TravelPlanReadService reads, Clock clock) {
+            TravelPlanReadService reads, Clock clock, AuthAttemptLimitService limits) {
         this.plans = plans;
         this.shares = shares;
         this.reads = reads;
         this.clock = clock;
+        this.limits = limits;
     }
 
     @Transactional
     public TravelPlanShareResponse issue(long userId, long travelPlanId) {
+        limits.acquireShareIssue(userId);
         plans.findOwnedForUpdate(travelPlanId, userId).orElseGet(() -> {
             throw new ApiException(plans.existsById(travelPlanId)
                     ? ErrorCode.ACCESS_DENIED : ErrorCode.TRAVEL_PLAN_NOT_FOUND);
@@ -54,7 +58,8 @@ public class TravelPlanShareService {
     }
 
     @Transactional(readOnly = true)
-    public TravelPlanDetailResponse read(String token) {
+    public TravelPlanDetailResponse read(String token, String clientIp) {
+        limits.acquireShareRead(clientIp);
         if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) throw missing();
         byte[] bytes;
         try {

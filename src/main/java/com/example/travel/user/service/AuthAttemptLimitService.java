@@ -48,6 +48,16 @@ public class AuthAttemptLimitService {
 				bucket("LOGIN_ACCOUNT", email.toLowerCase(Locale.ROOT), TEN_MINUTES, 5, now)));
 	}
 
+	public void acquireShareIssue(long userId) {
+		Instant now = clock.instant();
+		acquire(now, List.of(bucket("SHARE_ISSUE_USER", Long.toString(userId), HOUR, 10, now)));
+	}
+
+	public void acquireShareRead(String clientIp) {
+		Instant now = clock.instant();
+		acquire(now, List.of(bucket("SHARE_READ_IP", clientIp, 60, 60, now)));
+	}
+
 	private void acquire(Instant now, List<AuthAttemptTransaction.Bucket> buckets) {
 		for (int attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt++) {
 			try {

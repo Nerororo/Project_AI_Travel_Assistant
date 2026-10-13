@@ -434,6 +434,44 @@ class TravelPlanReadIntegrationTest {
     }
 
     @Test
+    void shareIssueLimitsOwnerWithoutRotatingOnDenial() throws Exception {
+        long owner = user();
+        long planId = plan(owner, "Limited issue");
+        String latest = null;
+        for (int count = 0; count < 10; count++) {
+            latest = issue(owner, planId);
+        }
+        mvc.perform(post("/api/travel-plans/{id}/shares", planId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMIT_EXCEEDED"));
+        mvc.perform(get("/api/shared/travel-plans/{token}", latest))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicShareReadLimitsClientIpAndKeepsErrorHeaders() throws Exception {
+        long owner = user();
+        String token = issue(owner, plan(owner, "Limited read"));
+        for (int count = 0; count < 60; count++) {
+            mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                            .with(request -> { request.setRemoteAddr("192.0.2.30"); return request; }))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                        .with(request -> { request.setRemoteAddr("192.0.2.30"); return request; }))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                .andExpect(jsonPath("$.code").value("RATE_LIMIT_EXCEEDED"));
+        mvc.perform(get("/api/shared/travel-plans/{token}", token)
+                        .with(request -> { request.setRemoteAddr("192.0.2.31"); return request; }))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void shareIssueWaitsForAggregateMutationLock() throws Exception {
         long owner = user();
         long planId = plan(owner, "Original");

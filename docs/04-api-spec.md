@@ -762,6 +762,8 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 
 인증된 소유자가 읽기 전용 공유 토큰을 발급한다. 일정당 토큰은 하나이며 재발급은 이전 토큰을 같은 트랜잭션에서 즉시 무효화한다. 다른 사용자의 일정은 403, 없는 일정은 404다. 성공 시 201과 `Cache-Control: no-store`를 반환하며 원문은 이 Response에서만 제공한다.
 
+발급 시도는 인증 사용자별 1시간 고정 창에서 10회까지 허용한다. 초과하면 토큰을 교체하지 않고 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`를 반환한다. 대기 후 다시 요청할 수 있으며, 403·404 시도도 창에 포함한다.
+
 ~~~json
 {
   "shareToken": "base64url-encoded-random-token",
@@ -774,6 +776,8 @@ Response에는 `mealDate`·`mealStartTime`·`mealEndTime`, `previousPlace`·`nex
 ### GET /api/shared/travel-plans/{shareToken}
 
 인증 없이 저장된 완료 일정의 읽기 전용 Response를 반환한다.
+
+조회 시도는 클라이언트 IP별 1분 고정 창에서 60회까지 허용한다. 무효·만료 토큰 시도도 포함하며, 초과하면 429 `RATE_LIMIT_EXCEEDED`와 `Retry-After`를 반환한다. 같은 IP를 쓰는 이용자는 창을 공유한다. 유효한 링크는 대기 후 다시 조회할 수 있다.
 
 - 형식이 유효하고 해시가 일치하며 만료 전인 토큰만 허용한다. 조회는 만료 시각을 연장하지 않는다.
 - 카카오 API를 호출하지 않는다.
