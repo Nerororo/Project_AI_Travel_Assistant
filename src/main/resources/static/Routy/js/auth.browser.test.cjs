@@ -195,7 +195,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     if (req.method === 'POST' && req.url === '/api/places/image') {
       for await (const _ of req) { /* Discard temporary search terms. */ }
       res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
-      res.end(JSON.stringify({thumbnailUrl: null}));
+      res.end(JSON.stringify({thumbnailUrls: []}));
       return;
     }
     if (req.method === 'POST' && req.url === '/api/places/restaurants/search') {
@@ -498,6 +498,23 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('#next-step');
     await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      const sizes = await evaluate(`(() => {
+        const list = document.querySelector('#place-results'), plain = list.querySelector('.place-result');
+        const pictured = plain.cloneNode(true), gallery = document.createElement('div');
+        const strip = document.createElement('div'), image = document.createElement('img');
+        gallery.className = 'place-image-gallery'; strip.className = 'place-image-strip'; image.className = 'place-thumbnail';
+        strip.append(image); gallery.append(strip); pictured.append(gallery); pictured.classList.add('has-thumbnail'); list.append(pictured);
+        const result = {plainButton: plain.querySelector('button').getBoundingClientRect().width,
+          picturedButton: pictured.querySelector('button').getBoundingClientRect().width,
+          imageWidth: image.getBoundingClientRect().width};
+        pictured.remove(); return result;
+      })()`);
+      assert.ok(Math.abs(sizes.plainButton - sizes.picturedButton) < 1, 'selection buttons keep the same width');
+      assert.equal(sizes.imageWidth, 144, 'place photos are nine rem wide');
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await designScreenshot('w1-06-attractions-desktop.png');
     await searchScrollScreenshot('#place-results', 'attractions');
     const attractionRequest = placeRequests.at(-1);

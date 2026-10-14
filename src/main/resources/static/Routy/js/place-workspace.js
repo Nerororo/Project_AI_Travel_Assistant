@@ -38,19 +38,51 @@
           headers: {'Content-Type': 'application/json', Accept: 'application/json', 'Idempotency-Key': window.crypto.randomUUID()},
           body: JSON.stringify({placeName: place.providerDisplayName, address: place.address}), signal: controller.signal})
           .then(response => response instanceof window.Response && response.ok ? response.json() : null)
-          .then(body => {
-            const url = new URL(body?.thumbnailUrl);
-            return url.protocol === 'https:' && (url.hostname === 'kakaocdn.net' || url.hostname.endsWith('.kakaocdn.net')) ? url.href : null;
-          }).catch(() => null).finally(() => pending.delete(controller));
+          .then(body => (Array.isArray(body?.thumbnailUrls) ? body.thumbnailUrls : []).flatMap(value => {
+            try {
+              const url = new URL(value);
+              return url.protocol === 'https:' && (url.hostname === 'kakaocdn.net' || url.hostname.endsWith('.kakaocdn.net')) ? [url.href] : [];
+            } catch (_) { return []; }
+          }).slice(0, 5)).catch(() => []).finally(() => pending.delete(controller));
         cache.set(place.kakaoPlaceId, lookup);
       }
-      lookup.then(url => {
-        if (!url || !item.isConnected) return;
-        const img = document.createElement('img'); img.className = 'place-thumbnail'; img.alt = '';
-        img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
-        img.onload = () => item.classList.add('has-thumbnail');
-        img.onerror = () => img.remove();
-        img.src = url; item.append(img);
+      lookup.then(urls => {
+        if (!urls.length || !item.isConnected) return;
+        const gallery = document.createElement('div'); gallery.className = 'place-image-gallery';
+        const strip = document.createElement('div'); strip.className = 'place-image-strip';
+        const count = document.createElement('span'); count.className = 'place-image-count';
+        count.textContent = `1 / ${urls.length}`;
+        if (urls.length > 1) {
+          strip.tabIndex = 0;
+          strip.setAttribute('role', 'group');
+          strip.setAttribute('aria-label', `${urls.length}장의 장소 사진. 좌우로 넘겨 보세요.`);
+          strip.addEventListener('scroll', () => {
+            count.textContent = `${Math.min(urls.length, Math.round(strip.scrollLeft / strip.clientWidth) + 1)} / ${urls.length}`;
+          });
+          let startX = null, startScroll = 0;
+          strip.addEventListener('pointerdown', event => {
+            if (event.pointerType !== 'mouse' || event.button !== 0) return;
+            startX = event.clientX; startScroll = strip.scrollLeft;
+            strip.setPointerCapture(event.pointerId);
+            event.preventDefault();
+          });
+          strip.addEventListener('pointermove', event => {
+            if (startX !== null) strip.scrollLeft = startScroll + startX - event.clientX;
+          });
+          const stopDrag = () => { startX = null; };
+          strip.addEventListener('pointerup', stopDrag);
+          strip.addEventListener('pointercancel', stopDrag);
+        }
+        for (const url of urls) {
+          const img = document.createElement('img'); img.className = 'place-thumbnail'; img.alt = '';
+          img.loading = 'eager'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer'; img.draggable = false;
+          img.onload = () => { if (item.isConnected) item.classList.add('has-thumbnail'); };
+          img.onerror = () => img.remove();
+          img.src = url; strip.append(img);
+        }
+        gallery.append(strip);
+        if (urls.length > 1) gallery.append(count);
+        item.append(gallery);
       });
     }
     return {append, clear};

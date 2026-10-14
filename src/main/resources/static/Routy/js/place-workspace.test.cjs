@@ -36,16 +36,21 @@ test('invalid responses and provider text do not enter the displayed error', () 
   assert.match(ui.errorFor(429, {code: 'RATE_LIMIT_EXCEEDED', retryAfterSeconds: 13}).message, /13초/);
 });
 
-test('image loader places a Kakao thumbnail beside a result and reuses the lookup', async () => {
+test('image loader keeps safe photos in one draggable gallery and reuses the lookup', async () => {
   class Response { constructor(body) { this.ok = true; this.body = body; } async json() { return this.body; } }
-  const calls = [], images = [];
-  const document = {createElement: () => { const img = {}; images.push(img); return img; }};
+  const calls = [];
+  const document = {createElement: tag => ({tag, children: [], listeners: {}, scrollLeft: 0, clientWidth: 144,
+    append(...children) { this.children.push(...children); },
+    addEventListener(type, listener) { this.listeners[type] = listener; },
+    setAttribute(name, value) { this[name] = value; }, setPointerCapture() {}})};
   const window = {Response, crypto: {randomUUID: () => 'request-id'}};
   const client = {protectedRequest: async (path, options) => {
     calls.push({path, options});
-    return new Response({thumbnailUrl: 'https://search2.kakaocdn.net/argon/example'});
+    return new Response({thumbnailUrls: ['https://search2.kakaocdn.net/argon/first',
+      'https://example.invalid/photo', 'https://search2.kakaocdn.net/argon/second']});
   }};
-  const item = {isConnected: true, classList: {add: value => assert.equal(value, 'has-thumbnail')}, append: () => {}};
+  const item = {isConnected: true, classList: {add: value => assert.equal(value, 'has-thumbnail')}, children: [],
+    append(child) { this.children.push(child); }};
   const loader = ui.createImageLoader(document, window, client);
   const place = {kakaoPlaceId: '1', providerDisplayName: '테스트 장소', address: '테스트도 테스트시'};
   loader.append(item, place);
@@ -54,6 +59,15 @@ test('image loader places a Kakao thumbnail beside a result and reuses the looku
   assert.equal(calls.length, 1);
   assert.equal(calls[0].path, '/api/places/image');
   assert.deepEqual(JSON.parse(calls[0].options.body), {placeName: place.providerDisplayName, address: place.address});
-  assert.equal(images[0].src, 'https://search2.kakaocdn.net/argon/example');
-  assert.equal(images[0].alt, '');
+  const strip = item.children[0].children[0];
+  assert.deepEqual(strip.children.map(image => image.src), [
+    'https://search2.kakaocdn.net/argon/first', 'https://search2.kakaocdn.net/argon/second']);
+  assert.equal(strip.children[0].alt, '');
+  assert.equal(strip.tabIndex, 0);
+  strip.children[0].onload();
+  strip.listeners.pointerdown({pointerType: 'mouse', button: 0, clientX: 100, pointerId: 1, preventDefault() {}});
+  strip.listeners.pointermove({clientX: 20});
+  assert.equal(strip.scrollLeft, 80);
+  strip.listeners.scroll();
+  assert.equal(item.children[0].children[1].textContent, '2 / 2');
 });

@@ -307,9 +307,17 @@
   .place-results { display: grid; gap: .65rem; padding: 0; list-style: none; }
   .region-results, .place-results { max-height: clamp(18rem, 55dvh, 28rem); overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; grid-auto-rows: max-content; padding: .25rem; }
   .place-result, .selected-place { display: grid; gap: .45rem; padding: .9rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-strong); overflow-wrap: anywhere; }
-  .place-result.has-thumbnail { grid-template-columns: minmax(0, 1fr) 7rem; align-items: start; }
-  .place-result.has-thumbnail > :not(.place-thumbnail) { grid-column: 1; }
-  .place-thumbnail { grid-column: 2; grid-row: 1 / span 5; width: 7rem; height: 7rem; object-fit: cover; border-radius: .65rem; background: var(--blue-soft); }
+  .place-result.has-thumbnail { grid-template-columns: minmax(0, 1fr) 9rem; align-items: start; }
+  .place-result.has-thumbnail > :not(.place-image-gallery, .button) { grid-column: 1; }
+  .place-result.has-thumbnail > .button { grid-column: 1 / -1; }
+  .place-image-gallery { display: none; position: relative; min-width: 0; }
+  .place-result.has-thumbnail > .place-image-gallery { display: block; grid-column: 2; grid-row: 1 / span 4; }
+  .place-image-strip { display: flex; overflow-x: auto; width: 9rem; height: 9rem; border-radius: .65rem; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab; }
+  .place-image-strip:active { cursor: grabbing; }
+  .place-image-strip::-webkit-scrollbar { display: none; }
+  .place-image-strip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .place-thumbnail { flex: 0 0 100%; width: 9rem; height: 9rem; object-fit: cover; background: var(--blue-soft); scroll-snap-align: start; }
+  .place-image-count { position: absolute; right: .35rem; bottom: .35rem; padding: .1rem .35rem; border-radius: .4rem; background: #172235d9; color: white; font-size: .7rem; pointer-events: none; }
   .place-result span, .place-result a { color: var(--ink-soft); font-size: var(--text-xs); }
   .place-result .button, .selected-place button { justify-self: start; min-height: 2.65rem; }
   .place-pagination { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .75rem; }

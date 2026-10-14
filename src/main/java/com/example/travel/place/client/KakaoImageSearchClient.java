@@ -26,8 +26,8 @@ public final class KakaoImageSearchClient implements KakaoImageClient {
 	}
 
 	@Override
-	public URI search(String query) {
-		URI uri = URI.create("https://dapi.kakao.com/v2/search/image?size=1&query="
+	public List<URI> search(String query) {
+		URI uri = URI.create("https://dapi.kakao.com/v2/search/image?size=5&query="
 				+ URLEncoder.encode(query, StandardCharsets.UTF_8));
 		HttpRequest request = HttpRequest.newBuilder(uri)
 				.timeout(Duration.ofSeconds(3))
@@ -37,24 +37,34 @@ public final class KakaoImageSearchClient implements KakaoImageClient {
 		try {
 			HttpResponse<String> response = httpClient.send(request,
 					HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-			if (response.statusCode() != 200) return null;
+			if (response.statusCode() != 200) return List.of();
 			ImageResponse body = objectMapper.readValue(response.body(), ImageResponse.class);
-			if (body == null || body.documents() == null || body.documents().isEmpty()) return null;
-			String thumbnail = body.documents().getFirst().thumbnailUrl();
-			if (thumbnail == null) return null;
-			URI image = URI.create(thumbnail);
+			if (body == null || body.documents() == null) return List.of();
+			return body.documents().stream().limit(5).map(ImageDocument::thumbnailUrl)
+					.map(KakaoImageSearchClient::safeThumbnail).filter(image -> image != null)
+					.distinct().toList();
+		}
+		catch (IOException exception) {
+			return List.of();
+		}
+		catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			return List.of();
+		}
+		catch (RuntimeException exception) {
+			return List.of();
+		}
+	}
+
+	private static URI safeThumbnail(String value) {
+		if (value == null) return null;
+		try {
+			URI image = URI.create(value);
 			String host = image.getHost();
 			return "https".equalsIgnoreCase(image.getScheme()) && host != null
 					&& (host.equals("kakaocdn.net") || host.endsWith(".kakaocdn.net")) ? image : null;
 		}
-		catch (IOException exception) {
-			return null;
-		}
-		catch (InterruptedException exception) {
-			Thread.currentThread().interrupt();
-			return null;
-		}
-		catch (RuntimeException exception) {
+		catch (IllegalArgumentException exception) {
 			return null;
 		}
 	}

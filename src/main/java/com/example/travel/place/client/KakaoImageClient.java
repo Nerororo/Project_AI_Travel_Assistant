@@ -1,7 +1,8 @@
 package com.example.travel.place.client;
 
 import java.net.URI;
+import java.util.List;
 
 public interface KakaoImageClient {
-	URI search(String query);
+	List<URI> search(String query);
 }

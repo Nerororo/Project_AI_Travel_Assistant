@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,12 +30,12 @@ class PlaceImageServiceTest {
 				.thenReturn(RequestStartResult.started(lease));
 		when(executions.markSucceeded(lease)).thenReturn(true);
 		when(client.search("테스트 장소 테스트도 테스트시"))
-				.thenReturn(URI.create("https://search2.kakaocdn.net/argon/example"));
+				.thenReturn(List.of(URI.create("https://search2.kakaocdn.net/argon/example")));
 
 		var result = new PlaceImageService(client, executions).search(7L, requestId,
 				new PlaceImageApiRequest("테스트 장소", "테스트도 테스트시 도로 1"));
 
-		assertThat(result.thumbnailUrl()).isEqualTo(URI.create("https://search2.kakaocdn.net/argon/example"));
+		assertThat(result.thumbnailUrls()).containsExactly(URI.create("https://search2.kakaocdn.net/argon/example"));
 		verify(executions).markSucceeded(lease);
 	}
 }
