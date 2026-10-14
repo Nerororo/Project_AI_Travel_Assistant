@@ -25,7 +25,7 @@
       || bounds.minLatitude >= bounds.maxLatitude || bounds.minLongitude >= bounds.maxLongitude)) return null;
     return {estimate: confirmed.request, mealDate: slot.date, mealType: slot.mealType,
       menuQuery: menu.searchQuery.trim(), referenceAttractionClientPlaceId: referenceId || null,
-      ...(bounds ? {bounds} : {}), page, size: 15};
+      ...(bounds ? {bounds} : {}), page, size: 10};
   }
 
   function validResponse(body, request) {
@@ -61,11 +61,12 @@
     const referenceInput = $('#restaurant-reference'), status = $('#restaurant-status');
     const layout = $('#restaurant-layout'), intro = $('#restaurant-intro');
     const map = mapModule.createMapView(window, $('#restaurant-map'), $('#restaurant-map-status'));
+    const images = mapModule.createImageLoader(document, window, client);
     const selections = new Map();
     let fingerprint = null, pending = null, version = 0, results = [], references = null, pagination = null;
     function setStatus(message, error = false) { status.textContent = message; status.dataset.error = String(error); if (error) status.focus({preventScroll: true}); else if (document.activeElement === status) status.blur(); }
     function cancel() { version++; pending?.abort(); pending = null; $('#restaurant-submit').disabled = false; }
-    function clearResults() { results = []; references = null; pagination = null; map.clear(); render(); }
+    function clearResults() { images.clear(); results = []; references = null; pagination = null; map.clear(); render(); }
     function reset() { cancel(); fingerprint = null; selections.clear(); slotInput.replaceChildren(); menuInput.replaceChildren(); referenceInput.replaceChildren(); map.dispose(); clearResults(); setStatus(''); }
     function selectedSlot(confirmed) { return confirmed?.slots.find(slot => slotKey(slot) === slotInput.value) || null; }
     function renderReferenceChoices(confirmed, menus) {
@@ -126,7 +127,7 @@
         button.textContent = chosen?.kakaoPlaceId === place.kakaoPlaceId ? '선택됨' : '선택';
         button.setAttribute('aria-pressed', String(chosen?.kakaoPlaceId === place.kakaoPlaceId));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
-        item.append(heading, address, detour, link, button); return item;
+        item.append(heading, address, detour, link, button); images.append(item, place); return item;
       });
       if (searched && !results.length) {
         const item = document.createElement('li'); item.className = 'workspace-empty';
@@ -178,7 +179,7 @@
           setStatus(errorText(response, body), true); return;
         }
         if (!validResponse(body, request)) { setStatus('음식점 결과를 확인할 수 없습니다. 다시 검색해 주세요.', true); return; }
-        results = body.places; references = body; pagination = {page: body.page, hasNext: body.hasNext};
+        images.clear(); results = body.places; references = body; pagination = {page: body.page, hasNext: body.hasNext};
         if (!results.length) {
           layout.dataset.mobileView = 'list';
           section.querySelectorAll('[data-restaurant-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.restaurantView === 'list')));

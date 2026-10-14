@@ -131,6 +131,7 @@
     let estimateController;
     let restaurantController;
     let reviewController;
+    const downloadController = window.RoutyItineraryDownload.mount(document, window);
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
       resetJourney();
       cancelForm();
@@ -192,7 +193,8 @@
       estimateController?.reset();
       restaurantController?.reset();
       reviewController?.reset();
-      window.RoutyReviewWorkspace.clearCompleted(document);
+      window.RoutyItineraryDownload.clearCompleted(document);
+      downloadController.clear();
       selectedRegion = null;
       currentStep = 0;
       furthestStep = 0;
@@ -599,7 +601,8 @@
       restaurants: restaurantController.selected(), regionName: selectedRegion?.name
     }), body => {
       resetJourney();
-      window.RoutyReviewWorkspace.renderCompleted(document, body);
+      window.RoutyItineraryDownload.renderCompleted(document, body);
+      downloadController.setPlan(body);
       window.location.hash = '#/trip';
     }, () => { currentStep = 5; renderStep(true); }, body => estimateController.showRouteNotFound(body));
     document.querySelector('#estimate-start-date').addEventListener('change', event => {

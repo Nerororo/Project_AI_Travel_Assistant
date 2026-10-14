@@ -110,6 +110,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | U1-04 | `docs/04` 1절과 `POST /api/auth/login`, `docs/08` 6.1절, `docs/09` 3절 | JWT 결정이 바뀔 때 `docs/06`의 인증 ADR |
 | U1-05A | `docs/01` FR-14, `docs/03` 8절, `docs/04` 11절, `docs/08` 6.1·6.8절, `docs/09` 5절 | 카운터 schema·한도 계약이 바뀔 때 해당 `docs/03`·`docs/04` 절 |
 | U1-05B | `docs/01` FR-14, `docs/03` 8절, `docs/04` 1절의 중복 요청, `docs/08` 6.1·6.8절, `docs/09` 6절 | 실행 상태 schema·오류 계약이 바뀔 때 해당 `docs/03`·`docs/04` 절 |
+| U1-05C | `docs/03` 8·13절, `docs/08` 2·3절, `docs/09` 5·11절, `docs/10` 4절 | 신규 카운터 CHECK migration과 직접 대응 MySQL 통합 테스트만; 기존 migration·화면·외부 Client 변경 금지 |
 | U1-06 | `docs/08` 6.1절, `docs/10` 3~4·13절 | 발견한 문제의 책임 문서 |
 | G1-01 | `docs/01` 국내 지역·FR-01, `docs/06` ADR-026·ADR-035, `docs/09` 9절 | 데이터 갱신 운영 절차가 바뀔 때 `docs/09` |
 | G1-02~03 | G1-01 결정 기록, `docs/01` FR-01, `docs/08` 5·6.2절 | 공개 필드가 바뀔 때 `docs/04` 3절 |
@@ -172,6 +173,7 @@ K0-02A는 2026-09-11 완료됐다. 다음 기능은 각 구현 단계의 Allowed
 | W1-01B | W1-00 공통 골격, G1 지역 결과·A1-04 지역 추천 API와 인증 사용자 전달 계약, `docs/04` 지역 직접 검색·AI 추천 API, `docs/08` 8절의 지역 UI 항목, `Routy/INTEGRATION.md`의 지역 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02 | W1-00 공통 골격, P1-03A 서버 계약·P1-06 상태 모듈, S1-05 숙소 전용 검색 API 구현 결과, `docs/01` FR-03~05, `docs/04` 장소 검색 API·12절, `docs/08` 6.4·8절, `docs/10` 7절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-02A | A1-05 메뉴 분석 API·W1-02 관광지 선택 상태, `docs/04` 메뉴 분석 API, `docs/08` 6.3·8절, `Routy/INTEGRATION.md`의 메뉴 분석 흐름 | API 계약 오류 발견 시 문서 변경 제안 |
+| W1-02B | W1-02·W1-03A 결과, `docs/04` 장소 이미지 endpoint, `docs/08` 장소·브라우저 검증, `docs/09` 제공자 쿼터, `docs/10` 7절 | `place/client·controller·dto·service`, 이미지 기능의 `user` 호출 한도, `Routy` 장소·음식점 카드·스타일과 직접 테스트·책임 문서; migration·완료 일정·다른 화면 금지 |
 | W1-03 | W1-00 공통 골격, `docs/01` 여행 조건·FR-09, `docs/04` estimate endpoint, `docs/08` 6.6·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03A | W1-00 공통 골격, W1-02A 확정 메뉴·W1-03 추정 결과, `docs/01` 식사와 음식점, `docs/04` 음식점 검색 endpoint, `docs/08` 6.6·6.10·8절, `Routy/INTEGRATION.md` | API 계약 오류 발견 시 문서 변경 제안 |
 | W1-03B | T1-06A의 422 응답, W1-03·W1-03A 작성 상태, `docs/04`의 `ROUTE_NOT_FOUND.details`, `docs/08` 4·8절, `Routy/INTEGRATION.md` | `src/main/resources/static/Routy/**`의 오류 표시 상태·정확한 구간 또는 날짜 단위 fallback과 직접 대응 UI 테스트; 완료 생성 요청 연결·재검증은 W1-04, API 계약 오류 발견 시 같은 Task에서 백엔드를 수정하지 않고 별도 Task 제안 |
@@ -264,7 +266,7 @@ Verification:
 
 - 카카오 좌표·주소·전화번호·카테고리·장소명·원문과 경로 원문을 DB, cache, 서버 session, 로그와 fixture에 저장하지 않는다.
 - 작성 중 좌표의 브라우저 메모리 사용은 K0 허용 조건 안에서만 가능하며 localStorage·sessionStorage·IndexedDB에 저장하지 않는다.
-- 중복 요청 저장소에는 사용자와 `requestId`의 식별 정보 및 상태만 10분간 두고 결과 리소스 ID·payload·response를 저장하지 않는다. 처리 중·성공 중복은 계약된 409로 차단하고 외부 호출·저장·호출량 차감을 반복하지 않는다.
+- 중복 요청 저장소에는 사용자와 `requestId`의 식별 정보 및 상태만 두고 처리 중에는 만료 시각을 갱신하며 성공 뒤 10분간 유지한다. 결과 리소스 ID·payload·response를 저장하지 않는다. 처리 중·성공 중복은 계약된 409로 차단하고 외부 호출·저장·호출량 차감을 반복하지 않는다.
 - API 키, JWT secret, 비밀번호와 Authorization 헤더를 코드·Git·로그·오류 응답에 남기지 않는다.
 - 자동 테스트에서 실제 OpenAI·카카오 API를 호출하지 않는다.
 - 완료·공유 조회는 외부 API를 호출하지 않는다.

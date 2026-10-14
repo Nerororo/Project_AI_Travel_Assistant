@@ -6,7 +6,7 @@
   else root.RoutyPlaceWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (stateModule) {
   const {ROLES, BOUNDARY_SLOTS} = stateModule;
-  const SEARCH_SIZE = 15;
+  const SEARCH_SIZE = 10;
   const MESSAGES = Object.freeze({
     VALIDATION_FAILED: '선택 정보가 만료되었거나 요청을 확인할 수 없습니다. 장소를 다시 검색해 선택해 주세요.',
     AUTHENTICATION_REQUIRED: '로그인 시간이 만료되었습니다. 다시 로그인해 주세요.',
@@ -23,6 +23,36 @@
     const seconds = code === 'RATE_LIMIT_EXCEEDED' && Number.isInteger(body?.retryAfterSeconds) && body.retryAfterSeconds > 0
       ? ` ${body.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : '';
     return {code, message: MESSAGES[code] + seconds};
+  }
+
+  function createImageLoader(document, window, client) {
+    const cache = new Map(), pending = new Set();
+    function clear() { pending.forEach(controller => controller.abort()); pending.clear(); cache.clear(); }
+    function append(item, place) {
+      if (!place?.kakaoPlaceId || !place.providerDisplayName || !place.address) return;
+      let lookup = cache.get(place.kakaoPlaceId);
+      if (!lookup) {
+        const controller = new AbortController(); pending.add(controller);
+        lookup = client.protectedRequest('/api/places/image', {method: 'POST',
+          headers: {'Content-Type': 'application/json', Accept: 'application/json', 'Idempotency-Key': window.crypto.randomUUID()},
+          body: JSON.stringify({placeName: place.providerDisplayName, address: place.address}), signal: controller.signal})
+          .then(response => response instanceof window.Response && response.ok ? response.json() : null)
+          .then(body => {
+            const url = new URL(body?.thumbnailUrl);
+            return url.protocol === 'https:' && (url.hostname === 'kakaocdn.net' || url.hostname.endsWith('.kakaocdn.net')) ? url.href : null;
+          }).catch(() => null).finally(() => pending.delete(controller));
+        cache.set(place.kakaoPlaceId, lookup);
+      }
+      lookup.then(url => {
+        if (!url || !item.isConnected) return;
+        const img = document.createElement('img'); img.className = 'place-thumbnail'; img.alt = '';
+        img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+        img.onload = () => item.classList.add('has-thumbnail');
+        img.onerror = () => img.remove();
+        img.src = url; item.append(img);
+      });
+    }
+    return {append, clear};
   }
 
   function searchBody(role, regionId, query, options = {}) {
@@ -136,6 +166,7 @@
     const store = stateModule.createStore();
     const map = createMapView(window, $('#place-map'), $('#place-map-status'));
     const hotelMap = createMapView(window, $('#hotel-map'), $('#hotel-map-status'));
+    const images = createImageLoader(document, window, client);
     let region = null;
     let generation = 0;
     let role = ROLES.ATTRACTION;
@@ -160,6 +191,7 @@
     function cancelRequest() { requestVersion++; pending?.abort(); pending = null; pendingFingerprint = null; }
     function cancelDistrict() { districtVersion++; districtPending?.abort(); districtPending = null; }
     function clearSearch() {
+      images.clear();
       results = {[ROLES.ATTRACTION]: [], [ROLES.TRAVEL_BOUNDARY]: [], [ROLES.HOTEL]: []};
       pages = {[ROLES.ATTRACTION]: null, [ROLES.TRAVEL_BOUNDARY]: null, [ROLES.HOTEL]: null};
       map.clear(); hotelMap.clear();
@@ -211,6 +243,7 @@
         button.setAttribute('aria-pressed', String(selectedIds.has(place.kakaoPlaceId)));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
         item.append(heading, address, link, button);
+        images.append(item, place);
         return item;
       }));
     }
@@ -436,5 +469,5 @@
     return {setRegion, showStep, canLeave, nextStep, summary, attractionContexts, estimatePlaces, reset, cancelRequest, selected: () => store.selected()};
   }
 
-  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, loadMapSdk, createMapView, mount});
+  return Object.freeze({MESSAGES, errorFor, searchBody, hotelBody, validPage, loadMapSdk, createMapView, createImageLoader, mount});
 });

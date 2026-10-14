@@ -168,7 +168,7 @@ public class HotelSearchService {
 			PlaceSearchRegion region) {
 		Map<String, PlaceCandidate> accepted = new LinkedHashMap<>();
 		for (PlaceCandidate candidate : result.places()) {
-			if (matches(candidate.address(), region)) {
+			if (PlaceAddressMatcher.matches(candidate.address(), region)) {
 				accepted.putIfAbsent(candidate.kakaoPlaceId(), candidate);
 			}
 		}
@@ -181,19 +181,6 @@ public class HotelSearchService {
 					candidate.longitude(), token);
 		}).toList();
 		return new HotelSearchApiResponse(places, result.page(), result.hasNext());
-	}
-
-	private static boolean matches(String address, PlaceSearchRegion region) {
-		PlaceSearchRegion.AddressBoundary boundary = region.addressBoundary();
-		if (boundary == null || address == null) {
-			return false;
-		}
-		String[] parts = address.trim().split("\\s+");
-		if (parts.length == 0 || !boundary.region1Names().contains(parts[0])) {
-			return false;
-		}
-		return boundary.region2Names().isEmpty()
-				|| (parts.length > 1 && boundary.region2Names().contains(parts[1]));
 	}
 
 	private static ApiException validationFailed() {

@@ -128,6 +128,26 @@ class RequestExecutionConcurrencyIntegrationTest {
 	}
 
 	@Test
+	void activeExecutionRenewsPastTenMinutesAndSuccessLivesTenMoreMinutes() {
+		UUID requestId = UUID.randomUUID();
+		RequestExecutionLease lease = service.tryStart(userId, UsageFeature.PLACE_SEARCH, requestId, 1).lease();
+		clock.set(Instant.parse("2026-09-16T00:08:00Z"));
+		service.renew(lease);
+		assertThat(lease.expiresAt()).isEqualTo(Instant.parse("2026-09-16T00:18:00Z"));
+
+		clock.set(Instant.parse("2026-09-16T00:11:00Z"));
+		assertDuplicate(requestId, ErrorCode.REQUEST_IN_PROGRESS);
+		assertThat(service.markSucceeded(lease)).isTrue();
+		assertThat(executionRepository.findAll()).singleElement()
+				.extracting(execution -> execution.status(), execution -> execution.expiresAt())
+				.containsExactly(RequestExecutionStatus.SUCCESS, Instant.parse("2026-09-16T00:21:00Z"));
+		assertDuplicate(requestId, ErrorCode.REQUEST_ALREADY_COMPLETED);
+
+		clock.set(Instant.parse("2026-09-16T00:21:00Z"));
+		assertThat(service.tryStart(userId, UsageFeature.PLACE_SEARCH, requestId, 1).started()).isTrue();
+	}
+
+	@Test
 	void cleanupDeletesOnlyRequestedExpiredBatchSize() {
 		for (int index = 0; index < 3; index++) {
 			service.tryStart(userId, UsageFeature.PLACE_SEARCH, UUID.randomUUID(), 1);
