@@ -61,6 +61,7 @@
   }
 
   const REGION_MESSAGES = Object.freeze({
+    REQUEST_TOO_LARGE: '요청 크기가 너무 큽니다. 추천 조건을 줄이거나 직접 검색해 주세요.',
     VALIDATION_FAILED: '입력 내용을 확인해 주세요.',
     AUTHENTICATION_REQUIRED: '로그인이 만료되었습니다. 다시 로그인해 주세요.',
     REQUEST_IN_PROGRESS: '같은 추천 요청을 처리 중입니다. 잠시 후 다시 시도해 주세요.',
@@ -88,8 +89,8 @@
   }
 
   function regionError(status, body) {
-    const allowed = new Set(['VALIDATION_FAILED', 'AUTHENTICATION_REQUIRED', 'REQUEST_IN_PROGRESS', 'REQUEST_ALREADY_COMPLETED', 'RATE_LIMIT_EXCEEDED', 'AI_UNAVAILABLE', 'AI_RESPONSE_INVALID']);
-    const code = allowed.has(body?.code) ? body.code : (status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR');
+    const allowed = new Set(['REQUEST_TOO_LARGE', 'VALIDATION_FAILED', 'AUTHENTICATION_REQUIRED', 'REQUEST_IN_PROGRESS', 'REQUEST_ALREADY_COMPLETED', 'RATE_LIMIT_EXCEEDED', 'AI_UNAVAILABLE', 'AI_RESPONSE_INVALID']);
+    const code = status === 413 ? 'REQUEST_TOO_LARGE' : allowed.has(body?.code) ? body.code : (status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR');
     let message = REGION_MESSAGES[code];
     if (code === 'RATE_LIMIT_EXCEEDED' && Number.isInteger(body?.retryAfterSeconds) && body.retryAfterSeconds > 0) message += ` 약 ${body.retryAfterSeconds}초 후 다시 시도할 수 있어요.`;
     return {code, message};
@@ -131,14 +132,16 @@
     let estimateController;
     let restaurantController;
     let reviewController;
+    let tripsController;
     const downloadController = window.RoutyItineraryDownload.mount(document, window);
     const client = auth.createClient({fetch: window.fetch.bind(window), onSessionEnd(reason) {
+      tripsController?.clear();
       resetJourney();
       cancelForm();
       renderAccount();
       if (reason === 'expired') {
         const route = normalizeRoute(window.location.hash);
-        if (auth.isProtected(route)) returnRoute = route;
+        if (auth.isProtected(route)) returnRoute = window.location.hash.slice(1);
         selectAuthMode('login');
         setAuthStatus('로그인 시간이 만료되었습니다. 다시 로그인해 주세요.');
         window.location.hash = '#/auth';
@@ -356,7 +359,7 @@
     });
     window.addEventListener('pagehide', () => { client.clear('pagehide'); emailInput.value = ''; });
     window.addEventListener('pageshow', () => showRoute(false));
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { client.isAuthenticated(); showRoute(false); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) client.isAuthenticated(); });
 
     function renderState() {
       const model = stateModel(currentState);
@@ -449,7 +452,7 @@
     function showRoute(shouldFocus) {
       let route = normalizeRoute(window.location.hash);
       if (auth.isProtected(route) && !client.isAuthenticated()) {
-        returnRoute = route;
+        returnRoute = window.location.hash.slice(1);
         window.history.replaceState(null, '', '#/auth');
         route = '/auth';
         if (!authStatus.textContent) setAuthStatus('로그인 후 계속할 수 있어요.');
@@ -469,6 +472,7 @@
       };
       // Commit the guard synchronously so a delayed transition cannot reveal a protected view.
       update();
+      tripsController?.show(window.location.hash);
       window.scrollTo({top: 0, behavior: 'instant'});
       if (shouldFocus) content.focus({preventScroll: true});
     }
@@ -603,11 +607,13 @@
       resetJourney();
       window.RoutyItineraryDownload.renderCompleted(document, body);
       downloadController.setPlan(body);
-      window.location.hash = '#/trip';
+      tripsController.created(body);
+      window.location.hash = `#/trip?id=${body.travelPlanId}`;
     }, () => { currentStep = 5; renderStep(true); }, body => estimateController.showRouteNotFound(body));
     document.querySelector('#estimate-start-date').addEventListener('change', event => {
       renderRegionSummary();
     });
+    tripsController = window.RoutyTripsWorkspace.mount(document, window, client, downloadController);
     renderStep(false);
     renderState();
     showRoute(false);

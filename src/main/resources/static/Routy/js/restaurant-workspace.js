@@ -45,6 +45,7 @@
   }
 
   function errorText(response, body) {
+    if (response.status === 413) return '요청 크기가 너무 큽니다. 메뉴·검색어 등 입력 길이를 줄여 다시 검색해 주세요. 선택한 음식점은 유지됩니다.';
     switch (body?.code) {
       case 'VALIDATION_FAILED': return '식사 슬롯이나 선택 정보가 유효하지 않습니다. 추정 일정을 다시 계산하고 만료된 장소는 다시 선택해 주세요.';
       case 'REQUEST_IN_PROGRESS': return '같은 요청을 처리 중입니다. 잠시 뒤 새로 검색해 주세요.';
@@ -104,6 +105,8 @@
         .filter(([item]) => item).map(([item, name], index) => ({kakaoPlaceId: `reference:${index}`, providerDisplayName: `${name} · ${referenceName(item, name)}`, latitude: item.latitude, longitude: item.longitude}));
     }
     function render() {
+      const resultList = $('#restaurant-results');
+      const focusedId = resultList.contains(document.activeElement) ? document.activeElement.dataset.placeId : null;
       const slot = slotInput.value, chosen = selections.get(slot);
       const searched = Boolean(pagination);
       layout.hidden = !searched;
@@ -124,6 +127,7 @@
         const detour = document.createElement('span'); detour.textContent = `예상 동선 이탈 ${place.estimatedDetourMinutes}분`;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
         const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        button.dataset.placeId = place.kakaoPlaceId;
         button.textContent = chosen?.kakaoPlaceId === place.kakaoPlaceId ? '선택됨' : '선택';
         button.setAttribute('aria-pressed', String(chosen?.kakaoPlaceId === place.kakaoPlaceId));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
@@ -136,6 +140,7 @@
         item.append(title, help); cards.push(item);
       }
       $('#restaurant-results').replaceChildren(...cards);
+      if (focusedId) [...resultList.querySelectorAll('button')].find(button => button.dataset.placeId === focusedId)?.focus({preventScroll: true});
       $('#restaurant-page').parentElement.hidden = !searched || !results.length;
       $('#restaurant-page').textContent = String(pagination?.page || 1);
       $('#restaurant-prev-page').disabled = !pagination || pagination.page <= 1 || Boolean(pending);
