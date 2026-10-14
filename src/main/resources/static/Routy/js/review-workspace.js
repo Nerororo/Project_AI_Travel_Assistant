@@ -50,6 +50,8 @@
   }
 
   function errorText(response, body) {
+    if (response.status === 413) return '요청 크기가 너무 큽니다. 제목·이름·메모 등 입력 길이를 줄인 뒤 다시 완료해 주세요. 작성 내용은 유지됩니다.';
+    if (body?.code === 'TRAVEL_PLAN_LIMIT_EXCEEDED') return '저장 가능한 일정 수에 도달했습니다. 내 여행에서 불필요한 일정을 삭제한 뒤 다시 완료해 주세요. 작성 내용은 유지됩니다.';
     if (body?.code === 'PLAN_CAPACITY_EXCEEDED') {
       const details = body.details;
       return /^\d{4}-\d{2}-\d{2}$/.test(details?.date || '') && Number.isInteger(details.exceededMinutes)

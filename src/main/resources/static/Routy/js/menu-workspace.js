@@ -6,6 +6,7 @@
   else root.RoutyMenuWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const MESSAGES = Object.freeze({
+    REQUEST_TOO_LARGE: '요청 크기가 너무 큽니다. 음식 요청을 줄이거나 직접 메뉴를 입력해 주세요. 기존 메뉴는 유지됩니다.',
     VALIDATION_FAILED: '입력 내용을 확인해 주세요. 기존 메뉴는 그대로 유지됩니다.',
     AUTHENTICATION_REQUIRED: '로그인 시간이 만료되었습니다. 다시 로그인해 주세요.',
     REQUEST_IN_PROGRESS: '같은 요청을 처리 중입니다. 잠시 뒤 새로 요청해 주세요.',
@@ -18,7 +19,7 @@
   });
 
   function errorFor(status, body) {
-    const code = Object.hasOwn(MESSAGES, body?.code) ? body.code : status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR';
+    const code = status === 413 ? 'REQUEST_TOO_LARGE' : Object.hasOwn(MESSAGES, body?.code) ? body.code : status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR';
     const seconds = code === 'RATE_LIMIT_EXCEEDED' && Number.isInteger(body?.retryAfterSeconds) && body.retryAfterSeconds > 0
       ? ` ${body.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : '';
     return MESSAGES[code] + seconds;

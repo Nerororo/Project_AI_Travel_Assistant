@@ -43,6 +43,7 @@
   }
 
   function errorText(response, body) {
+    if (response.status === 413) return '요청 크기가 너무 큽니다. 이름·메모 등 입력 길이를 줄여 다시 계산해 주세요. 작성 내용은 유지됩니다.';
     if (body?.code === 'PLAN_CAPACITY_EXCEEDED') {
       const details = body.details;
       return iso.test(details?.date || '') && clock.test(details?.plannedEndTime) && clock.test(details?.allowedEndTime) && Number.isInteger(details?.exceededMinutes)

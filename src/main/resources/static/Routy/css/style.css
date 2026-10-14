@@ -305,6 +305,7 @@
   .place-layout > div { min-width: 0; }
   .mobile-place-view { display: none; }
   .place-results { display: grid; gap: .65rem; padding: 0; list-style: none; }
+  .region-results, .place-results { max-height: clamp(18rem, 55dvh, 28rem); overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; grid-auto-rows: max-content; padding: .25rem; }
   .place-result, .selected-place { display: grid; gap: .45rem; padding: .9rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-strong); overflow-wrap: anywhere; }
   .place-result.has-thumbnail { grid-template-columns: minmax(0, 1fr) 7rem; align-items: start; }
   .place-result.has-thumbnail > :not(.place-thumbnail) { grid-column: 1; }

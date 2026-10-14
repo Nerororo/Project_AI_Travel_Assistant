@@ -8,6 +8,7 @@
   const {ROLES, BOUNDARY_SLOTS} = stateModule;
   const SEARCH_SIZE = 10;
   const MESSAGES = Object.freeze({
+    REQUEST_TOO_LARGE: '요청 크기가 너무 큽니다. 검색 입력을 줄여 다시 검색해 주세요. 현재 선택은 유지됩니다.',
     VALIDATION_FAILED: '선택 정보가 만료되었거나 요청을 확인할 수 없습니다. 장소를 다시 검색해 선택해 주세요.',
     AUTHENTICATION_REQUIRED: '로그인 시간이 만료되었습니다. 다시 로그인해 주세요.',
     REQUEST_IN_PROGRESS: '같은 요청이 처리 중입니다. 잠시 뒤 새로 검색해 주세요.',
@@ -19,7 +20,7 @@
   });
 
   function errorFor(status, body) {
-    const code = Object.hasOwn(MESSAGES, body?.code) ? body.code : status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR';
+    const code = status === 413 ? 'REQUEST_TOO_LARGE' : Object.hasOwn(MESSAGES, body?.code) ? body.code : status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR';
     const seconds = code === 'RATE_LIMIT_EXCEEDED' && Number.isInteger(body?.retryAfterSeconds) && body.retryAfterSeconds > 0
       ? ` ${body.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : '';
     return {code, message: MESSAGES[code] + seconds};
@@ -223,6 +224,7 @@
       onSummary?.();
     }
     function renderDistrict() {
+      $('#district-controls').hidden = !['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주', '광주광역시', '대전광역시', '울산광역시'].includes(region?.name);
       const target = $('#district-current');
       target.replaceChildren();
       if (!district) return;
@@ -233,12 +235,14 @@
     }
     function renderCards(listSelector, places, selectedIds, choose) {
       const list = $(listSelector);
+      const focusedId = list.contains(document.activeElement) ? document.activeElement.dataset.placeId : null;
       list.replaceChildren(...places.map(place => {
         const item = document.createElement('li'); item.className = 'place-result';
         const heading = document.createElement('strong'); heading.textContent = place.providerDisplayName;
         const address = document.createElement('span'); address.textContent = place.address;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
         const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        button.dataset.placeId = place.kakaoPlaceId;
         button.textContent = selectedIds.has(place.kakaoPlaceId) ? '선택됨' : '선택';
         button.setAttribute('aria-pressed', String(selectedIds.has(place.kakaoPlaceId)));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
@@ -246,6 +250,7 @@
         images.append(item, place);
         return item;
       }));
+      if (focusedId) [...list.querySelectorAll('button')].find(button => button.dataset.placeId === focusedId)?.focus({preventScroll: true});
     }
     function selectPlace(id) {
       if (role === ROLES.ATTRACTION) {
@@ -264,6 +269,7 @@
       renderAll(); onSummary?.();
     }
     function renderSelected() {
+      const focusedSlot = $('#boundary-slot-controls').contains(document.activeElement) ? document.activeElement.value : null;
       const selected = store.selected();
       const attractions = $('#attraction-selected'); attractions.replaceChildren();
       const heading = document.createElement('h3'); heading.textContent = `선택한 관광지 ${selected.attractions.length}곳`;
@@ -286,19 +292,25 @@
       }
       const boundary = $('#boundary-selected'); boundary.replaceChildren();
       const slots = document.createElement('fieldset');
-      const legend = document.createElement('legend'); legend.textContent = '검색 결과를 어느 경계로 선택할까요?'; slots.append(legend);
+      slots.className = 'boundary-slot-picker';
+      const legend = document.createElement('legend'); legend.textContent = '어느 장소를 선택할까요?'; slots.append(legend);
       for (const slot of [BOUNDARY_SLOTS.START, BOUNDARY_SLOTS.END]) {
         const label = document.createElement('label'), radio = document.createElement('input');
         radio.type = 'radio'; radio.name = 'boundary-slot'; radio.value = slot; radio.checked = slot === boundarySlot;
-        radio.addEventListener('change', () => { boundarySlot = slot; });
+        radio.addEventListener('change', () => { boundarySlot = slot; renderAll(); });
         label.append(radio, document.createTextNode(slot === BOUNDARY_SLOTS.START ? ' 첫날 시작' : ' 마지막 날 종료')); slots.append(label);
       }
-      boundary.append(slots);
+      $('#boundary-slot-controls').replaceChildren(slots);
+      if (focusedSlot) slots.querySelector('input:checked').focus({preventScroll: true});
+      const boundaryHeading = document.createElement('h3'); boundaryHeading.textContent = '선택한 시작·종료 장소'; boundary.append(boundaryHeading);
       for (const [slot, place] of [[BOUNDARY_SLOTS.START, selected.startBoundary], [BOUNDARY_SLOTS.END, selected.endBoundary]]) {
         const card = document.createElement('div'); card.className = 'selected-place';
-        const label = document.createElement('strong'); label.textContent = `${slot === BOUNDARY_SLOTS.START ? '시작' : '종료'}: ${place?.providerDisplayName || '선택 전'}`;
-        card.append(label);
-        if (place) { const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '선택 해제'; remove.addEventListener('click', () => { store.unselectBoundary(generation, slot); renderAll(); }); card.append(remove); }
+        card.dataset.boundarySlot = slot;
+        const label = document.createElement('strong'); label.textContent = slot === BOUNDARY_SLOTS.START ? '첫날 시작 장소' : '마지막 날 종료 장소';
+        const name = document.createElement('span'); name.textContent = place?.providerDisplayName || '아직 선택하지 않았어요.';
+        const help = document.createElement('p'); help.className = 'field-help'; help.textContent = place ? '장소를 바꾸려면 위에서 검색한 결과를 선택해 주세요.' : '위에서 시작 또는 종료를 고른 뒤 검색 결과의 선택 버튼을 눌러 주세요.';
+        card.append(label, name, help);
+        if (place) { const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button button-ghost'; remove.textContent = '선택 해제'; remove.addEventListener('click', () => { store.unselectBoundary(generation, slot); renderAll(); }); card.append(remove); }
         boundary.append(card);
       }
       const hotel = $('#hotel-selected'); hotel.replaceChildren();
@@ -307,8 +319,9 @@
     }
     function renderAll() {
       const selected = store.selected();
-      const selectedIds = new Set(selected.attractions.map(place => place.kakaoPlaceId));
-      if (role === ROLES.TRAVEL_BOUNDARY) for (const place of [selected.startBoundary, selected.endBoundary]) if (place) selectedIds.add(place.kakaoPlaceId);
+      const selectedPlaces = role === ROLES.ATTRACTION ? selected.attractions
+        : [boundarySlot === BOUNDARY_SLOTS.START ? selected.startBoundary : selected.endBoundary].filter(Boolean);
+      const selectedIds = new Set(selectedPlaces.map(place => place.kakaoPlaceId));
       renderCards('#place-results', results[role], selectedIds, selectPlace);
       renderCards('#hotel-results', results[ROLES.HOTEL], new Set(selected.hotel ? [selected.hotel.kakaoPlaceId] : []), selectHotel);
       const additional = role === ROLES.ATTRACTION ? selected.attractions : [selected.startBoundary, selected.endBoundary].filter(Boolean);
@@ -389,6 +402,7 @@
         const matches = body.regions.filter(item => item.placeSearchFilterable === true && item.parentRegionId === region?.regionId);
         $('#district-results').replaceChildren(...matches.map(item => {
           const li = document.createElement('li'), button = document.createElement('button'); button.type = 'button'; button.textContent = `${item.name} 필터 선택`;
+          li.className = 'place-result'; button.className = 'button button-ghost';
           button.addEventListener('click', () => { district = {regionId: item.regionId, name: item.name}; renderDistrict(); status('#district-status', `${item.name} 필터를 적용했습니다.`); }); li.append(button); return li;
         }));
         status('#district-status', matches.length ? `${matches.length}개의 구·군을 찾았습니다.` : '선택 지역에 속한 구·군 필터가 없습니다.');
