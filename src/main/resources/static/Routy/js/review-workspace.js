@@ -50,6 +50,8 @@
   }
 
   function errorText(response, body) {
+    if (response.status === 413) return '요청 크기가 너무 큽니다. 제목·이름·메모 등 입력 길이를 줄인 뒤 다시 완료해 주세요. 작성 내용은 유지됩니다.';
+    if (body?.code === 'TRAVEL_PLAN_LIMIT_EXCEEDED') return '저장 가능한 일정 수에 도달했습니다. 내 여행에서 불필요한 일정을 삭제한 뒤 다시 완료해 주세요. 작성 내용은 유지됩니다.';
     if (body?.code === 'PLAN_CAPACITY_EXCEEDED') {
       const details = body.details;
       return /^\d{4}-\d{2}-\d{2}$/.test(details?.date || '') && Number.isInteger(details.exceededMinutes)
@@ -177,7 +179,6 @@
       if (!shown) { cancel(); mapVersion++; clearMap(); return; }
       const data = context();
       if (!data.confirmed) { setStatus('현재 입력으로 추정 일정을 다시 계산해 주세요.', true); return; }
-      if (!$('#review-title').value) $('#review-title').value = `${data.regionName || '여행'} 일정`;
       renderDay(); ensureMap();
     }
     async function submit(event) {
@@ -214,65 +215,5 @@
     return {showStep, reset};
   }
 
-  function createPlaceLink(document, url, label) {
-    const link = document.createElement('a');
-    link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-    link.className = 'kakao-place-link'; link.setAttribute('aria-label', label); link.title = label;
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2');
-    svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
-    svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('focusable', 'false');
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'M13 4h7v7m0-7-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5');
-    svg.append(path); link.append(svg);
-    return link;
-  }
-
-  function renderCompleted(document, body) {
-    const $ = selector => document.querySelector(selector);
-    $('#detail-title').textContent = body.title;
-    $('#detail-summary').textContent = `${body.region.displayName} · ${body.startDate}–${body.endDate} · ${body.travelMode === 'CAR' ? '자동차' : '대중교통'}`;
-    $('#detail-warning').textContent = body.warnings?.includes('ESTIMATED_TRAVEL_TIMES_USED')
-      ? '일부 경로를 확인하지 못해 일정 전체의 예상 이동시간을 거리 기반으로 계산했습니다.' : '';
-    const days = body.days.map(day => {
-      const article = document.createElement('article'); article.className = 'itinerary-document';
-      const header = document.createElement('header'), number = document.createElement('span'), date = document.createElement('p');
-      number.textContent = `DAY ${String(day.day).padStart(2, '0')}`; date.textContent = `${day.date} · ${day.activityStartTime}–${day.activityEndTime}`;
-      header.append(number, date);
-      const list = document.createElement('ol');
-      for (const item of day.items) {
-        const row = document.createElement('li'), time = document.createElement('time'), copy = document.createElement('span'), name = document.createElement('strong'), detail = document.createElement('small');
-        copy.className = 'completed-item-copy';
-        time.textContent = `${item.startTime}–${item.endTime}`;
-        name.textContent = item.type === 'MOVE' ? `예상 이동시간 ${item.estimatedMinutes}분` : item.displayName;
-        detail.textContent = item.type === 'VISIT' ? `체류 ${item.stayMinutes}분${item.memo ? ` · ${item.memo}` : ''}` : (item.memo || '');
-        copy.append(name, detail);
-        if (item.placeUrl && safeLink(item.placeUrl)) {
-          copy.append(createPlaceLink(document, item.placeUrl, `카카오 지도에서 ${item.displayName} 장소 보기`));
-        }
-        row.append(time, copy); list.append(row);
-      }
-      article.append(header, list); return article;
-    });
-    $('#detail-days').replaceChildren(...days);
-    const hotel = $('#detail-hotel'); hotel.replaceChildren(); hotel.hidden = !body.hotel;
-    if (body.hotel) {
-      const name = document.createElement('strong'); name.textContent = `숙소 · ${body.hotel.displayName}`;
-      const memo = document.createElement('p'); memo.textContent = body.hotel.memo || '';
-      const link = createPlaceLink(document, body.hotel.placeUrl, `카카오 지도에서 ${body.hotel.displayName} 보기`);
-      hotel.append(name, memo, link);
-    }
-  }
-
-  function clearCompleted(document) {
-    document.querySelector('#detail-title').textContent = '저장된 일정이 놓일 자리';
-    document.querySelector('#detail-summary').textContent = '내 여행 목록 연결은 다음 화면 작업에서 진행합니다.';
-    document.querySelector('#detail-warning').textContent = '';
-    document.querySelector('#detail-days').replaceChildren();
-    document.querySelector('#detail-hotel').replaceChildren();
-    document.querySelector('#detail-hotel').hidden = true;
-  }
-
-  return Object.freeze({createRequest, validPlan, errorText, stopsForDay, mount, renderCompleted, clearCompleted});
+  return Object.freeze({createRequest, validPlan, errorText, stopsForDay, mount});
 });

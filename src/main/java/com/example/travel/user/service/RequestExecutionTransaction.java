@@ -58,8 +58,21 @@ class RequestExecutionTransaction {
 
 	@Transactional
 	boolean markSucceeded(RequestExecutionLease lease) {
+		Instant now = clock.instant();
 		return repository.markSuccess(
-				lease.userId(), lease.feature().name(), lease.requestId().toString(), lease.expiresAt(), clock.instant()) == 1;
+				lease.userId(), lease.feature().name(), lease.requestId().toString(),
+				lease.expiresAt(), now.plus(LIFETIME), now) == 1;
+	}
+
+	@Transactional
+	Instant renewProcessing(RequestExecutionLease lease) {
+		Instant now = clock.instant();
+		Instant newExpiresAt = now.plus(LIFETIME);
+		if (repository.renewProcessing(lease.userId(), lease.feature().name(), lease.requestId().toString(),
+				lease.expiresAt(), newExpiresAt, now) != 1) {
+			return null;
+		}
+		return newExpiresAt;
 	}
 
 	@Transactional

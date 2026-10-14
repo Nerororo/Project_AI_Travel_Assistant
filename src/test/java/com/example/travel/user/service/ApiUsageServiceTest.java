@@ -89,6 +89,15 @@ class ApiUsageServiceTest {
 	}
 
 	@Test
+	void imageSearchUsesSeparateUserAndServiceLimits() {
+		ApiUsagePolicy policy = new ApiUsagePolicy(
+				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));
+		assertThat(policy.windows(1L, UsageFeature.IMAGE_SEARCH))
+				.extracting(ApiUsagePolicy.UsageWindow::limit)
+				.containsExactly(300L, 4_500L, 27_000L);
+	}
+
+	@Test
 	void policyAppliesExactCarRouteUserAndServiceLimits() {
 		ApiUsagePolicy policy = new ApiUsagePolicy(
 				Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"), ZoneOffset.UTC));

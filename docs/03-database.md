@@ -231,7 +231,7 @@ SEC1-02의 `auth_attempt_counters`는 V7에서 만든다. `(bucket_type, identif
 
 같은 제한을 DB뿐 아니라 Redis, Caffeine, 서버 세션, 파일, 로그, fixture, localStorage, sessionStorage, IndexedDB에도 적용한다.
 
-중복 요청 방지용 `request_executions`에는 userId, 기능, requestId, 처리 상태, 만료 시각만 최대 10분 유지한다. 결과 리소스 ID, 외부 요청·응답과 좌표는 포함하지 않는다.
+중복 요청 방지용 `request_executions`에는 userId, 기능, requestId, 처리 상태, 만료 시각만 유지한다. 처리 중에는 만료 시각을 주기적으로 10분 뒤로 갱신하고, 성공 뒤에는 10분간 유지한다. 결과 리소스 ID, 외부 요청·응답과 좌표는 포함하지 않는다.
 
 ---
 

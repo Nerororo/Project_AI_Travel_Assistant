@@ -25,7 +25,7 @@
       || bounds.minLatitude >= bounds.maxLatitude || bounds.minLongitude >= bounds.maxLongitude)) return null;
     return {estimate: confirmed.request, mealDate: slot.date, mealType: slot.mealType,
       menuQuery: menu.searchQuery.trim(), referenceAttractionClientPlaceId: referenceId || null,
-      ...(bounds ? {bounds} : {}), page, size: 15};
+      ...(bounds ? {bounds} : {}), page, size: 10};
   }
 
   function validResponse(body, request) {
@@ -45,6 +45,7 @@
   }
 
   function errorText(response, body) {
+    if (response.status === 413) return '요청 크기가 너무 큽니다. 메뉴·검색어 등 입력 길이를 줄여 다시 검색해 주세요. 선택한 음식점은 유지됩니다.';
     switch (body?.code) {
       case 'VALIDATION_FAILED': return '식사 슬롯이나 선택 정보가 유효하지 않습니다. 추정 일정을 다시 계산하고 만료된 장소는 다시 선택해 주세요.';
       case 'REQUEST_IN_PROGRESS': return '같은 요청을 처리 중입니다. 잠시 뒤 새로 검색해 주세요.';
@@ -61,11 +62,12 @@
     const referenceInput = $('#restaurant-reference'), status = $('#restaurant-status');
     const layout = $('#restaurant-layout'), intro = $('#restaurant-intro');
     const map = mapModule.createMapView(window, $('#restaurant-map'), $('#restaurant-map-status'));
+    const images = mapModule.createImageLoader(document, window, client);
     const selections = new Map();
     let fingerprint = null, pending = null, version = 0, results = [], references = null, pagination = null;
     function setStatus(message, error = false) { status.textContent = message; status.dataset.error = String(error); if (error) status.focus({preventScroll: true}); else if (document.activeElement === status) status.blur(); }
     function cancel() { version++; pending?.abort(); pending = null; $('#restaurant-submit').disabled = false; }
-    function clearResults() { results = []; references = null; pagination = null; map.clear(); render(); }
+    function clearResults() { images.clear(); results = []; references = null; pagination = null; map.clear(); render(); }
     function reset() { cancel(); fingerprint = null; selections.clear(); slotInput.replaceChildren(); menuInput.replaceChildren(); referenceInput.replaceChildren(); map.dispose(); clearResults(); setStatus(''); }
     function selectedSlot(confirmed) { return confirmed?.slots.find(slot => slotKey(slot) === slotInput.value) || null; }
     function renderReferenceChoices(confirmed, menus) {
@@ -103,6 +105,8 @@
         .filter(([item]) => item).map(([item, name], index) => ({kakaoPlaceId: `reference:${index}`, providerDisplayName: `${name} · ${referenceName(item, name)}`, latitude: item.latitude, longitude: item.longitude}));
     }
     function render() {
+      const resultList = $('#restaurant-results');
+      const focusedId = resultList.contains(document.activeElement) ? document.activeElement.dataset.placeId : null;
       const slot = slotInput.value, chosen = selections.get(slot);
       const searched = Boolean(pagination);
       layout.hidden = !searched;
@@ -123,10 +127,11 @@
         const detour = document.createElement('span'); detour.textContent = `예상 동선 이탈 ${place.estimatedDetourMinutes}분`;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
         const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        button.dataset.placeId = place.kakaoPlaceId;
         button.textContent = chosen?.kakaoPlaceId === place.kakaoPlaceId ? '선택됨' : '선택';
         button.setAttribute('aria-pressed', String(chosen?.kakaoPlaceId === place.kakaoPlaceId));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
-        item.append(heading, address, detour, link, button); return item;
+        item.append(heading, address, detour, link, button); images.append(item, place); return item;
       });
       if (searched && !results.length) {
         const item = document.createElement('li'); item.className = 'workspace-empty';
@@ -135,6 +140,7 @@
         item.append(title, help); cards.push(item);
       }
       $('#restaurant-results').replaceChildren(...cards);
+      if (focusedId) [...resultList.querySelectorAll('button')].find(button => button.dataset.placeId === focusedId)?.focus({preventScroll: true});
       $('#restaurant-page').parentElement.hidden = !searched || !results.length;
       $('#restaurant-page').textContent = String(pagination?.page || 1);
       $('#restaurant-prev-page').disabled = !pagination || pagination.page <= 1 || Boolean(pending);
@@ -178,7 +184,7 @@
           setStatus(errorText(response, body), true); return;
         }
         if (!validResponse(body, request)) { setStatus('음식점 결과를 확인할 수 없습니다. 다시 검색해 주세요.', true); return; }
-        results = body.places; references = body; pagination = {page: body.page, hasNext: body.hasNext};
+        images.clear(); results = body.places; references = body; pagination = {page: body.page, hasNext: body.hasNext};
         if (!results.length) {
           layout.dataset.mobileView = 'list';
           section.querySelectorAll('[data-restaurant-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.restaurantView === 'list')));

@@ -1,10 +1,64 @@
 # Routy 신규 화면 설계와 연결 가이드
 
+## W1-05 — 내 일정·제한 편집·공유 (2026-10-14)
+
+- Task ID / Goal: W1-05. 기존 저장 API에 목록·상세·텍스트 편집·삭제·공유 화면을 연결한다.
+- Allowed Paths: `index.html`, `js/preview.js`, `js/trips-workspace.js`, `js/trips-workspace.test.cjs`, `js/review-workspace.js`, `js/auth.browser.test.cjs`, `INTEGRATION.md`.
+- Conditional Paths: 검증 결과에 따라 `docs/07`의 실제 상태와 `docs/11`의 다음 작업을 정렬한다.
+- Forbidden Paths: Java, Repository, migration, 설정·빌드·의존성과 원본 템플릿.
+- References Read: 적용 AGENTS, `docs/04` 8·10절과 저장 DTO, `docs/07` 선행 완료 기록, `docs/08` 6.9·8절, `docs/10` 공통·11·14~15절, `docs/11`·`docs/12` W1-05, 기존 화면 모듈과 W1-04A 검증 기록.
+
+`#/trips`는 서버 순서 그대로 20개씩 이전·다음 페이지를 표시한다. `#/trip?id=...`는 소유자 상세를 조회하고, 로그인 전 직접 진입한 ID도 로그인 뒤 유지한다. 생성 직후에는 이미 받은 성공 응답을 한 번 재사용한다. 기존 고정 템플릿과 다운로드 모듈을 사용하며 저장 한도 오류는 내 여행에서 삭제 후 다시 완료하도록 안내한다.
+
+편집 폼은 중복 없는 저장 장소와 숙소의 이름·메모, 일정 제목만 받으며 변경한 텍스트만 PATCH한다. 이동 항목과 미선택 식사의 null 장소는 편집 대상으로 만들지 않는다. 저장 중 입력을 잠그고 실패하면 입력을 유지한다. 삭제는 확인 후 성공한 204에만 목록으로 돌아간다.
+
+공유 발급·재발급은 성공한 토큰으로만 링크를 교체하고 거절 시 기존 링크를 유지한다. `#/shared?token=...`는 인증 없이 직접 진입·새로고침할 수 있고 별도의 읽기 전용 고정 문서만 표시한다. 공개 조회는 Authorization·쿠키·Referrer 없이 `no-store`로 요청하며 페이지에도 `no-referrer`를 적용한다. 403·404·429는 고정 안내로 처리하고 외부 오류 원문을 출력하지 않는다. 지도·외부 제공자·재계산 호출과 브라우저 저장소 사용은 추가하지 않았다.
+
+화면 이동·로그아웃·인증 만료·pagehide에서 이전 요청을 무효화하고 일정·편집 이벤트·공유 링크 참조를 폐기한다. 화면의 토큰은 링크 사용에 필요한 URL fragment와 현재 DOM에만 존재한다.
+
+Verification: Node·실제 Chromium 회귀 81개 통과. 21개 일정의 페이지 접근과 서버 순서, 키보드 편집 진입, 제목·숙소 이름·메모 PATCH, 실패 시 입력 보존, HTML 형태 문자열 비실행, 403, 지연 응답 폐기, 공유 재발급·거절·무효·만료·429·익명 새로고침, 삭제 취소·확인·공유 무효화, 외부 제공자 호출 증가 없음과 브라우저 저장소 미사용을 확인했다. 1440px·390px 흐름과 모바일 편집·공유 캡처를 확인했다. `build/qa/w1-05-editor-mobile.png`, `build/qa/w1-05-shared-mobile.png`는 가짜 데이터 산출물이다. 루트 `test.ps1` 전체 552개 테스트(실패·오류·건너뜀 0), JS 구문 검사와 `git diff --check`가 통과했다. 실제 제공자·Render/Aiven 배포 검증과 W1-06 전체 시각·보안 응답 회귀는 남았다.
+
+## W1-04A — 고정 HTML 다운로드 (2026-10-13)
+
+- 선행 조건: `docs/11`의 W1-04·SEC1-01~06과 `docs/07`의 구현·로컬 검증 완료 기록을 확인했다. SEC1-08·Q1-06 실환경 검증은 후속 단계다.
+- Goal: 기존 완료 일정 DTO의 허용된 저장 필드만 같은 고정 템플릿에 채워 완료 화면에 표시하고 UTF-8 HTML로 내려받는다.
+- Allowed Paths: 이 문서, `index.html`, `css/style.css`, `js/preview.js`, `js/review-workspace.js`, `js/preview-server.cjs`, `js/itinerary-download.js`, `js/itinerary-download.test.cjs`, `js/auth.browser.test.cjs`.
+- Conditional Paths: 없음. Forbidden Paths: Java·설정·빌드·migration, 제공된 `static/routy_final_itinerary_v3.html` 원본과 다른 정적 자산.
+- References Read: 적용 AGENTS, `docs/01` FR-11, `docs/02` 8절, `docs/04` 완료 생성·상세 DTO, `docs/06` ADR-031, `docs/07` 선행 단계 기록, `docs/08` 6.9·8절, `docs/10` 14~15절, `docs/11` W1-04A, `docs/12` W1-04A.
+
+| 예시 화면 | 다운로드 템플릿 반영 |
+|---|---|
+| `routy_trip.png`의 파란 표지·라임색 그래픽·요약 카드·세로 번호 일정표 | 큰 사용자 제목, 움직이는 장식 화살표, 격자 티켓, 4개 요약 카드와 일차별 타임라인 |
+| 날짜 탭과 지도 | 처음에는 1일차만 표시하고 날짜 선택 시 해당 일차만 표시. 인쇄에서는 전체 일정 표시. 지도·마커·경로선 없음 |
+| 이미지 저장·수정·공유 버튼 | 완료 화면의 HTML 저장 버튼. 파일에는 편집·공유 동작 없음 |
+| CDN 스타일·폰트·아이콘·캡처 라이브러리 | 내장 CSS와 시스템 글꼴. 다운로드 파일에 script·외부 리소스 의존성 없음 |
+| 시안의 가상 장소 설명·분위기·동선 | DTO의 사용자 작성 이름·메모·체류시간·예상 이동시간만 표시 |
+
+디자인 수정: 검토 단계의 여행 제목은 빈 입력란에서 사용자가 직접 작성하며 지역명 기반 자동 제목을 채우지 않는다. 저장된 `title`을 파란 표지의 큰 제목과 다운로드 파일명에 그대로 사용한다. 장소 링크는 직접 작성한 인라인 SVG 외부 링크 아이콘으로 표시하고, `aria-label`·`title`·키보드 초점을 유지한다. 사진이나 장소 특성을 추정한 문구는 추가하지 않는다.
+
+일차 선택: 완료 화면과 다운로드 문서 모두 같은 HTML 라디오 입력과 CSS `:has(:checked)`로 선택한 날짜의 일정만 표시한다. 기본 선택은 1일차이고, 클릭·Tab·방향키로 선택한다. 다운로드 파일에 스크립트를 추가하지 않으며 앱 경로도 변경하지 않는다. 숨긴 날짜의 링크는 키보드 탐색 대상에서 제외하고, 인쇄에서는 전체 일차를 표시한다. 브라우저 테스트로 화면·오프라인 파일의 1일차/2일차 전환과 전체 인쇄를 확인했다.
+
+시간·링크 정렬: 아이콘용 여백은 제목·체류시간·메모에만 적용하고 시간 표시와 링크 아이콘에는 적용하지 않는다. 1440px·390px에서 링크 유무에 따른 시간 표시 오른쪽 위치 차이가 1px 미만이며 아이콘이 카드 오른쪽에 유지되는지 검사한다. 시각 미리보기에는 정상 관광지·선택한 식당의 예시 링크를 넣고, 잘못된 URL은 별도 보안 fixture에서 제외 여부를 검사한다. 식당 미선택 MEAL은 API 계약상 `placeUrl=null`이므로 링크를 표시하지 않는다.
+
+2026-10-14 마무리 확인: 템플릿 상·하단 로고는 `Routy.`, 상단 오른쪽 문구는 `Route your Trip`으로 변경했다. 최신 코드로 Node·브라우저 테스트 75개를 재실행해 모두 통과했고 캡처·미리보기 HTML을 갱신했다. 직전 시간·링크 수정 뒤 실행한 전체 테스트의 XML 92개 suite·543개 테스트에서 실패·오류·건너뜀 0건을 확인했다. 해당 실행 세션은 재접속 시 만료되어 최종 프로세스 종료 코드는 재확인하지 못했으며, 아래의 `BUILD SUCCESSFUL` 기록은 이전 일차 선택 수정 시점의 결과다.
+
+표지 화살표는 실제 여행 좌표와 무관한 고정 장식이며 CSS `offset-path`·keyframes로 움직인다. 사용자 요청에 따라 수동 모션 끄기 UI는 템플릿에서 제외하고 완료 화면의 공통 모션 버튼도 숨긴다. 기기의 `prefers-reduced-motion`과 인쇄에서는 애니메이션을 멈춘다. 반응형은 container queries·container units, 제목 줄바꿈은 `text-wrap: balance`와 `word-break: keep-all`을 사용한다. 내장 CSS·SVG만 사용하므로 새 패키지·CDN·외부 글꼴 의존성은 없다.
+
+`RoutyItineraryDownload.mount()`가 완료 화면 버튼을 연결한다. 생성 응답은 상세 조회와 같은 저장 구조이므로 새 요청 없이 재사용하고 `warnings`·식별자·금지 필드는 파일에 복제하지 않는다. W1-05에서 상세 조회가 연결되면 같은 `setPlan(dto)`를 사용할 수 있다. `buildDocument()`는 고정 구조를 복제하고 텍스트를 DOM API로 채운다. 완료 화면은 그 결과의 문서 본문과 스타일을 Shadow DOM에 넣으며 다운로드도 같은 결과를 사용한다. 외부 링크는 인증 정보·쿼리·fragment 없는 HTTPS 카카오 장소 URL만 허용한다. 파일에는 CSP와 no-referrer를 포함한다.
+
+Blob URL은 다운로드 시작 뒤 해제하고, 로그아웃·인증 만료·작성 초기화·pagehide에서 다운로드 참조를 폐기한다. 서버·DB·브라우저 저장소에 생성 HTML을 저장하지 않는다. `build/qa/`의 파일은 가짜 데이터로 만든 테스트 산출물이다.
+
+디자인 검증: 빈 여행 제목의 저장 요청 차단, 사용자 입력 제목의 표지 표시, 아이콘 링크의 접근성 이름과 키보드 초점, 수동 모션 UI 부재, 오프라인 화살표 이동·기기 모션 감소 설정에서 정지를 브라우저 테스트로 확인했다. 전체 길이 캡처는 `build/qa/w1-04a-template-desktop-full.png`, `build/qa/w1-04a-template-mobile-full.png`이며 제목과 장소 문구는 테스트용 예시 입력이다.
+
+검증: Node 테스트 75개 통과. 실제 Chromium에서 완료 화면과 다운로드 파일의 템플릿 본문 마크업 일치, 완료 화면의 키보드 다운로드, 파일명·UTF-8·내용, 로그아웃 후 비활성화, 1·2·7일과 숙소 유무·대중교통, HTML 형태 텍스트의 비실행, 금지 필드 제외, 외부 요청 없는 오프라인 재열기, 날짜 선택·인쇄 시 전체 날짜 표시, 1440px·390px 가로 넘침을 확인했다. 캡처는 `build/qa/w1-04-completed-desktop.png`, `build/qa/w1-04a-completed-mobile.png`, `build/qa/w1-04a-template-desktop.png`, `build/qa/w1-04a-template-mobile.png`, 열어볼 HTML은 `build/qa/w1-04a-template.html`이다. 실제 제공자·운영 배포 검증을 뜻하지 않는다.
+
+전체 검증: 일차 선택 수정 후 루트 `test.ps1`은 `BUILD SUCCESSFUL` (4분 13초), 92개 suite·543개 테스트에서 실패·오류·건너뜀 0건이다. `git diff --check`와 변경 JS 구문 검사도 통과했다. W1-04A 범위의 DoD를 확인했으며, 새 의존성·다운로드 API·서버 저장은 추가하지 않았다. 기존 보안 변경과 예시 원본의 스테이징 상태를 유지했다.
+
 ## 1. 문서 목적
 
 이 문서는 기존 정적 시안을 보존하거나 점진적으로 고치는 지침이 아니다. `W1-00`부터 Routy 화면을 새로 설계하고 이후 W1 작업에서 실제 API를 단계적으로 연결하기 위한 기준이다.
 
-`W1-00`에서 `index.html`, `css/style.css`, `js/preview.js`를 신규 화면 골격으로 교체했다. `W1-01A`는 회원가입·로그인과 인증 수명을, `W1-01B`는 지역 검색과 AI 추천을 연결했다. `W1-02`는 여행 조건과 장소 선택, `W1-02A`는 메뉴 검토·확정, `W1-03`은 추정 일정, `W1-03A`는 음식점 검색·선택을 연결했다. `W1-03B`는 경로 없음 표시 상태를, `W1-04`는 일차별 검토·실제 완료 생성 요청·생성 응답 기반 완료 화면을 연결했다. 다운로드·내 여행 목록·공유 화면은 후속 W1 작업이다.
+`W1-00`에서 `index.html`, `css/style.css`, `js/preview.js`를 신규 화면 골격으로 교체했다. `W1-01A`는 회원가입·로그인과 인증 수명을, `W1-01B`는 지역 검색과 AI 추천을 연결했다. `W1-02`는 여행 조건과 장소 선택, `W1-02A`는 메뉴 검토·확정, `W1-03`은 추정 일정, `W1-03A`는 음식점 검색·선택을 연결했다. `W1-03B`는 경로 없음 표시 상태를, `W1-04`는 일차별 검토·실제 완료 생성 요청·생성 응답 기반 완료 화면을 연결했다. `W1-04A`는 고정 템플릿 HTML 다운로드를, `W1-05`는 목록·제한 편집·삭제·공유를 연결했다. 전체 화면 보안 응답·시각 회귀는 W1-06에서 진행한다.
 
 화면은 다음 원칙을 동시에 만족해야 한다.
 
@@ -452,3 +506,12 @@ git diff --check
 - `git diff --check` 통과. DoD 14·15절의 UI·기존 데이터 수명 관련 회귀를 확인했으며 저장·외부 호출 로직 변경은 없다.
 - 전체 `test.ps1`은 제한된 실행 환경에서 Docker CLI를 찾지 못했으나, 2026-10-08 권한을 확보해 재실행한 결과 `BUILD SUCCESSFUL` (5분 42초)을 확인했다. 격리된 Testcontainers MySQL을 사용하는 전체 테스트 510개가 통과했고 실패·오류·건너뜀은 모두 0개다. 종료 중 Hikari 연결 정리 경고가 있었으나 테스트 실패는 없었다. 실제 카카오 지도·외부 API smoke는 이번 변경에서 검증하지 않았으며 전체 운영 DoD 완료나 로드맵 다음 단계 이동은 기록하지 않는다.
 - 사용자 원본 PNG 변경과 Git 스테이징 상태는 유지했다. Change Envelope 밖 구현 변경은 없다. 새 Spring 개념 도입은 없다.
+
+### W1-06 보안 응답 정렬·최종 로컬 회귀 (2026-10-14)
+
+- W1-05와 SEC1-01~06 완료 기록·현재 코드·기존 diff를 확인한 뒤 W1-06 하나만 수행했다. 로그인 429는 서버가 반환한 양의 정수 대기 시간을 표시한다. 인증·지역·장소·메뉴·추정·음식점·완료·텍스트 편집의 413은 입력 길이를 줄여 다시 요청하도록 안내한다. 응답 원문을 표시하지 않고 기존 입력 보존·비밀번호 폐기·수동 재시도 동작을 유지한다.
+- 실제 변경 파일: `js/auth.js`, `js/preview.js`, `js/place-workspace.js`, `js/menu-workspace.js`, `js/estimate-workspace.js`, `js/restaurant-workspace.js`, `js/review-workspace.js`, `js/trips-workspace.js`, `js/auth.browser.test.cjs`, `js/security-errors.test.cjs`, 이 문서. 검증 뒤 실제 상태·다음 작업 정렬에만 Conditional Paths인 `docs/07`·`docs/11`을 사용했다. 기존 미커밋 W1-05 변경을 보존했다. dependency·API·Java·설정·원본 자산 변경과 새 Spring 개념 도입은 없다.
+- 최종 Node 회귀 84개(실제 Chromium 포함)와 JS 구문 검사가 통과했다. 로그인 429·413, 추정 429·413, 완료 409·429·413의 안전한 복구와 기존 제작·422·인증 만료·내 일정·편집·삭제·공유·다운로드 회귀를 확인했다. 데스크톱·390px 모바일, Tab·Shift+Tab·Enter·방향키, 모션 감소와 forced colors의 초점 표시를 검증했다. 테스트는 실제 외부 API를 호출하지 않는다.
+- 6.7절 기준으로 지역·관광지·숙소·메뉴·추정·음식점·일차별 검토와 오류·편집 캡처를 확인했다. 추가 오류 캡처는 `build/qa/w1-06-auth-{limited,oversized}-{desktop,mobile}.png`, `w1-06-estimate-{limited,oversized}-{desktop,mobile}.png`, `w1-06-create-rejected-{desktop,mobile}.png`, `w1-06-forced-colors-mobile.png`다. 완료·공유는 기존 저장 DTO와 지도 없는 고정 템플릿 계약을 유지한다.
+- 루트 `test.ps1`이 4분 27초에 `BUILD SUCCESSFUL`로 종료했다. XML 합계는 96개 suite·552개 테스트이며 실패·오류·건너뜀 0이다. DB 종료 중 Hikari 연결 정리 경고가 있었으나 최종 종료 코드 0과 테스트 결과를 확인했다. `git diff --check`가 통과했고 공통·보안 응답·브라우저·데이터 수명 DoD의 로컬 해당 범위를 확인했다.
+- W1-06은 구현·로컬 검증 완료다. 실제 카카오/OpenAI·CSP 적용·Render/Aiven 보안 회귀·운영 가능 판정은 SEC1-07~08·Q1에서 확인한다. 다음 Task는 SEC1-07이며 이번 작업에서 시작하지 않았다.

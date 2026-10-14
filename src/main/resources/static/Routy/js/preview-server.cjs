@@ -15,6 +15,7 @@ const files = new Map([
   ['/js/estimate-workspace.js', 'js/estimate-workspace.js'],
   ['/js/restaurant-workspace.js', 'js/restaurant-workspace.js'],
   ['/js/review-workspace.js', 'js/review-workspace.js'],
+  ['/js/itinerary-download.js', 'js/itinerary-download.js'],
   ['/js/map-config.json', 'js/map-config.json'],
   ['/img/mark.svg', 'img/mark.svg'], ['/img/hero-busan.png', 'img/hero-busan.png'],
   ['/img/hero-seoul.png', 'img/hero-seoul.png'],

@@ -76,6 +76,7 @@ public class ApiUsagePolicy {
 		private static FeatureLimits forFeature(UsageFeature feature) {
 			return switch (feature) {
 				case PLACE_SEARCH -> new FeatureLimits(20, 300, 90_000L);
+				case IMAGE_SEARCH -> new FeatureLimits(300, 4_500, 27_000L);
 				case CAR_ROUTE -> new FeatureLimits(60, 120, 9_000L);
 				case PUBLIC_TRANSIT_ROUTE -> new FeatureLimits(60, 120, 900L);
 				case AI_REGION_RECOMMENDATION -> new FeatureLimits(3, 15, 30L);

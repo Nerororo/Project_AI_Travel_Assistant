@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f4f1ea">
   <meta name="description" content="Routy — 좋아하는 장소가 하루의 좋은 흐름이 되도록.">
@@ -16,6 +17,8 @@
   <script src="js/estimate-workspace.js" defer></script>
   <script src="js/restaurant-workspace.js" defer></script>
   <script src="js/review-workspace.js" defer></script>
+  <script src="js/trips-workspace.js" defer></script>
+  <script src="js/itinerary-download.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -200,7 +203,7 @@
                 <p class="field-help">시·군과 특별시·광역시·세종을 선택할 수 있어요. 구·군은 다음 장소 검색에서만 사용됩니다.</p>
               </form>
               <div class="region-status" id="region-search-status" role="status" aria-live="polite" tabindex="-1"></div>
-              <ul class="region-results" id="region-search-results" aria-label="지역 검색 결과"></ul>
+              <ul class="region-results" id="region-search-results" aria-label="지역 검색 결과" tabindex="0"></ul>
             </section>
 
             <section class="region-panel" id="region-ai-panel" role="tabpanel" aria-labelledby="region-ai-tab" hidden>
@@ -210,7 +213,7 @@
                 <div class="region-form-footer"><span><span id="region-request-count">0</span>/500자</span><button class="button button-primary" id="region-ai-submit" type="submit">3곳 추천받기</button></div>
               </form>
               <div class="region-status" id="region-ai-status" role="status" aria-live="polite" tabindex="-1"></div>
-              <ul class="region-results recommendation-results" id="region-ai-results" aria-label="AI 추천 지역"></ul>
+              <ul class="region-results recommendation-results" id="region-ai-results" aria-label="AI 추천 지역" tabindex="0"></ul>
             </section>
           </div>
 
@@ -225,14 +228,21 @@
           <section class="place-workspace" id="attractions-workspace" aria-label="관광지와 여행 경계" hidden>
             <div class="place-tabs" role="group" aria-label="장소 종류"><button type="button" data-place-role="ATTRACTION" aria-pressed="true">관광지</button><button type="button" data-place-role="TRAVEL_BOUNDARY" aria-pressed="false">시작·종료 장소</button></div>
             <div id="attraction-controls">
+              <div id="district-controls" hidden>
               <form id="district-form" class="place-search-form" novalidate><label for="district-query">구·군 필터 찾기 <span class="field-help">특별시·광역시만</span></label><div class="place-input-row"><input id="district-query" type="search" autocomplete="off"><button type="submit" class="button button-ghost">구·군 찾기</button></div></form>
-              <div id="district-status" role="status" aria-live="polite"></div><ul id="district-results" class="place-results" aria-label="구·군 검색 결과"></ul><div id="district-current" class="selected-place"></div>
+              <div id="district-status" role="status" aria-live="polite"></div><ul id="district-results" class="place-results" aria-label="구·군 검색 결과" tabindex="0"></ul><div id="district-current" class="selected-place"></div>
+              </div>
               <form id="attraction-search-form" class="place-search-form" novalidate><label for="attraction-query">관광지 검색어</label><div class="place-input-row"><input id="attraction-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div><label><input id="attraction-whole-region" type="checkbox"> 지역 전체에서 검색</label></form>
             </div>
-            <form id="boundary-search-form" class="place-search-form" novalidate hidden><label for="boundary-query">시작·종료 장소 검색어</label><div class="place-input-row"><input id="boundary-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div></form>
+            <form id="boundary-search-form" class="place-search-form" novalidate hidden>
+              <div id="boundary-slot-controls"></div>
+              <label for="boundary-query">시작·종료 장소 검색어</label>
+              <div class="place-input-row"><input id="boundary-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div>
+              <p class="field-help">역·터미널·공항 등 여행을 시작하거나 마칠 장소를 선택해 주세요. 시작과 종료에 같은 장소를 선택할 수 있어요.</p>
+            </form>
             <div id="place-status" role="status" aria-live="polite" tabindex="-1"></div>
             <div class="mobile-place-view" role="group" aria-label="관광지 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
-            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="place-results" class="place-results" aria-label="장소 검색 결과"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
+            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="place-results" class="place-results" aria-label="장소 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
             <div id="attraction-selected" class="selected-places" aria-label="선택한 관광지"></div>
             <div id="boundary-selected" class="selected-places" aria-label="선택한 시작·종료 장소" hidden></div>
           </section>
@@ -241,7 +251,7 @@
             <form id="hotel-search-form" class="place-search-form" novalidate><label for="hotel-mode">숙소 탐색 기준</label><div class="place-input-row"><select id="hotel-mode"><option value="GEOMETRIC_MEDIAN">관광지 중심 · 5km</option><option value="GEOMETRIC_MEDIAN_10">관광지 중심 · 10km</option><option value="MEDOID">관광지 중간 장소 · 5km</option><option value="MAP_BOUNDS">현재 지도 영역</option></select><button type="submit" class="button button-primary">숙소 찾기</button></div></form>
             <p class="field-help">검색 순서에 거리 점수나 추천 순위는 적용하지 않습니다. 숙소를 직접 선택해 주세요.</p><div id="hotel-status" role="status" aria-live="polite" tabindex="-1"></div>
             <div class="mobile-place-view" role="group" aria-label="숙소 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
-            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
+            <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
             <div id="hotel-selected" class="selected-places" aria-label="선택한 숙소"></div>
           </section>
 
@@ -291,7 +301,7 @@
             <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소" hidden></div>
             <div class="mobile-place-view" id="restaurant-view-switch" role="group" aria-label="음식점 검색 결과 보기" hidden><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
             <div class="place-layout" id="restaurant-layout" data-mobile-view="list" hidden>
-              <div class="place-list-pane"><ul id="restaurant-results" class="place-results" aria-label="음식점 검색 결과"></ul><div class="place-pagination"><button id="restaurant-prev-page" type="button" class="button button-ghost">이전</button><span id="restaurant-page">1</span><button id="restaurant-next-page" type="button" class="button button-ghost">다음</button></div></div>
+              <div class="place-list-pane"><ul id="restaurant-results" class="place-results" aria-label="음식점 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="restaurant-prev-page" type="button" class="button button-ghost">이전</button><span id="restaurant-page">1</span><button id="restaurant-next-page" type="button" class="button button-ghost">다음</button></div></div>
               <div class="place-map-pane"><div id="restaurant-map" class="place-map" role="img" aria-label="식사 전후 장소와 음식점 지도"></div><p id="restaurant-map-status" class="field-help"></p><button id="restaurant-search-map" type="button" class="button button-ghost">현재 지도 영역에서 다시 검색</button></div>
             </div>
             <div id="restaurant-selected" class="selected-places" aria-label="직접 선택한 음식점" hidden></div>
@@ -315,7 +325,7 @@
             </div>
             <section class="review-finish" aria-labelledby="review-finish-title">
               <header><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><div><p>마지막 확인</p><h3 id="review-finish-title">이 일정으로 여행을 완성할까요?</h3><span>완료 요청에서 전체 이동 경로와 저장 가능 여부를 다시 확인합니다.</span></div></div><button id="review-adjust" class="button button-ghost" type="button">일정 조정하기</button></header>
-              <form id="review-form" novalidate><label for="review-title">일정 제목</label><input id="review-title" type="text" maxlength="100" required><button id="review-submit" class="button button-primary" type="submit">전체 경로 확인하고 완료</button></form>
+              <form id="review-form" novalidate><label for="review-title">여행 제목</label><input id="review-title" type="text" maxlength="100" placeholder="여행 제목을 직접 입력해 주세요" required><button id="review-submit" class="button button-primary" type="submit">전체 경로 확인하고 완료</button></form>
               <p id="review-status" role="status" aria-live="polite" tabindex="-1"></p>
             </section>
           </section>
@@ -356,35 +366,53 @@
     </section>
 
     <section class="page collection-page" data-view="trips" aria-labelledby="trips-title" hidden>
-      <header class="page-hero compact">
-        <div><p class="eyebrow dark">MY JOURNEYS</p><h1 id="trips-title">내 여행</h1><p>완료한 여행이 시간순으로 놓일 공간입니다.</p></div>
-        <a class="button button-primary" href="#/workspace">새 여행 만들기</a>
+      <header class="page-hero compact trip-hero">
+        <div class="trip-hero-copy"><p class="eyebrow dark">MY JOURNEYS</p><h1 id="trips-title">다시 펼쳐보는<br><span class="title-accent">내 여행</span></h1><p>좋아하는 장소를 담아 완성한 여행을 모아뒀어요.</p><a class="button button-primary" href="#/workspace">새 여행 만들기 <span aria-hidden="true">↗</span></a></div>
+        <div class="trip-hero-art" aria-hidden="true"><figure class="travel-photo trip-hero-photo"><img src="img/workspace-coast.png" alt=""><figcaption>좋았던 순간을<br>다시 펼쳐봐요.</figcaption></figure><span class="trip-spark">✦</span></div>
       </header>
-      <div class="empty-collection">
+      <div class="trip-collection-heading"><div><h2>저장한 여행</h2><p>최근 만든 여행부터 차례대로 살펴보세요.</p></div><button id="trips-reload" class="button button-ghost" type="button" data-trip-action>목록 새로고침 <span aria-hidden="true">↻</span></button></div>
+      <p id="trips-status" role="status" aria-live="polite"></p>
+      <ol id="trips-list" class="trip-list" aria-label="저장한 여행"></ol>
+      <nav class="place-pagination trips-pagination" aria-label="일정 목록 페이지"><button id="trips-previous" class="button button-ghost" type="button" disabled>이전 페이지</button><span id="trips-page"></span><button id="trips-next" class="button button-ghost" type="button" disabled>다음 페이지</button></nav>
+      <div class="empty-collection" id="trips-empty" hidden>
         <div class="empty-orbit" aria-hidden="true"><span>✦</span></div>
         <p class="eyebrow dark">EMPTY STATE</p>
         <h2>아직 완성된 여행이 없어요.</h2>
-        <p>W1-05에서 저장된 일정 목록과 paging을 연결합니다.</p>
+        <p>새 여행을 만들고 완성한 일정을 이곳에서 확인하세요.</p>
         <a class="text-link" href="#/workspace">첫 여행의 골격 둘러보기 →</a>
       </div>
     </section>
 
-    <section class="page document-page" data-view="detail" aria-labelledby="detail-title" hidden>
+    <section class="page document-page" data-view="detail" aria-label="완료한 여행" hidden>
       <header class="document-header">
         <a class="back-link" href="#/trips">← 내 여행</a>
-        <p class="eyebrow dark">완료한 여행</p>
-        <h1 id="detail-title">저장된 일정이 놓일 자리</h1>
-        <p id="detail-summary">완료 화면은 지도 없이 저장 정보와 외부 링크만 표시합니다.</p>
         <p id="detail-warning" role="status"></p>
+        <div class="download-actions">
+          <button id="download-itinerary" class="button button-dark" type="button" disabled>여행 일정 HTML 저장 ↓</button>
+          <span>인터넷 없이 다시 읽는 나만의 여행 문서</span>
+        </div>
+        <p id="download-status" role="status" aria-live="polite"></p>
+        <p id="trip-status" role="status" aria-live="polite"></p>
+        <button id="trip-reload" class="button button-ghost" type="button" data-trip-action>일정 다시 조회</button>
+        <div id="trip-actions" hidden>
+          <button id="trip-edit" class="button button-ghost" type="button" data-trip-action>제목·이름·메모 편집</button>
+          <button id="trip-delete" class="button button-ghost" type="button" data-trip-action>일정 삭제</button>
+          <button id="trip-share" class="button button-ghost" type="button" data-trip-action>공유 링크 발급·재발급</button>
+          <p>날짜·시간·장소를 바꾸려면 새 여행을 만들어 주세요.</p>
+          <div id="trip-delete-confirm" hidden><p>이 일정과 공유 링크를 삭제할까요?</p><button id="trip-delete-cancel" class="button button-ghost" type="button" data-trip-action>취소</button><button id="trip-delete-yes" class="button button-dark" type="button" data-trip-action>삭제 확인</button></div>
+          <div id="share-result"></div>
+        </div>
+        <form id="trip-editor" class="region-form" aria-label="저장 일정 텍스트 편집" hidden></form>
       </header>
-      <div id="detail-days" class="document-grid"></div>
-      <div id="detail-hotel" class="document-note" hidden></div>
+      <div id="detail-document"></div>
     </section>
 
     <section class="page shared-page" data-view="shared" aria-labelledby="shared-title" hidden>
       <header class="shared-header"><a class="brand" href="#/"><span>routy</span><i>.</i></a><span>공유 일정 · 읽기 전용</span></header>
-      <div class="shared-intro"><p class="eyebrow dark">SHARED JOURNEY</p><h1 id="shared-title">함께 볼 여행의 자리</h1><p>공유 토큰 API가 연결되면 비공개 정보와 소유자 action 없이 고정 일정을 표시합니다.</p></div>
-      <div class="shared-placeholder"><span aria-hidden="true">⌁</span><strong>공유 일정 API 연결 전입니다.</strong><p>지도·마커·경로선 없이 읽기 좋은 시간표 구조를 유지합니다.</p></div>
+      <div class="shared-intro"><p class="eyebrow dark">SHARED JOURNEY</p><h1 id="shared-title">함께 보는 여행</h1><p>저장된 시간표를 읽기 전용으로 확인하세요.</p></div>
+      <p id="shared-status" role="status" aria-live="polite"></p>
+      <button id="shared-reload" class="button button-ghost" type="button" data-trip-action>다시 조회</button>
+      <div id="shared-document"></div>
     </section>
   </main>
 

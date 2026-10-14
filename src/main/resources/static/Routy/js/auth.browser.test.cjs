@@ -9,12 +9,15 @@ const path = require('node:path');
 const os = require('node:os');
 const {spawn} = require('node:child_process');
 const {randomBytes} = require('node:crypto');
+const {pathToFileURL} = require('node:url');
 const {setTimeout: delay} = require('node:timers/promises');
 
 test('authentication and region browser flows, keyboard, lifecycle and mobile layout', {timeout: 90000}, async t => {
   const root = path.resolve(__dirname, '..');
   const files = new Map([['/', 'index.html'], ['/css/style.css', 'css/style.css'], ['/js/auth.js', 'js/auth.js'], ['/js/place-selection-state.js', 'js/place-selection-state.js'], ['/js/place-workspace.js', 'js/place-workspace.js'], ['/js/menu-workspace.js', 'js/menu-workspace.js'], ['/js/estimate-workspace.js', 'js/estimate-workspace.js'], ['/js/restaurant-workspace.js', 'js/restaurant-workspace.js'], ['/js/review-workspace.js', 'js/review-workspace.js'], ['/js/preview.js', 'js/preview.js'], ['/img/mark.svg', 'img/mark.svg']]);
   files.set('/css/journey.css', 'css/journey.css');
+  files.set('/js/itinerary-download.js', 'js/itinerary-download.js');
+  files.set('/js/trips-workspace.js', 'js/trips-workspace.js');
   files.set('/fonts/NanumPenScript-Regular.ttf', 'fonts/NanumPenScript-Regular.ttf');
   for (const name of ['auth-coast.png', 'auth-heritage.png', 'workspace-coast.png']) files.set(`/img/${name}`, `img/${name}`);
   const types = {'.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf'};
@@ -35,6 +38,8 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   let restaurantMode = 'success';
   const createRequests = [];
   let createMode = 'success';
+  let savedPlan = null, tripMode = 'success', shareSequence = 0, currentShare = null;
+  const tripRequests = [];
   let menuMode = 'success';
   const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && ['/api/users', '/api/auth/login'].includes(req.url)) {
@@ -45,11 +50,12 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       res.setHeader('Cache-Control', 'no-store');
       const mode = responseMode;
       if (mode === 'delayed') await delay(350);
-      const status = mode === 'duplicate' ? 409 : mode === 'validation' ? 400 : mode === 'unauthorized' ? 401 : signup ? 201 : 200;
+      const status = mode === 'limited' ? 429 : mode === 'oversized' ? 413 : mode === 'duplicate' ? 409 : mode === 'validation' ? 400 : mode === 'unauthorized' ? 401 : signup ? 201 : 200;
+      if (status === 429) res.setHeader('Retry-After', '43');
       res.writeHead(status);
       if (status === 201) res.end();
       else if (status === 200) res.end(JSON.stringify({accessToken: token, tokenType: 'Bearer', expiresInSeconds: loginTtl}));
-      else res.end(JSON.stringify({code: status === 409 ? 'EMAIL_ALREADY_EXISTS' : status === 400 ? 'VALIDATION_FAILED' : 'AUTHENTICATION_REQUIRED', message: 'untrusted-response', fieldErrors: status === 400 ? [{field: 'email', reason: 'INVALID_FORMAT'}] : [], details: null, adjustments: [], retryAfterSeconds: null}));
+      else res.end(JSON.stringify({code: status === 429 ? 'RATE_LIMIT_EXCEEDED' : status === 413 ? 'REQUEST_TOO_LARGE' : status === 409 ? 'EMAIL_ALREADY_EXISTS' : status === 400 ? 'VALIDATION_FAILED' : 'AUTHENTICATION_REQUIRED', message: 'untrusted-response', fieldErrors: status === 400 ? [{field: 'email', reason: 'INVALID_FORMAT'}] : [], details: null, adjustments: [], retryAfterSeconds: status === 429 ? 43 : null}));
       return;
     }
     if (req.method === 'GET' && req.url.startsWith('/api/regions?')) {
@@ -107,7 +113,10 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       const body = JSON.parse(raw);
       estimateRequests.push(body);
       res.setHeader('Content-Type', 'application/json');
-      if (estimateMode === 'capacity') {
+      if (estimateMode === 'oversized' || estimateMode === 'limited') {
+        res.writeHead(estimateMode === 'oversized' ? 413 : 429);
+        res.end(JSON.stringify({code: estimateMode === 'oversized' ? 'REQUEST_TOO_LARGE' : 'RATE_LIMIT_EXCEEDED', retryAfterSeconds: 43, message: 'untrusted-response'}));
+      } else if (estimateMode === 'capacity') {
         res.writeHead(422);
         res.end(JSON.stringify({code: 'PLAN_CAPACITY_EXCEEDED', message: 'fixed', details: {date: body.startDate, plannedEndTime: '20:30', allowedEndTime: '20:00', exceededMinutes: 30}, adjustments: ['CHANGE_END_TIME']}));
       } else {
@@ -121,6 +130,39 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       }
       return;
     }
+    if (req.url.startsWith('/api/travel-plans?') || /^\/api\/travel-plans\/\d+(\/shares)?$/.test(req.url) || req.url.startsWith('/api/shared/travel-plans/')) {
+      let raw = ''; for await (const chunk of req) raw += chunk;
+      const body = raw ? JSON.parse(raw) : null;
+      tripRequests.push({path: req.url, method: req.method, headers: req.headers, body});
+      res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store');
+      const fail = code => { res.writeHead(code); res.end(JSON.stringify({code: code === 429 ? 'RATE_LIMIT_EXCEEDED' : 'TRAVEL_PLAN_NOT_FOUND', retryAfterSeconds: 12})); };
+      const mode = tripMode;
+      if (mode === 'delayed') await delay(350);
+      if (mode === 'forbidden') { fail(403); return; }
+      if (mode === 'limited') { fail(429); return; }
+      if (mode === 'unavailable') { fail(503); return; }
+      if (req.url.startsWith('/api/shared/')) {
+        if (!savedPlan || req.url.split('/').at(-1) !== currentShare || mode === 'expired') { fail(404); return; }
+        const {warnings, ...detail} = savedPlan; res.end(JSON.stringify(detail)); return;
+      }
+      if (req.url.startsWith('/api/travel-plans?')) {
+        const page = Number(new URL(req.url, 'http://localhost').searchParams.get('page'));
+        res.end(JSON.stringify({items: savedPlan ? Array.from({length: page === 0 ? 20 : 1}, (_, i) => ({...savedPlan, travelPlanId: 42 + page * 20 + i, title: `여행 ${page * 20 + i + 1}`})) : [], page, size: 20, hasNext: !!savedPlan && page === 0})); return;
+      }
+      if (!savedPlan) { fail(404); return; }
+      if (req.method === 'DELETE') { savedPlan = null; currentShare = null; res.writeHead(204); res.end(); return; }
+      if (req.url.endsWith('/shares')) {
+        currentShare = String(++shareSequence).padStart(43, 'a');
+        res.writeHead(201); res.end(JSON.stringify({shareToken: currentShare, expiresAt: '2026-11-14T00:00:00Z'})); return;
+      }
+      if (req.method === 'PATCH') {
+        if (body.title) savedPlan.title = body.title;
+        for (const edit of body.placeEdits || []) for (const place of [savedPlan.hotel, ...savedPlan.days.flatMap(day => day.items)]) {
+          if (place?.planPlaceId === edit.planPlaceId) Object.assign(place, edit);
+        }
+      }
+      const {warnings, ...detail} = savedPlan; res.end(JSON.stringify(detail)); return;
+    }
     if (req.method === 'POST' && req.url === '/api/travel-plans') {
       let raw = '';
       for await (const chunk of req) raw += chunk;
@@ -130,12 +172,16 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       if (mode === 'delayedRoute') await delay(350);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Cache-Control', 'no-store');
-      if (mode === 'route' || mode === 'delayedRoute') {
+      if (['oversized', 'limited', 'storage', 'processing', 'completed'].includes(mode)) {
+        const code = {oversized: 'REQUEST_TOO_LARGE', limited: 'RATE_LIMIT_EXCEEDED', storage: 'TRAVEL_PLAN_LIMIT_EXCEEDED', processing: 'REQUEST_IN_PROGRESS', completed: 'REQUEST_ALREADY_COMPLETED'}[mode];
+        res.writeHead(mode === 'oversized' ? 413 : mode === 'limited' ? 429 : 409);
+        res.end(JSON.stringify({code, retryAfterSeconds: 43, message: 'untrusted-response'}));
+      } else if (mode === 'route' || mode === 'delayedRoute') {
         res.writeHead(422);
         res.end(JSON.stringify({code: 'ROUTE_NOT_FOUND', message: 'untrusted-provider-message', details: {date: body.startDate, moveOrder: 2, travelMode: body.travelMode}}));
       } else {
         res.writeHead(201, {Location: '/api/travel-plans/42'});
-        res.end(JSON.stringify({travelPlanId: 42, title: body.title, region: {regionId: body.regionId, displayName: '부산광역시'}, travelMode: body.travelMode,
+        res.end(JSON.stringify(savedPlan = {travelPlanId: 42, title: body.title, region: {regionId: body.regionId, displayName: '부산광역시'}, travelMode: body.travelMode,
           startDate: body.startDate, endDate: body.endDate, warnings: ['ESTIMATED_TRAVEL_TIMES_USED'],
           hotel: body.hotelSelectionToken ? {planPlaceId: 8, displayName: body.hotelDisplayName, memo: null, placeUrl: 'https://place.map.kakao.com/hotel'} : null,
           days: body.days.map((day, index) => ({day: index + 1, date: day.date, activityStartTime: day.activityStartTime, activityEndTime: day.activityEndTime,
@@ -144,6 +190,12 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
               {itemId: 2, order: 2, type: 'MOVE', planPlaceId: null, displayName: null, placeUrl: null, startTime: '11:30', endTime: '12:00', stayMinutes: null, estimatedMinutes: 30, memo: null}
             ] : []}))}));
       }
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/api/places/image') {
+      for await (const _ of req) { /* Discard temporary search terms. */ }
+      res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
+      res.end(JSON.stringify({thumbnailUrl: null}));
       return;
     }
     if (req.method === 'POST' && req.url === '/api/places/restaurants/search') {
@@ -208,8 +260,11 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   let id = 0;
   let runtimeErrors = 0;
   let sensitiveConsole = false;
+  const networkRequests = [];
+  let downloadedPath;
   socket.onmessage = event => {
     const message = JSON.parse(event.data);
+    if (message.method === 'Network.requestWillBeSent') networkRequests.push({url: message.params.request.url, documentURL: message.params.documentURL});
     if (message.method === 'Runtime.exceptionThrown') runtimeErrors++;
     if (message.method === 'Runtime.consoleAPICalled') {
       const output = JSON.stringify(message.params);
@@ -235,26 +290,47 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.fail('Browser condition did not become true');
   }
   const click = selector => evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);
-  async function screenshot(name) {
+  async function screenshot(name, fullPage = false) {
     const directory = path.resolve(root, '../../../../../build/qa');
     await fs.mkdir(directory, {recursive: true});
-    const shot = await send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: false});
+    const size = fullPage ? (await send('Page.getLayoutMetrics')).cssContentSize : null;
+    const shot = await send('Page.captureScreenshot', {format: 'png', captureBeyondViewport: fullPage,
+      ...(size ? {clip: {...size, scale: 1}} : {})});
     await fs.writeFile(path.join(directory, name), Buffer.from(shot.data, 'base64'));
   }
-  async function designScreenshot(name) {
+  async function designScreenshot(name, fullPage = false) {
     await evaluate('document.fonts.ready.then(() => true)');
     const scroll = await evaluate('scrollY');
     await delay(150);
     await evaluate('window.scrollTo({top:0,behavior:"instant"})');
     await until('scrollY === 0');
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'design fits viewport');
-    await screenshot(name);
+    await screenshot(name, fullPage);
     await evaluate(`window.scrollTo({top:${scroll},behavior:"instant"})`);
   }
-  async function mobileDesignScreenshot(name) {
+  async function searchScrollScreenshot(selector, name) {
+    const previousScroll = await evaluate('scrollY');
+    // Expand fake result cards for layout only; restore the original nodes and listeners.
+    await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});window.scrollProbeNodes=[...list.children];list.replaceChildren(...Array.from({length:10},(_,i)=>window.scrollProbeNodes[i%window.scrollProbeNodes.length].cloneNode(true)))})()`);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.scrollTop=0;list.scrollIntoView({block:'center',behavior:'instant'});list.focus({preventScroll:true})})()`);
+      await delay(150);
+      assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),style=getComputedStyle(list);return list.clientHeight<=Math.ceil(parseFloat(style.maxHeight)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom))&&list.scrollHeight>list.clientHeight&&list.getBoundingClientRect().right<=innerWidth})()`), true, `${name} bounds at ${width}px`);
+      await screenshot(`search-scroll-${name}-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+      await key('ArrowDown', 'ArrowDown', 40);
+      await until(`document.querySelector(${JSON.stringify(selector)}).scrollTop>0`);
+      assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.scrollTop=list.scrollHeight;return list.scrollTop>0})()`), true);
+    }
+    await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.replaceChildren(...window.scrollProbeNodes);list.scrollTop=0;delete window.scrollProbeNodes})()`);
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await evaluate(`window.scrollTo({top:${previousScroll},behavior:'instant'})`);
+    await delay(150);
+  }
+  async function mobileDesignScreenshot(name, fullPage = false) {
     const size = await evaluate('({width: innerWidth, height: innerHeight})');
     await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
-    await designScreenshot(name);
+    await designScreenshot(name, fullPage);
     await send('Emulation.setDeviceMetricsOverride', {...size, deviceScaleFactor: 1, mobile: size.width <= 700});
   }
   async function fill() {
@@ -269,8 +345,14 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     if (key === 'Enter') await send('Input.dispatchKeyEvent', {type: 'char', text: '\r', key, code, windowsVirtualKeyCode});
     await send('Input.dispatchKeyEvent', {type: 'keyUp', key, code, windowsVirtualKeyCode, modifiers});
   }
+  async function chooseWithKeyboard(selector) {
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
+    await key('Enter', 'Enter', 13);
+    assert.equal(await evaluate(`document.activeElement === document.querySelector(${JSON.stringify(selector)})`), true, 'selection keeps focus on the same result');
+  }
   await send('Runtime.enable');
   await send('Page.enable');
+  await send('Network.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', {source: 'const nativeTimer=window.setTimeout;window.setTimeout=(fn,ms,...args)=>nativeTimer(fn,window.__shortExpiry&&ms>3500000?700:ms,...args);'});
   await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
   await send('Page.navigate', {url: `${origin}/#/workspace`});
@@ -323,6 +405,25 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate('document.body.dataset.view'), 'auth');
     assert.equal(registrationCalls, 3);
   });
+  await t.test('W1-06 login rejection shows wait or input recovery without automatic retry', async () => {
+    for (const mode of ['limited', 'oversized']) {
+      responseMode = mode;
+      await fill();
+      const before = loginCalls;
+      await click('#auth-submit');
+      await until(`document.querySelector('#auth-form').getAttribute('aria-busy') === 'false'`);
+      assert.equal(loginCalls, before + 1);
+      assert.equal(await evaluate(`document.querySelector('#auth-status').textContent.includes(${JSON.stringify(mode === 'limited' ? '43초' : '입력 길이')})`), true);
+      assert.equal(await evaluate(`document.querySelector('#auth-password').value`), '');
+      assert.equal(await evaluate(`document.querySelector('#auth-email').value === ${JSON.stringify(account.email)}`), true);
+      assert.equal(await evaluate(`document.body.dataset.view`), 'auth');
+      await designScreenshot(`w1-06-auth-${mode}-desktop.png`, true);
+      await mobileDesignScreenshot(`w1-06-auth-${mode}-mobile.png`, true);
+      await delay(100);
+      assert.equal(loginCalls, before + 1);
+    }
+    responseMode = 'success';
+  });
   await t.test('failed login remains anonymous, success returns to requested protected view', async () => {
     responseMode = 'unauthorized';
     await fill();
@@ -364,6 +465,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#summary-region').textContent`), '강릉시');
     assert.equal(await evaluate(`document.querySelector('.summary-list').hidden`), false);
     assert.equal(await evaluate(`document.querySelector('#summary-days').textContent`), '설정 전');
+    await searchScrollScreenshot('#region-search-results', 'regions');
     await click('[data-region-method="ai"]');
     await evaluate(`document.querySelector('#region-request').value='바다가 있고 조용한 여행';document.querySelector('#region-request').dispatchEvent(new Event('input'));document.querySelector('#region-ai-form').requestSubmit()`);
     await until(`document.querySelectorAll('#region-ai-results .region-result').length === 3`);
@@ -375,6 +477,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#summary-region').textContent`), '속초시');
     assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
     await screenshot('w1-01b-region-desktop.png');
+    await searchScrollScreenshot('#region-ai-results', 'recommendations');
     await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
     assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
     await evaluate(`document.querySelector('#region-ai-submit').scrollIntoView({block:'center'})`);
@@ -396,23 +499,51 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
     await designScreenshot('w1-06-attractions-desktop.png');
+    await searchScrollScreenshot('#place-results', 'attractions');
     const attractionRequest = placeRequests.at(-1);
     assert.equal(attractionRequest.path, '/api/places/search');
     assert.equal(attractionRequest.body.placeRole, 'ATTRACTION');
     assert.equal(attractionRequest.body.radiusMeters, 20000);
     assert.match(attractionRequest.headers['idempotency-key'], /^[0-9a-f-]{36}$/);
-    await click('#place-results .place-result button');
+    await chooseWithKeyboard('#place-results .place-result button');
     assert.equal(await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value`), '');
     assert.equal(await evaluate(`document.querySelector('#attraction-selected input[type="text"]').placeholder.includes('가상 해변')`), false);
     await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value='내 바닷가';document.querySelector('#attraction-selected input[type="text"]').dispatchEvent(new Event('input'))`);
     await click('[data-place-role="TRAVEL_BOUNDARY"]');
+    assert.equal(await evaluate(`document.querySelector('#boundary-search-form .boundary-slot-picker') !== null`), true);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      await evaluate(`document.querySelector('#boundary-search-form').scrollIntoView({block:'center',behavior:'instant'})`);
+      await delay(150);
+      assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+      await screenshot(`w1-02-boundary-input-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await evaluate(`document.querySelector('#boundary-query').value='역';document.querySelector('#boundary-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
     assert.equal(placeRequests.at(-1).path, '/api/places/travel-boundaries/search');
+    await searchScrollScreenshot('#place-results', 'boundaries');
+    await chooseWithKeyboard('#place-results .place-result button');
+    await evaluate(`document.querySelector('input[name="boundary-slot"][value="START"]').focus()`);
+    await key('ArrowRight', 'ArrowRight', 39);
+    assert.equal(await evaluate(`document.activeElement.name === 'boundary-slot' && document.activeElement.value === 'END'`), true, 'role switch keeps radio focus');
+    assert.equal(await evaluate(`document.querySelector('#place-results button').getAttribute('aria-pressed')`), 'false', 'a start-only selection is not selected as the end');
+    assert.equal(await evaluate(`document.querySelector('#boundary-selected [data-boundary-slot="END"] > span').textContent.includes('아직 선택')`), true);
+    await chooseWithKeyboard('#place-results .place-result button');
+    assert.equal(await evaluate(`['START','END'].every(slot=>document.querySelector('#boundary-selected [data-boundary-slot="'+slot+'"] > span').textContent === '가상 역')`), true);
+    await click('#boundary-selected [data-boundary-slot="START"] button');
+    assert.equal(await evaluate(`document.querySelector('#boundary-selected [data-boundary-slot="START"] > span').textContent.includes('아직 선택') && document.querySelector('#boundary-selected [data-boundary-slot="END"] > span').textContent === '가상 역'`), true);
+    await click('input[name="boundary-slot"][value="START"]');
     await click('#place-results .place-result button');
     await click('input[name="boundary-slot"][value="END"]');
-    await click('#place-results .place-result button');
-    assert.equal(await evaluate(`document.querySelector('#boundary-selected').textContent.includes('시작: 가상 역') && document.querySelector('#boundary-selected').textContent.includes('종료: 가상 역')`), true);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      await evaluate(`document.querySelector('#boundary-selected').scrollIntoView({block:'center',behavior:'instant'})`);
+      await delay(150);
+      assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+      await screenshot(`w1-02-boundary-selected-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     assert.equal(await evaluate(`document.querySelector('[data-step="4"]').disabled`), true);
     await click('[data-step="4"]');
     assert.equal(await evaluate(`document.querySelector('[data-step="2"]').getAttribute('aria-current')`), 'step');
@@ -424,8 +555,9 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#hotel-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#hotel-results .place-result').length === 1`);
     assert.equal(placeRequests.at(-1).path, '/api/places/hotels/search');
+    await searchScrollScreenshot('#hotel-results', 'hotels');
     assert.deepEqual(placeRequests.at(-1).body.attractionSelectionTokens, ['fake-attraction-1-token']);
-    await click('#hotel-results .place-result button');
+    await chooseWithKeyboard('#hotel-results .place-result button');
     assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '1곳');
     assert.equal(await evaluate(`(()=>{const heading=document.querySelector('#step-title').getBoundingClientRect();return heading.top >= document.querySelector('.site-header').getBoundingClientRect().bottom && heading.top < innerHeight})()`), true);
     assert.equal(await evaluate(`document.querySelector('#hotel-map').classList.contains('is-unavailable')`), true);
@@ -447,7 +579,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await screenshot('w1-02-map-mobile.png');
     await click('#attractions-workspace [data-place-view="list"]');
     assert.equal(await evaluate(`getComputedStyle(document.querySelector('#attractions-workspace .place-list-pane')).display !== 'none'`), true);
-    assert.equal(await evaluate(`document.querySelector('#boundary-selected').textContent.includes('시작: 가상 역')`), true);
+    assert.equal(await evaluate(`document.querySelector('#boundary-selected [data-boundary-slot="START"] > span').textContent`), '가상 역');
     await click('[data-step="4"]');
     assert.equal(await evaluate(`document.querySelector('[data-step="4"]').getAttribute('aria-current')`), 'step');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
@@ -519,6 +651,15 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       await until(`document.querySelector('#estimate-status').textContent.includes('30분 초과')`);
       assert.equal(await evaluate(`document.querySelector('#estimate-start-date').value`), '2026-10-01');
       assert.equal(await evaluate(`document.querySelector('#estimate-result').textContent`), '');
+      for (const mode of ['oversized', 'limited']) {
+        estimateMode = mode;
+        await click('#estimate-submit');
+        await until(`document.querySelector('#estimate-status').textContent.includes(${JSON.stringify(mode === 'oversized' ? '요청 크기' : '43초')})`);
+        assert.equal(await evaluate(`document.querySelector('#estimate-start-date').value`), '2026-10-01');
+        assert.equal(await evaluate(`document.querySelector('#estimate-result').textContent`), '');
+        await designScreenshot(`w1-06-estimate-${mode}-desktop.png`, true);
+        await mobileDesignScreenshot(`w1-06-estimate-${mode}-mobile.png`, true);
+      }
       estimateMode = 'success';
       await click('#estimate-submit');
       await until(`document.querySelector('#estimate-result section') !== null`);
@@ -585,6 +726,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.match(restaurantRequests.at(-1).headers['idempotency-key'], /^[0-9a-f-]{36}$/);
     assert.equal(await evaluate(`document.querySelector('#restaurant-context').textContent.includes('직전 장소') && document.querySelector('#restaurant-context').textContent.includes('직후 장소')`), true);
     await screenshot('w1-03a-candidates-desktop.png');
+    await searchScrollScreenshot('#restaurant-results', 'restaurants');
     await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
     await evaluate(`document.querySelector('#restaurant-results').scrollIntoView({block:'start',behavior:'instant'})`);
     await delay(150);
@@ -592,7 +734,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result').getBoundingClientRect().bottom <= document.querySelector('.canvas-actions').getBoundingClientRect().top`), true);
     await screenshot('w1-03a-candidates-mobile.png');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
-    await click('#restaurant-results .place-result button');
+    await chooseWithKeyboard('#restaurant-results .place-result button');
     assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
     await evaluate(`document.querySelector('#restaurant-slot').value='2026-10-01|DINNER';document.querySelector('#restaurant-slot').dispatchEvent(new Event('change'))`);
     await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
@@ -657,6 +799,14 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#menu-draft select').textContent.includes('새 바닷가')`), true);
   });
   await t.test('W1-02 district filter is explicit and a new region discards prior place selections', async () => {
+    assert.equal(await evaluate(`document.querySelector('#district-controls').hidden`), true);
+    await click('[data-step="2"]');
+    await designScreenshot('w1-02-district-hidden-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    await evaluate(`document.querySelector('#attraction-search-form').scrollIntoView({block:'center',behavior:'instant'})`);
+    await delay(150);
+    await screenshot('w1-02-district-hidden-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await click('[data-step="0"]');
     await evaluate(`document.querySelector('#region-query').value='부산';document.querySelector('#region-search-form').requestSubmit()`);
     await until(`document.querySelector('#region-search-results [data-region-id="opaque-metro"]') !== null`);
@@ -664,8 +814,19 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#summary-places').textContent`), '선택 전');
     assert.equal(await evaluate(`document.querySelectorAll('#menu-draft .menu-card').length`), 0);
     await click('#next-step'); await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('#district-controls').hidden`), false);
     await evaluate(`document.querySelector('#district-query').value='해운대';document.querySelector('#district-form').requestSubmit()`);
     await until(`document.querySelector('#district-results button') !== null`);
+    await searchScrollScreenshot('#district-results', 'districts');
+    assert.equal(await evaluate(`parseFloat(getComputedStyle(document.querySelector('#district-results li')).borderTopWidth) > 0`), true);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      await evaluate(`document.querySelector('#district-results').scrollIntoView({block:'center',behavior:'instant'})`);
+      await delay(150);
+      assert.equal(await evaluate(`(()=>{const r=document.querySelector('#district-results li').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth})()`), true);
+      await screenshot(`w1-02-district-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await click('#district-results button');
     await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
     await until(`document.querySelector('#place-status').textContent.includes('1곳을 찾았습니다')`);
@@ -760,6 +921,23 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await screenshot('w1-04-review-finish-mobile.png');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     createMode = 'route';
+    assert.equal(await evaluate(`document.querySelector('#review-title').value`), '', 'title requires user input');
+    const beforeEmptyTitle = createRequests.length;
+    await evaluate(`document.querySelector('#review-form').requestSubmit()`);
+    assert.equal(createRequests.length, beforeEmptyTitle, 'empty title does not create a plan');
+    await evaluate(`document.querySelector('#review-title').value='직접 지은 여행 제목'`);
+    for (const [mode, message] of [['oversized', '요청 크기'], ['limited', '43초'], ['storage', '내 여행'], ['processing', '저장 여부'], ['completed', '저장 여부']]) {
+      createMode = mode;
+      await evaluate(`document.querySelector('#review-form').requestSubmit()`);
+      await until(`document.querySelector('#review-status').textContent.includes(${JSON.stringify(message)})`);
+      assert.equal(await evaluate(`document.querySelector('#review-title').value`), '직접 지은 여행 제목');
+      assert.equal(await evaluate(`document.body.dataset.view`), 'workspace');
+      assert.equal(savedPlan, null);
+      assert.equal(await evaluate(`document.body.textContent.includes('untrusted-response')`), false);
+    }
+    await designScreenshot('w1-06-create-rejected-desktop.png', true);
+    await mobileDesignScreenshot('w1-06-create-rejected-mobile.png', true);
+    createMode = 'route';
     await evaluate(`document.querySelector('#review-form').requestSubmit()`);
     await until(`document.querySelector('#review-status').textContent.includes('경로를 찾지')`);
     assert.equal(createRequests.at(-1).body.meals[0].displayName, '내 점심 식당');
@@ -786,21 +964,30 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     createMode = 'success';
     await evaluate(`document.querySelector('#review-form').requestSubmit()`);
     await until(`document.body.dataset.view === 'detail'`);
-    assert.equal(await evaluate(`document.querySelector('#detail-title').textContent`), '새 제목');
-    assert.equal(await evaluate(`document.querySelector('#detail-days').textContent.includes('내 해변')`), true);
-    assert.equal(await evaluate(`document.querySelector('#detail-days').textContent.includes('예상 이동시간 30분')`), true);
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('h1').textContent`), '새 제목');
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('.motion-toggle')).display`), 'none');
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.textContent.includes('내 해변')`), true);
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.textContent.includes('예상 이동시간 30분')`), true);
     assert.deepEqual(await evaluate(`(() => {
-      const link = document.querySelector('#detail-days .kakao-place-link');
+      const root = document.querySelector('#detail-document').shadowRoot;
+      const link = root.querySelector('.days .place-link');
       link.focus();
-      return {icon: !!link.querySelector('svg[aria-hidden="true"]'), text: link.textContent,
+      return {text: link.textContent, icon: !!link.querySelector('svg[aria-hidden="true"]'),
         name: link.getAttribute('aria-label'), url: link.href, target: link.target,
-        rel: link.rel, keyboard: document.activeElement === link};
-    })()`), {icon: true, text: '', name: '카카오 지도에서 내 해변 장소 보기',
+        rel: link.rel, keyboard: root.activeElement === link};
+    })()`), {text: '', icon: true, name: '카카오 지도에서 내 해변 장소 보기',
       url: 'https://place.map.kakao.com/attraction', target: '_blank', rel: 'noopener noreferrer', keyboard: true});
-    assert.equal(await evaluate(`document.querySelector('#detail-hotel .kakao-place-link').getAttribute('aria-label')`), '카카오 지도에서 숙소 보기');
-    assert.equal(await evaluate(`document.querySelector('#detail-hotel .kakao-place-link').textContent`), '');
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('.hotel .place-link').getAttribute('aria-label')`), '카카오 지도에서 숙소 장소 보기');
     assert.equal(await evaluate(`document.querySelector('#detail-warning').textContent.includes('거리 기반')`), true);
-    assert.equal(await evaluate(`document.querySelector('#detail-days .place-map, #detail-hotel .place-map')?.id || 'none'`), 'none');
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('.place-map')?.id || 'none'`), 'none');
+    const visibleScreenDays = () => evaluate(`[...document.querySelector('#detail-document').shadowRoot.querySelectorAll('.day')].filter(day => getComputedStyle(day).display !== 'none').map(day => day.id)`);
+    assert.deepEqual(await visibleScreenDays(), ['day-1']);
+    await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('#day-choice-2').click()`);
+    assert.deepEqual(await visibleScreenDays(), ['day-2'], 'screen shows only the selected day');
+    assert.equal(await evaluate(`location.hash`), '#/trip?id=42', 'day selection preserves the app route');
+    await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('#day-choice-2').focus()`);
+    await key('ArrowLeft', 'ArrowLeft', 37);
+    assert.deepEqual(await visibleScreenDays(), ['day-1'], 'native keyboard day selection works');
     assert.equal(await evaluate(`document.querySelector('#place-map').closest('[data-view]').dataset.view`), 'workspace');
     assert.equal(await evaluate(`document.querySelector('#review-map').childElementCount`), 0);
     assert.deepEqual(await evaluate(`(async () => {
@@ -810,7 +997,126 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     })()`), {center: null, bounds: null});
     assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
     assert.equal(await evaluate(`document.documentElement.outerHTML.includes('fake-attraction-1-token')`), false);
+    await evaluate(`window.scrollTo({top: 0, behavior: 'instant'})`);
     await screenshot('w1-04-completed-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true, 'completed screen fits mobile viewport');
+    await evaluate(`window.scrollTo({top: 0, behavior: 'instant'})`);
+    await screenshot('w1-04a-completed-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    const directory = path.resolve(root, '../../../../../build/qa');
+    const downloads = await fs.mkdtemp(path.join(directory, 'w1-04a-download-'));
+    await send('Browser.setDownloadBehavior', {behavior: 'allow', downloadPath: downloads});
+    await evaluate(`document.querySelector('#download-itinerary').focus()`);
+    const requestsBefore = networkRequests.length;
+    await key('Enter', 'Enter', 13);
+    let saved;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      saved = (await fs.readdir(downloads)).find(name => name.endsWith('.html'));
+      if (saved) break;
+      await delay(30);
+    }
+    assert.equal(saved, 'Routy_새 제목.html');
+    const html = await fs.readFile(path.join(downloads, saved), 'utf8');
+    assert.equal(await evaluate(`new DOMParser().parseFromString(${JSON.stringify(html)}, 'text/html').querySelector('.itinerary-page').outerHTML === document.querySelector('#detail-document').shadowRoot.querySelector('.itinerary-page').outerHTML`), true, 'screen and download share the same template markup');
+    assert.match(html, /<meta charset="UTF-8">/);
+    assert.match(html, /내 해변/);
+    assert.match(html, /예상 이동시간 30분/);
+    assert.doesNotMatch(html, /ESTIMATED_TRAVEL_TIMES_USED|fake-attraction-1-token|travelPlanId|planPlaceId/);
+    assert.equal(networkRequests.length, requestsBefore, 'download triggers no network request');
+    assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
+    downloadedPath = path.join(directory, 'w1-04a-downloaded.html');
+    await fs.writeFile(downloadedPath, html);
+  });
+  await t.test('W1-05 pages, owner text edits, share rotation, anonymous reload and deletion', async () => {
+    const providerCallsBefore = {estimate: estimateRequests.length, restaurant: restaurantRequests.length, place: placeRequests.length};
+    await navigate('/trips');
+    await until(`document.querySelectorAll('#trips-list li').length === 20`);
+    assert.equal(await evaluate(`document.querySelectorAll('#trips-list .trip-card').length`), 20);
+    assert.equal(await evaluate(`parseFloat(getComputedStyle(document.querySelector('#trips-list li')).borderTopWidth) > 0`), true);
+    await screenshot('w1-06-trips-cards-desktop.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    await evaluate(`window.scrollTo({top:0,behavior:'instant'})`);
+    await delay(150);
+    await screenshot('w1-06-trips-overview-mobile.png');
+    await evaluate(`document.querySelector('#trips-list').scrollIntoView({block:'start',behavior:'instant'})`);
+    await delay(150);
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+    await screenshot('w1-06-trips-cards-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    assert.equal(await evaluate(`document.querySelector('#trips-previous').disabled`), true);
+    await click('#trips-next'); await until(`document.querySelectorAll('#trips-list li').length === 1`);
+    assert.equal(await evaluate(`document.querySelector('#trips-list h2').textContent`), '여행 21');
+    await evaluate(`window.scrollTo({top:200,behavior:'instant'})`);
+    const listRequestsBeforeReturn = tripRequests.length, listScrollBeforeReturn = await evaluate('scrollY');
+    await evaluate(`document.dispatchEvent(new Event('visibilitychange'))`); await delay(150);
+    assert.equal(await evaluate(`document.querySelector('#trips-page').textContent`), '2페이지');
+    assert.equal(await evaluate('scrollY'), listScrollBeforeReturn);
+    assert.equal(tripRequests.length, listRequestsBeforeReturn, 'tab return does not reload the list');
+    assert.equal(await evaluate(`document.querySelector('#trips-next').disabled`), true);
+    await click('#trips-previous'); await until(`document.querySelectorAll('#trips-list li').length === 20`);
+    assert.equal(tripRequests.at(-1).headers.authorization, `Bearer ${token}`);
+    await click('#trips-list a'); await until(`document.querySelector('#trip-actions').hidden === false`);
+    await evaluate(`document.querySelector('#trip-edit').focus()`); await key('Enter', 'Enter', 13);
+    assert.equal(await evaluate(`document.activeElement === document.querySelector('#trip-editor > label input')`), true);
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true, 'owner editor fits mobile');
+    await screenshot('w1-05-editor-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    const hostile = '<img src=x onerror=alert(1)>';
+    await evaluate(`document.querySelector('#trip-editor > label input').value=${JSON.stringify(hostile)}; document.querySelector('#trip-editor fieldset input').value='내 쉼터'; document.querySelector('#trip-editor fieldset textarea').value='준비 메모'`);
+    const editRequestsBeforeReturn = tripRequests.length;
+    await evaluate(`document.dispatchEvent(new Event('visibilitychange'))`); await delay(150);
+    assert.equal(await evaluate(`document.querySelector('#trip-editor').hidden`), false);
+    assert.deepEqual(await evaluate(`({title:document.querySelector('#trip-editor > label input').value,name:document.querySelector('#trip-editor fieldset input').value,memo:document.querySelector('#trip-editor fieldset textarea').value})`), {title: hostile, name: '내 쉼터', memo: '준비 메모'});
+    assert.equal(tripRequests.length, editRequestsBeforeReturn, 'tab return does not reload or discard edits');
+    tripMode = 'unavailable';
+    await evaluate(`document.querySelector('#trip-editor').requestSubmit()`);
+    await until(`document.querySelector('#trip-status').textContent.includes('처리하지 못')`);
+    assert.equal(await evaluate(`document.querySelector('#trip-editor > label input').value`), hostile, 'failed edit retains input');
+    tripMode = 'success'; await evaluate(`document.querySelector('#trip-editor').requestSubmit()`);
+    await until(`document.querySelector('#trip-editor').hidden`);
+    const payload = tripRequests.filter(request => request.method === 'PATCH').at(-1).body;
+    assert.deepEqual(payload, {title: hostile, placeEdits: [{planPlaceId: 8, displayName: '내 쉼터', memo: '준비 메모'}]});
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelector('h1').textContent`), hostile);
+    assert.equal(await evaluate(`document.querySelector('#detail-document').shadowRoot.querySelectorAll('img,script').length`), 0);
+    await click('#trip-share'); await until(`!!document.querySelector('#share-result a')`);
+    const oldLink = await evaluate(`document.querySelector('#share-result a').hash`);
+    tripMode = 'limited'; await click('#trip-share'); await until(`document.querySelector('#trip-status').textContent.includes('12초')`);
+    assert.equal(await evaluate(`document.querySelector('#share-result a').hash`), oldLink, 'rejected rotation preserves link');
+    tripMode = 'success'; await click('#trip-share'); await until(`document.querySelector('#share-result a').hash !== ${JSON.stringify(oldLink)}`);
+    const sharedHash = await evaluate(`document.querySelector('#share-result a').hash`);
+    await navigate('/trip?id=99'); tripMode = 'forbidden'; await click('#trip-reload');
+    await until(`document.querySelector('#trip-status').textContent.includes('권한')`);
+    assert.equal(await evaluate(`document.querySelector('#trip-actions').hidden`), true);
+    tripMode = 'success'; await navigate('/trip?id=42'); await until(`document.querySelector('#trip-actions').hidden === false`);
+    tripMode = 'delayed'; await navigate('/trips'); await navigate('/shared?token=bad'); await delay(400);
+    assert.equal(await evaluate(`document.querySelectorAll('#trips-list li').length`), 0, 'stale list cannot render after navigation');
+    tripMode = 'success'; await click('#logout-button');
+    await navigate(sharedHash.slice(1)); await until(`!!document.querySelector('#shared-document').shadowRoot?.querySelector('h1')`);
+    assert.equal(tripRequests.at(-1).headers.authorization, undefined);
+    assert.equal(tripRequests.at(-1).headers.referer, undefined);
+    assert.equal(await evaluate(`document.querySelector('[data-view="detail"]').hidden`), true);
+    assert.equal(await evaluate(`document.querySelector('#shared-document').shadowRoot.querySelectorAll('button,form,.place-map').length`), 0);
+    await send('Page.reload'); await until(`!!document.querySelector('#shared-document')?.shadowRoot?.querySelector('h1')`);
+    await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+    assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
+    await screenshot('w1-05-shared-mobile.png');
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+    await navigate(oldLink.slice(1)); await until(`document.querySelector('#shared-status').textContent.includes('만료')`);
+    assert.equal(await evaluate(`document.querySelector('#shared-document').shadowRoot?.childElementCount || 0`), 0);
+    tripMode = 'expired'; await navigate(sharedHash.slice(1)); await until(`document.querySelector('#shared-status').textContent.includes('만료')`);
+    tripMode = 'limited'; await click('#shared-reload'); await until(`document.querySelector('#shared-status').textContent.includes('12초')`);
+    tripMode = 'success';
+    await navigate('/trip?id=42'); await until(`document.body.dataset.view === 'auth'`);
+    await fill(); await click('#auth-submit'); await until(`document.querySelector('#trip-actions').hidden === false`);
+    assert.equal(await evaluate(`location.hash`), '#/trip?id=42', 'login preserves direct owner route');
+    await click('#trip-delete'); await click('#trip-delete-cancel'); assert.ok(savedPlan);
+    await click('#trip-delete'); await click('#trip-delete-yes');
+    await until(`document.body.dataset.view === 'trips' && !document.querySelector('#trips-empty').hidden`);
+    await navigate(sharedHash.slice(1)); await until(`document.querySelector('#shared-status').textContent.includes('만료')`);
+    assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
+    assert.deepEqual({estimate: estimateRequests.length, restaurant: restaurantRequests.length, place: placeRequests.length}, providerCallsBefore, 'saved views do not recalculate or search providers');
   });
   await t.test('logout discards current step and prevents back navigation from opening protected content', async () => {
     await navigate('/workspace');
@@ -820,6 +1126,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await navigate('/workspace');
     assert.equal(await evaluate('document.body.dataset.view'), 'auth');
     assert.equal(await evaluate(`document.querySelector('[data-step="0"]').getAttribute('aria-current')`), 'step');
+    assert.equal(await evaluate(`document.querySelector('#download-itinerary').disabled`), true);
   });
   await t.test('duplicate clicks and mode change invalidate a slow login', async () => {
     responseMode = 'delayed';
@@ -845,6 +1152,14 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`(()=>{const r=document.querySelector('#auth-submit').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<innerHeight-75})()`), true);
     await evaluate(`document.querySelector('#auth-email').value=''`);
     await screenshot('w1-01a-auth-mobile.png');
+    await send('Emulation.setEmulatedMedia', {features: [{name: 'forced-colors', value: 'active'}, {name: 'prefers-reduced-motion', value: 'reduce'}]});
+    await evaluate(`document.querySelector('#auth-email').focus()`);
+    await key('Tab', 'Tab', 9);
+    assert.equal(await evaluate('document.activeElement.id'), 'auth-password');
+    assert.equal(await evaluate(`getComputedStyle(document.activeElement).outlineStyle !== 'none'`), true);
+    assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    await screenshot('w1-06-forced-colors-mobile.png', true);
+    await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-motion', value: 'reduce'}]});
   });
   await t.test('expiry timer discards workspace and refresh never restores login', async () => {
     await click('[data-auth-tab="login"]');
@@ -862,6 +1177,104 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await send('Page.reload');
     await until(`document.body?.dataset.view === 'auth'`);
     assert.equal(await evaluate(`localStorage.length + sessionStorage.length`), 0);
+  });
+  await t.test('fixed HTML template escapes text, excludes private fields and opens offline at desktop and mobile sizes', async () => {
+    const fixture = {
+      title: '바다와 골목 사이, 우리의 이틀', startDate: '2026-10-01', endDate: '2026-10-02', travelMode: 'CAR',
+      userId: 'PRIVATE-MARKER', selectionToken: 'PRIVATE-MARKER', latitude: 'PRIVATE-MARKER',
+      warnings: ['PRIVATE-MARKER'], providerDisplayName: 'PRIVATE-MARKER', address: 'PRIVATE-MARKER',
+      hotel: {displayName: '하루를 쉬어갈 숙소', memo: '체크인 후 잠깐 쉬어가기\n다음 날 짐 챙기기', placeUrl: 'https://place.map.kakao.com/123', phone: 'PRIVATE-MARKER'},
+      days: [1, 2].map(day => ({day, date: `2026-10-0${day}`, activityStartTime: '10:00', activityEndTime: '19:00', items: [
+        {type: 'VISIT', startTime: '10:00', endTime: '11:30', displayName: day === 1 ? '아침 바다를 걷는 시간' : '천천히 둘러보는 골목', stayMinutes: 90,
+          memo: '서두르지 않고 풍경을 즐기기.', placeUrl: 'https://place.map.kakao.com/456', coordinate: 'PRIVATE-MARKER'},
+        {type: 'MOVE', startTime: '11:30', endTime: '12:00', estimatedMinutes: 30, memo: 'PRIVATE-MARKER'},
+        {type: 'MEAL', startTime: '12:00', endTime: '13:00', displayName: day === 1 ? '함께 고른 점심 식당' : '점심 식사',
+          memo: day === 1 ? '함께 고른 한 끼' : null, placeUrl: day === 1 ? 'https://place.map.kakao.com/789' : null},
+        {type: 'VISIT', startTime: '13:00', endTime: '14:00', displayName: '오후의 작은 쉼표', stayMinutes: 60, memo: null, placeUrl: 'https://place.map.kakao.com/987'}
+      ]}))
+    };
+    const attack = '</title><script>window.__downloadXss=1</script><img src=x onerror="window.__downloadXss=1"> & 한글';
+    const result = await evaluate(`(() => {
+      const plan = ${JSON.stringify(fixture)};
+      const page = RoutyItineraryDownload.buildDocument(document, plan);
+      const html = '<!doctype html>\\n' + page.documentElement.outerHTML;
+      const hostile = RoutyItineraryDownload.buildDocument(document, {...plan, title: ${JSON.stringify(attack)},
+        hotel: {...plan.hotel, memo: ${JSON.stringify(attack)}},
+        days: plan.days.map(day => ({...day, items: day.items.map((item, index) => index === 3 ? {...item, placeUrl: 'javascript:alert(1)'} : item)}))});
+      const seven = RoutyItineraryDownload.buildDocument(document, {...plan, hotel: null, travelMode: 'PUBLIC_TRANSIT',
+        days: Array.from({length:7}, (_,i) => ({...plan.days[0], day:i+1, date:'2026-10-0'+(i+1)}))});
+      const one = RoutyItineraryDownload.buildDocument(document, {...plan, hotel: null, endDate: plan.startDate, days: [plan.days[0]]});
+      return {html, hostile: '<!doctype html>\\n' + hostile.documentElement.outerHTML,
+        days: page.querySelectorAll('.day').length, meals: page.querySelectorAll('.meal').length,
+        links: [...page.querySelectorAll('.place-link')].map(a => ({url:a.href,rel:a.rel})),
+        hostileText: hostile.querySelector('h1').textContent,
+        unsafe: hostile.querySelectorAll('script,img,iframe,[onerror],link').length,
+        hostileLinks: hostile.querySelectorAll('.place-link').length,
+        seven: seven.querySelectorAll('.day').length, noHotel: !seven.querySelector('.hotel'),
+        transit: seven.querySelector('.facts').textContent.includes('대중교통'),
+        one: one.querySelectorAll('.day').length, oneHotel: !!one.querySelector('.hotel')};
+    })()`);
+    assert.equal(result.days, 2); assert.equal(result.meals, 2);
+    assert.equal(result.hostileText, attack); assert.equal(result.unsafe, 0);
+    assert.equal(result.seven, 7); assert.equal(result.noHotel, true); assert.equal(result.transit, true);
+    assert.equal(result.one, 1); assert.equal(result.oneHotel, false);
+    assert.equal(result.links.length, 6);
+    assert.equal(result.hostileLinks, 4, 'unsafe URLs are omitted from the separate hostile fixture');
+    assert.ok(result.links.every(link => link.url.startsWith('https://place.map.kakao.com/') && link.rel === 'noopener noreferrer'));
+    assert.doesNotMatch(result.html, /PRIVATE-MARKER|javascript:|<script|<iframe|<img|<link|latitude|selectionToken/);
+    const directory = path.resolve(root, '../../../../../build/qa');
+    const preview = path.join(directory, 'w1-04a-template.html'), hostilePath = path.join(directory, 'w1-04a-escaped.html');
+    await fs.writeFile(preview, result.html); await fs.writeFile(hostilePath, result.hostile);
+    await send('Network.emulateNetworkConditions', {offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1});
+    const before = networkRequests.length;
+    await send('Page.navigate', {url: pathToFileURL(downloadedPath).href});
+    await until(`document.querySelector('h1')?.textContent === '새 제목'`);
+    assert.equal(await evaluate(`document.querySelector('.days').textContent.includes('내 해변')`), true);
+    await send('Page.navigate', {url: pathToFileURL(hostilePath).href});
+    await until(`document.querySelector('h1')?.textContent === ${JSON.stringify(attack)}`);
+    assert.equal(await evaluate(`typeof window.__downloadXss`), 'undefined');
+    await send('Page.navigate', {url: pathToFileURL(preview).href});
+    await until(`document.querySelector('h1')?.textContent === ${JSON.stringify(fixture.title)}`);
+    assert.equal(await evaluate(`document.querySelectorAll('.motion-control,input:not([type="radio"]),button').length`), 0, 'document has no manual motion toggle');
+    assert.equal(await evaluate(`[...document.querySelectorAll('.place-link')].every(link => !link.textContent && link.querySelector('svg') && link.getAttribute('aria-label'))`), true, 'place links are named icons');
+    await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-motion', value: 'no-preference'}]});
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('.journey-arrow')).animationName`), 'journey-flight');
+    const arrowPosition = await evaluate(`getComputedStyle(document.querySelector('.journey-arrow')).offsetDistance`);
+    await delay(180);
+    assert.notEqual(await evaluate(`getComputedStyle(document.querySelector('.journey-arrow')).offsetDistance`), arrowPosition, 'hero arrow moves offline');
+    await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-motion', value: 'reduce'}]});
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('.journey-arrow')).animationName`), 'none');
+    await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-motion', value: 'no-preference'}]});
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: width === 1440 ? 1100 : 844, deviceScaleFactor: 1, mobile: width === 390});
+      assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true, 'download fits viewport');
+      for (const day of [1, 2]) {
+        await evaluate(`document.querySelector('#day-choice-${day}').click()`);
+        const cards = await evaluate(`[...document.querySelectorAll('#day-${day} .entry:not(.move) .stop')].map(card => ({
+          timeRight: card.querySelector('time').getBoundingClientRect().right, link: !!card.querySelector('.place-link'),
+          linkRight: card.querySelector('.place-link')?.getBoundingClientRect().right
+        }))`);
+        assert.ok(Math.max(...cards.map(card => card.timeRight)) - Math.min(...cards.map(card => card.timeRight)) < 1,
+          'time pills align with and without place links');
+        assert.deepEqual(cards.map(card => card.link), day === 1 ? [true, true, true] : [true, false, true],
+          'every selected place has a link; an unselected meal has none');
+        assert.ok(cards.filter(card => card.link).every(card => card.linkRight > card.timeRight && card.linkRight - card.timeRight < 8),
+          'icon stays at the card edge instead of inheriting the text gutter');
+      }
+      await evaluate(`document.querySelector('#day-choice-1').click()`);
+      await screenshot(`w1-04a-template-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+      await screenshot(`w1-04a-template-${width === 1440 ? 'desktop' : 'mobile'}-full.png`, true);
+    }
+    const visibleFileDays = () => evaluate(`[...document.querySelectorAll('.day')].filter(day => getComputedStyle(day).display !== 'none').map(day => day.id)`);
+    assert.deepEqual(await visibleFileDays(), ['day-1']);
+    await evaluate(`document.querySelector('#day-choice-1').focus()`);
+    await key('ArrowRight', 'ArrowRight', 39);
+    assert.deepEqual(await visibleFileDays(), ['day-2'], 'offline keyboard selection shows only day two');
+    await evaluate(`document.querySelector('#day-choice-1').click()`);
+    assert.deepEqual(await visibleFileDays(), ['day-1'], 'offline pointer selection restores day one');
+    await send('Emulation.setEmulatedMedia', {media: 'print'});
+    assert.equal(await evaluate(`[...document.querySelectorAll('.day')].every(day => getComputedStyle(day).display !== 'none')`), true);
+    assert.deepEqual(networkRequests.slice(before).filter(request => request.documentURL.startsWith('file:') && /^https?:/.test(request.url)), [], 'offline document has no external resource requests');
   });
   assert.equal(runtimeErrors, 0, 'no uncaught browser exceptions');
   assert.equal(sensitiveConsole, false, 'console does not expose credentials or token');

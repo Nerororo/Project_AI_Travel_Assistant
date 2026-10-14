@@ -23,4 +23,12 @@ public class KakaoPlaceClientConfiguration {
 				.build();
 		return new KakaoLocalPlaceClient(httpClient, objectMapper, properties);
 	}
+
+	@Bean
+	KakaoImageClient kakaoImageClient(ObjectMapper objectMapper, KakaoLocalProperties properties) {
+		HttpClient httpClient = HttpClient.newBuilder()
+				.connectTimeout(properties.connectTimeout())
+				.build();
+		return new KakaoImageSearchClient(httpClient, objectMapper, properties.restApiKey());
+	}
 }

@@ -20,7 +20,7 @@ test('search uses confirmed visit order, meal slot and optional reference', () =
   assert.equal(body.mealType, 'LUNCH');
   assert.equal(body.menuQuery, '지역 국밥');
   assert.equal(body.referenceAttractionClientPlaceId, placeId);
-  assert.equal(body.size, 15);
+  assert.equal(body.size, 10);
 });
 
 test('rejects missing slots, cross-day reference and invalid map bounds', () => {

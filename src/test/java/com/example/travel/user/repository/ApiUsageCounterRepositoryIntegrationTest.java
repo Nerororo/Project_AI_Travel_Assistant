@@ -93,6 +93,14 @@ class ApiUsageCounterRepositoryIntegrationTest {
 	}
 
 	@Test
+	void migrationAllowsImageSearchUsageFeature() {
+		Instant start = Instant.parse("2026-09-16T00:00:00Z");
+		assertThat(repository.acquire(UsageScopeType.USER, "32", UsageFeature.IMAGE_SEARCH,
+				UsageWindowType.MINUTE, start, start.plusSeconds(60), 1, 300)).isTrue();
+		assertThat(repository.findAll()).anyMatch(counter -> counter.feature() == UsageFeature.IMAGE_SEARCH);
+	}
+
+	@Test
 	void migrationContainsOnlyCounterContractColumns() {
 		List<String> columns = jdbcTemplate.queryForList("""
 				SELECT column_name

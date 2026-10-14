@@ -12,6 +12,7 @@
     EMAIL_ALREADY_EXISTS: '이미 사용 중인 이메일입니다.',
     AUTHENTICATION_REQUIRED: '인증이 필요합니다. 이메일과 비밀번호를 확인해 주세요.',
     ACCESS_DENIED: '접근 권한이 없습니다.',
+    REQUEST_TOO_LARGE: '요청 크기가 너무 큽니다. 입력 길이를 줄인 뒤 다시 시도해 주세요.',
     RATE_LIMIT_EXCEEDED: '요청이 많습니다. 잠시 후 다시 시도해 주세요.',
     NETWORK_ERROR: '연결을 확인한 뒤 다시 시도해 주세요.',
     SERVER_ERROR: '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
@@ -26,7 +27,7 @@
     return errors;
   }
   function apiError(status, body) {
-    const codes = {400: 'VALIDATION_FAILED', 401: 'AUTHENTICATION_REQUIRED', 403: 'ACCESS_DENIED', 409: 'EMAIL_ALREADY_EXISTS', 429: 'RATE_LIMIT_EXCEEDED'};
+    const codes = {400: 'VALIDATION_FAILED', 401: 'AUTHENTICATION_REQUIRED', 403: 'ACCESS_DENIED', 409: 'EMAIL_ALREADY_EXISTS', 413: 'REQUEST_TOO_LARGE', 429: 'RATE_LIMIT_EXCEEDED'};
     const code = codes[status] === body?.code ? body.code : (status === 401 ? 'AUTHENTICATION_REQUIRED' : 'SERVER_ERROR');
     const fieldErrors = {};
     if (code === 'VALIDATION_FAILED' && Array.isArray(body.fieldErrors)) {
@@ -35,7 +36,9 @@
         if (error.field === 'password') fieldErrors.password = '비밀번호 길이와 허용 문자를 확인해 주세요.';
       }
     }
-    return {ok: false, code, message: messages[code], fieldErrors};
+    const wait = code === 'RATE_LIMIT_EXCEEDED' && Number.isSafeInteger(body?.retryAfterSeconds) && body.retryAfterSeconds > 0
+      ? ` ${body.retryAfterSeconds}초 뒤 다시 시도해 주세요.` : '';
+    return {ok: false, code, message: wait ? '요청이 많습니다.' + wait : messages[code], fieldErrors};
   }
   function expirationTime(startedAt, expiresInSeconds) {
     if (!Number.isSafeInteger(startedAt) || startedAt < 0
