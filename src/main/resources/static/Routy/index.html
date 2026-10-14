@@ -16,6 +16,7 @@
   <script src="js/estimate-workspace.js" defer></script>
   <script src="js/restaurant-workspace.js" defer></script>
   <script src="js/review-workspace.js" defer></script>
+  <script src="js/itinerary-download.js" defer></script>
   <script src="js/preview.js" defer></script>
 </head>
 <body>
@@ -315,7 +316,7 @@
             </div>
             <section class="review-finish" aria-labelledby="review-finish-title">
               <header><div class="review-heading"><svg class="review-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><div><p>마지막 확인</p><h3 id="review-finish-title">이 일정으로 여행을 완성할까요?</h3><span>완료 요청에서 전체 이동 경로와 저장 가능 여부를 다시 확인합니다.</span></div></div><button id="review-adjust" class="button button-ghost" type="button">일정 조정하기</button></header>
-              <form id="review-form" novalidate><label for="review-title">일정 제목</label><input id="review-title" type="text" maxlength="100" required><button id="review-submit" class="button button-primary" type="submit">전체 경로 확인하고 완료</button></form>
+              <form id="review-form" novalidate><label for="review-title">여행 제목</label><input id="review-title" type="text" maxlength="100" placeholder="여행 제목을 직접 입력해 주세요" required><button id="review-submit" class="button button-primary" type="submit">전체 경로 확인하고 완료</button></form>
               <p id="review-status" role="status" aria-live="polite" tabindex="-1"></p>
             </section>
           </section>
@@ -369,16 +370,17 @@
       </div>
     </section>
 
-    <section class="page document-page" data-view="detail" aria-labelledby="detail-title" hidden>
+    <section class="page document-page" data-view="detail" aria-label="완료한 여행" hidden>
       <header class="document-header">
         <a class="back-link" href="#/trips">← 내 여행</a>
-        <p class="eyebrow dark">완료한 여행</p>
-        <h1 id="detail-title">저장된 일정이 놓일 자리</h1>
-        <p id="detail-summary">완료 화면은 지도 없이 저장 정보와 외부 링크만 표시합니다.</p>
         <p id="detail-warning" role="status"></p>
+        <div class="download-actions">
+          <button id="download-itinerary" class="button button-dark" type="button" disabled>여행 일정 HTML 저장 ↓</button>
+          <span>인터넷 없이 다시 읽는 나만의 여행 문서</span>
+        </div>
+        <p id="download-status" role="status" aria-live="polite"></p>
       </header>
-      <div id="detail-days" class="document-grid"></div>
-      <div id="detail-hotel" class="document-note" hidden></div>
+      <div id="detail-document"></div>
     </section>
 
     <section class="page shared-page" data-view="shared" aria-labelledby="shared-title" hidden>

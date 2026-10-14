@@ -108,10 +108,10 @@ SEC1-05 입력 상한: `/api/**` 본문은 UTF-8 바이트 기준 64KiB까지 �
 외부 API나 AI를 호출하는 POST에는 Idempotency-Key 헤더가 필수다.
 
 - 값은 클라이언트가 생성한 UUID 형식 requestId다.
-- 사용자·기능·requestId 조합과 처리 상태를 MySQL `request_executions`에 10분간 유지한다.
+- 사용자·기능·requestId 조합과 처리 상태를 MySQL `request_executions`에 유지한다. 처리 중에는 만료 시각을 갱신하고, 성공 뒤에는 10분간 유지한다.
 - 처리 중 같은 요청은 409 REQUEST_IN_PROGRESS를 반환한다.
 - 성공한 같은 요청은 409 REQUEST_ALREADY_COMPLETED를 반환한다.
-- 두 중복 응답 모두 외부 API와 저장 로직을 다시 실행하거나 호출량을 추가 차감하지 않는다. 10분 수명이 끝난 requestId는 새 요청으로 처리할 수 있다.
+- 두 중복 응답 모두 외부 API와 저장 로직을 다시 실행하거나 호출량을 추가 차감하지 않는다. 처리 중 갱신이 멈추거나 성공 뒤 10분이 지나 만료된 requestId는 새 요청으로 처리할 수 있다.
 - 결과 리소스 ID와 요청·응답 payload는 중복 요청 저장소에 보관하지 않는다. 클라이언트는 완료 상태를 받은 뒤 필요한 자원을 별도 조회 API로 확인한다.
 - 사용자·서비스 호출량은 MySQL `api_usage_counters`에서 공유하며 조건부 갱신으로 외부 호출 전에 원자적으로 확보한다.
 - 외부 호출이 실행된 뒤 실패하면 호출량에는 포함한다.
@@ -332,6 +332,10 @@ AI는 지역·관광지 맥락과 자연어 요청에서 중복 없는 메뉴 1~
 ~~~
 
 providerDisplayName, address, 좌표, 카테고리는 제작 화면에서만 사용하며 저장하지 않는다. 카테고리 원문은 Response에 노출하지 않고 서버가 suggestedStayMinutes로 즉시 변환한다.
+
+### POST /api/places/image
+
+인증된 작성 화면의 장소 결과 카드가 카카오 Daum 이미지 검색 썸네일을 조회한다. `Idempotency-Key` UUID 헤더와 `placeName`(1~120자), `address`(1~200자)가 필요하다. 서버는 장소명과 주소의 첫 두 행정구역 단어를 검색어로 사용한다. 성공 응답은 `{ "thumbnailUrl": "https://..." }`이며 결과가 없거나 이미지 검색이 실패하면 `thumbnailUrl: null`이다. 반환 URL은 HTTPS 카카오 CDN 호스트로 제한한다. 카카오 장소 ID와 이미지 검색 결과는 연결되지 않으므로 사진의 장소 일치성을 보장하지 않는다. 이미지 검색 키는 서버에만 두고 썸네일 URL·검색어·원문 응답은 저장하지 않는다. 이미지는 작성 중 검색 카드에서만 사용하며 완료·공유 응답에 넣지 않는다. 이미지 조회의 사용자·서비스 한도와 requestId 처리는 운영 문서를 따른다.
 
 selectionToken은 선택값 변조 방지를 위한 짧은 수명의 서명 토큰이다. 카카오 장소 ID·URL·좌표·검색 역할과 만료 시각을 무결성 보호하며 서버 저장소를 만들지 않는다. 브라우저는 메모리에만 보관하고 localStorage·sessionStorage·IndexedDB에 저장하지 않는다. 토큰 만료시간과 서명 방식은 보안 ADR에서 확정한다.
 

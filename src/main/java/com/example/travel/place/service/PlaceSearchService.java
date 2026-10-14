@@ -236,8 +236,8 @@ public class PlaceSearchService {
 	) {
 		Map<String, PlaceCandidate> accepted = new LinkedHashMap<>();
 		for (PlaceCandidate candidate : result.places()) {
-			if (matches(candidate.address(), travelRegion)
-					&& (district == null || matches(candidate.address(), district))) {
+			if (PlaceAddressMatcher.matches(candidate.address(), travelRegion)
+					&& (district == null || PlaceAddressMatcher.matches(candidate.address(), district))) {
 				accepted.putIfAbsent(candidate.kakaoPlaceId(), candidate);
 			}
 		}
@@ -254,7 +254,7 @@ public class PlaceSearchService {
 	) {
 		Map<String, PlaceCandidate> accepted = new LinkedHashMap<>();
 		for (PlaceCandidate candidate : result.places()) {
-			if (matches(candidate.address(), travelRegion)) {
+			if (PlaceAddressMatcher.matches(candidate.address(), travelRegion)) {
 				accepted.putIfAbsent(candidate.kakaoPlaceId(), candidate);
 			}
 		}
@@ -301,19 +301,6 @@ public class PlaceSearchService {
 		return new PlaceSearchApiResponse.Place(
 				candidate.kakaoPlaceId(), candidate.placeUrl(), candidate.providerDisplayName(),
 				candidate.address(), candidate.latitude(), candidate.longitude(), suggestedMinutes, token);
-	}
-
-	private boolean matches(String address, PlaceSearchRegion region) {
-		PlaceSearchRegion.AddressBoundary boundary = region.addressBoundary();
-		if (boundary == null || address == null) {
-			return false;
-		}
-		String[] parts = address.trim().split("\\s+");
-		if (parts.length == 0 || !boundary.region1Names().contains(parts[0])) {
-			return false;
-		}
-		return boundary.region2Names().isEmpty()
-				|| (parts.length > 1 && boundary.region2Names().contains(parts[1]));
 	}
 
 	private PlaceSearchRegion requiredRegion(String regionId) {

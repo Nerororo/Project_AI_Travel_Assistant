@@ -37,7 +37,7 @@ public interface RequestExecutionRepository extends JpaRepository<RequestExecuti
 	@Modifying(flushAutomatically = true, clearAutomatically = true)
 	@Query(value = """
 			UPDATE request_executions
-			SET status = 'SUCCESS'
+			SET status = 'SUCCESS', expires_at = :successExpiresAt
 			WHERE user_id = :userId
 			  AND feature = :feature
 			  AND request_id = :requestId
@@ -50,6 +50,27 @@ public interface RequestExecutionRepository extends JpaRepository<RequestExecuti
 			@Param("feature") String feature,
 			@Param("requestId") String requestId,
 			@Param("leaseExpiresAt") Instant leaseExpiresAt,
+			@Param("successExpiresAt") Instant successExpiresAt,
+			@Param("now") Instant now
+	);
+
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query(value = """
+			UPDATE request_executions
+			SET expires_at = :newExpiresAt
+			WHERE user_id = :userId
+			  AND feature = :feature
+			  AND request_id = :requestId
+			  AND status = 'PROCESSING'
+			  AND expires_at = :leaseExpiresAt
+			  AND expires_at > :now
+			""", nativeQuery = true)
+	int renewProcessing(
+			@Param("userId") long userId,
+			@Param("feature") String feature,
+			@Param("requestId") String requestId,
+			@Param("leaseExpiresAt") Instant leaseExpiresAt,
+			@Param("newExpiresAt") Instant newExpiresAt,
 			@Param("now") Instant now
 	);
 
