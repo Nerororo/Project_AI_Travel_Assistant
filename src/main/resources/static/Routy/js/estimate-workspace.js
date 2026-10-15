@@ -46,7 +46,8 @@
     if (response.status === 413) return '요청 크기가 너무 큽니다. 이름·메모 등 입력 길이를 줄여 다시 계산해 주세요. 작성 내용은 유지됩니다.';
     if (body?.code === 'PLAN_CAPACITY_EXCEEDED') {
       const details = body.details;
-      return iso.test(details?.date || '') && clock.test(details?.plannedEndTime) && clock.test(details?.allowedEndTime) && Number.isInteger(details?.exceededMinutes)
+      if (iso.test(details?.date || '') && details.exceededMinutes === 0) return `${details.date} 식사 허용 시간대에 식사와 이동을 배치할 수 없습니다. 활동 시작 시각·장소 순서·식사 이동 여유를 확인해 다시 계산해 주세요.`;
+      return iso.test(details?.date || '') && clock.test(details?.plannedEndTime) && clock.test(details?.allowedEndTime) && Number.isInteger(details?.exceededMinutes) && details.exceededMinutes > 0
         ? `${details.date} 일정이 ${details.exceededMinutes}분 초과합니다. 종료 시각이나 관광지 체류 시간·날짜 배치를 직접 조정해 다시 계산해 주세요.`
         : '일정이 허용 시간을 초과합니다. 활동 시간이나 관광지 선택을 직접 조정해 주세요.';
     }
@@ -147,6 +148,7 @@
             if (item.type === 'MOVE') entry.setAttribute('aria-label', '경로를 찾지 못한 이동 구간');
           }
           time.textContent = `${item.startTime}–${item.endTime}`;
+          if (item.type === 'MOVE' && item.estimatedMinutes === 0) continue;
           label.textContent = item.type === 'VISIT' ? item.displayName : item.type === 'MOVE' ? `이동 · 예상 ${item.estimatedMinutes}분` : '식사';
           entry.append(time, label); list.append(entry);
         }
@@ -199,7 +201,10 @@
         let visitOrder = 0;
         for (const item of day.items) {
           if (item.type === 'VISIT') {
-            if (positions.has(item.clientPlaceId)) return null;
+            if (positions.has(item.clientPlaceId)) {
+              if (positions.get(item.clientPlaceId).day !== day.date) return null;
+              continue;
+            }
             positions.set(item.clientPlaceId, {day: day.date, order: ++visitOrder});
           } else if (item.type === 'MEAL') {
             const mealType = item.startTime >= '17:30' && item.startTime < '20:30' ? 'DINNER'

@@ -292,7 +292,7 @@ class TravelPlanCompletionCalculationServiceTest {
 	}
 
 	@Test
-	void selectedRestaurantRoundTripFitsInsideLongVisitWithoutExtendingItsStay() {
+	void selectedRestaurantRoundTripExtendsDayAndPreservesSightseeingMinutes() {
 		Coordinate restaurant = new Coordinate(36.01, 127.01);
 		EstimateCommand command = command(LocalTime.of(11, 0), LocalTime.of(16, 0),
 				List.of(new EstimateVisit(A, FIRST, "사용자 이름", 180, DATE, 1)));
@@ -302,13 +302,79 @@ class TravelPlanCompletionCalculationServiceTest {
 		var result = service.calculate(command, Map.of(DATE, Map.of(MealType.LUNCH, restaurant)));
 
 		assertThat(result.days().getFirst().plannedEndTime().toLocalTime())
-				.isEqualTo(LocalTime.of(14, 0));
+				.isEqualTo(LocalTime.of(15, 20));
+		var items = result.days().getFirst().items();
+		assertThat(items.stream().filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.mapToLong(item -> java.time.Duration.between(item.startTime(), item.endTime()).toMinutes()).sum())
+				.isEqualTo(180);
+		assertThat(items.stream().map(EstimatedItem::type)).containsExactly(
+				EstimatedItem.Type.MOVE, EstimatedItem.Type.VISIT, EstimatedItem.Type.MOVE,
+				EstimatedItem.Type.MEAL, EstimatedItem.Type.MOVE, EstimatedItem.Type.VISIT,
+				EstimatedItem.Type.MOVE);
+		for (int index = 1; index < items.size(); index++) {
+			assertThat(items.get(index).startTime()).isAfterOrEqualTo(items.get(index - 1).endTime());
+		}
 		assertThat(result.days().getFirst().items().stream()
 				.filter(item -> item.type() == EstimatedItem.Type.MOVE)).hasSize(4);
 		ArgumentCaptor<List<RouteSegment>> captured = ArgumentCaptor.forClass(List.class);
 		verify(routes).verify(eq(7L), eq(TravelMode.CAR), captured.capture());
 		assertThat(captured.getValue()).containsExactly(segment(START, FIRST),
 				segment(FIRST, restaurant), segment(restaurant, FIRST), segment(FIRST, END));
+	}
+
+	@Test
+	void unselectedMealResumesSightseeingWithoutAnExtraProviderMove() {
+		var command = command(LocalTime.of(11, 0), LocalTime.of(16, 0),
+				List.of(new EstimateVisit(A, FIRST, "사용자 이름", 120, DATE, 1)));
+		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList())).thenReturn(verified(10, 10));
+		var day = service.calculate(command, Map.of()).days().getFirst();
+		assertThat(day.plannedEndTime()).isEqualTo(DATE.atTime(14, 50));
+		assertThat(day.items()).extracting(EstimatedItem::type).containsExactly(
+				EstimatedItem.Type.MOVE, EstimatedItem.Type.VISIT, EstimatedItem.Type.MEAL,
+				EstimatedItem.Type.VISIT, EstimatedItem.Type.MOVE);
+		assertThat(day.items().stream().filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.mapToLong(item -> java.time.Duration.between(item.startTime(), item.endTime()).toMinutes()).sum())
+				.isEqualTo(120);
+	}
+
+	@Test
+	void earlierLunchAvoidsFalseOneAndFiveMinuteCompletionOverrunsWithoutAnotherRouteCall() {
+		for (int minute : new int[] {10, 14}) {
+			var command = command(LocalTime.of(9, 0), LocalTime.of(13, minute), List.of(visit(A, FIRST, 1)));
+			when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList())).thenReturn(verified(0, 0));
+			var day = service.calculate(command, Map.of()).days().getFirst();
+			assertThat(day.plannedEndTime()).isEqualTo(DATE.atTime(12, 45));
+		}
+		verify(routes, org.mockito.Mockito.times(2)).verify(eq(7L), eq(TravelMode.CAR), anyList());
+	}
+
+	@Test
+	void lunchAndDinnerVerifiedDetoursPreserveFullSightseeingAndDoNotOverlap() {
+		var command = command(LocalTime.of(11, 0), LocalTime.of(23, 0),
+				List.of(new EstimateVisit(A, FIRST, "사용자 이름", 480, DATE, 1)));
+		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList())).thenReturn(verified(10, 20, 10, 30, 20, 10));
+		var day = service.calculate(command, Map.of(DATE, Map.of(
+				MealType.LUNCH, new Coordinate(36.01, 127.01),
+				MealType.DINNER, new Coordinate(36.02, 127.02)))).days().getFirst();
+		assertThat(day.plannedEndTime()).isEqualTo(DATE.atTime(22, 40));
+		assertThat(day.items().stream().filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.mapToLong(item -> java.time.Duration.between(item.startTime(), item.endTime()).toMinutes()).sum())
+				.isEqualTo(480);
+		assertThat(day.items().stream().filter(item -> item.type() == EstimatedItem.Type.MEAL)).hasSize(2);
+		for (int index = 1; index < day.items().size(); index++) {
+			assertThat(day.items().get(index).startTime()).isAfterOrEqualTo(day.items().get(index - 1).endTime());
+		}
+	}
+
+	@Test
+	void selectedMealTravelOverrunRejectsInsteadOfShorteningSightseeing() {
+		var command = command(LocalTime.of(11, 0), LocalTime.of(14, 0),
+				List.of(new EstimateVisit(A, FIRST, "사용자 이름", 120, DATE, 1)));
+		when(routes.verify(eq(7L), eq(TravelMode.CAR), anyList())).thenReturn(verified(10, 20, 20, 10));
+		assertThatThrownBy(() -> service.calculate(command,
+				Map.of(DATE, Map.of(MealType.LUNCH, new Coordinate(36.01, 127.01)))))
+				.isInstanceOfSatisfying(ApiException.class,
+						exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.PLAN_CAPACITY_EXCEEDED));
 	}
 
 	@Test

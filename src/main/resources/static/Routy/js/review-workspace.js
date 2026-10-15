@@ -54,7 +54,8 @@
     if (body?.code === 'TRAVEL_PLAN_LIMIT_EXCEEDED') return '저장 가능한 일정 수에 도달했습니다. 내 여행에서 불필요한 일정을 삭제한 뒤 다시 완료해 주세요. 작성 내용은 유지됩니다.';
     if (body?.code === 'PLAN_CAPACITY_EXCEEDED') {
       const details = body.details;
-      return /^\d{4}-\d{2}-\d{2}$/.test(details?.date || '') && Number.isInteger(details.exceededMinutes)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(details?.date || '') && details.exceededMinutes === 0) return `${details.date} 식사 허용 시간대에 식사와 이동을 배치할 수 없습니다. 활동 시작 시각·장소 순서·식사를 조정한 뒤 다시 검토해 주세요.`;
+      return /^\d{4}-\d{2}-\d{2}$/.test(details?.date || '') && Number.isInteger(details.exceededMinutes) && details.exceededMinutes > 0
         ? `${details.date} 일정이 ${details.exceededMinutes}분 초과합니다. 활동 시간·체류 시간·장소·식사를 직접 조정한 뒤 다시 검토해 주세요.`
         : '일정이 허용 시간을 초과합니다. 직접 조정한 뒤 다시 검토해 주세요.';
     }
@@ -90,9 +91,9 @@
   function mount(document, window, client, context, onComplete, onAdjust, onRouteFailure) {
     const $ = selector => document.querySelector(selector);
     const section = $('#review-workspace'), status = $('#review-status'), mapElement = $('#review-map');
-    let dayIndex = 0, map = null, markers = [], pending = null, version = 0, mapVersion = 0, shown = false;
+    let dayIndex = 0, map = null, markers = [], infoWindows = [], pending = null, version = 0, mapVersion = 0, shown = false;
     function setStatus(message, error = false) { status.textContent = message; status.dataset.error = String(error); if (error) status.focus({preventScroll: true}); }
-    function clearMap() { markers.forEach(marker => marker.setMap(null)); markers = []; }
+    function clearMap() { infoWindows.forEach(info => info.close()); infoWindows = []; markers.forEach(marker => marker.setMap(null)); markers = []; }
     function cancel() { version++; pending?.abort(); pending = null; $('#review-submit').disabled = false; }
     function reset() { cancel(); mapVersion++; clearMap(); map = null; mapElement.replaceChildren(); dayIndex = 0; shown = false; $('#review-title').value = ''; $('#review-days').replaceChildren(); $('#review-timeline').replaceChildren(); setStatus(''); }
     async function ensureMap() {
@@ -127,11 +128,19 @@
       for (const group of grouped.values()) {
         const {latitude, longitude} = group[0].place, position = new maps.LatLng(latitude, longitude);
         const numbers = group.map(item => item.number).join('·');
-        const node = document.createElement('span'); node.className = 'review-marker'; node.textContent = numbers;
+        const node = document.createElement('button'); node.type = 'button'; node.className = 'review-marker'; node.textContent = numbers;
         node.setAttribute('aria-label', `${numbers}번 방문`);
-        const marker = new maps.CustomOverlay({map, position, content: node, yAnchor: 1});
-        node.addEventListener('click', () => $('#review-timeline').querySelector(`[data-stop="${group[0].number}"]`)?.scrollIntoView({block: 'center'}));
-        markers.push(marker); bounds.extend(position);
+        const marker = new maps.Marker({map, position, title: group.map(stop => `${stop.number}. ${stop.label}`).join(' · ')});
+        const badge = new maps.CustomOverlay({map, position, content: node, yAnchor: 1, zIndex: 3});
+        const label = document.createElement('div'); label.className = 'map-place-label';
+        label.textContent = group.map(stop => `${stop.number}. ${stop.label}`).join(' · ');
+        const info = new maps.InfoWindow({content: label, zIndex: 5});
+        maps.event.addListener(marker, 'mouseover', () => info.open(map, marker));
+        maps.event.addListener(marker, 'mouseout', () => info.close());
+        const focusStop = () => { info.open(map, marker); $('#review-timeline').querySelector(`[data-stop="${group[0].number}"]`)?.scrollIntoView({block: 'center'}); };
+        maps.event.addListener(marker, 'click', focusStop);
+        node.addEventListener('click', focusStop);
+        infoWindows.push(info); markers.push(marker, badge); bounds.extend(position);
       }
       if (grouped.size) map.setBounds(bounds); else map.relayout();
     }
@@ -166,6 +175,7 @@
       if (stops.length) row(stops[0].label, null, stops[0], 'BOUNDARY', '출발');
       for (const item of day.items) {
         const stop = byOrder.get(item.order);
+        if (item.type === 'MOVE' && item.estimatedMinutes === 0) continue;
         const label = item.type === 'VISIT' ? item.displayName : item.type === 'MOVE'
           ? `예상 이동시간 ${item.estimatedMinutes}분` : (stop?.label || (mealType(item) === 'DINNER' ? '저녁 식사' : '점심 식사'));
         row(label, `${item.startTime}–${item.endTime}`, stop, item.type);

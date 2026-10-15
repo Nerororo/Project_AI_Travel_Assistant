@@ -116,6 +116,17 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       if (estimateMode === 'oversized' || estimateMode === 'limited') {
         res.writeHead(estimateMode === 'oversized' ? 413 : 429);
         res.end(JSON.stringify({code: estimateMode === 'oversized' ? 'REQUEST_TOO_LARGE' : 'RATE_LIMIT_EXCEEDED', retryAfterSeconds: 43, message: 'untrusted-response'}));
+      } else if (estimateMode === 'split') {
+        const place = body.places[0];
+        res.writeHead(200);
+        res.end(JSON.stringify({routeVerified: false, days: body.days.map((day, index) => ({date: day.date,
+          items: index ? [] : [
+            {order: 1, type: 'MOVE', startTime: '11:00', endTime: '11:00', estimatedMinutes: 0},
+            {order: 2, type: 'VISIT', clientPlaceId: place.clientPlaceId, displayName: place.displayName, startTime: '11:00', endTime: '11:45'},
+            {order: 3, type: 'MEAL', startTime: '12:00', endTime: '13:00'},
+            {order: 4, type: 'VISIT', clientPlaceId: place.clientPlaceId, displayName: place.displayName, startTime: '13:15', endTime: '14:30'},
+            {order: 5, type: 'MOVE', startTime: '14:30', endTime: '14:30', estimatedMinutes: 0}
+          ]}))}));
       } else if (estimateMode === 'capacity') {
         res.writeHead(422);
         res.end(JSON.stringify({code: 'PLAN_CAPACITY_EXCEEDED', message: 'fixed', details: {date: body.startDate, plannedEndTime: '20:30', allowedEndTime: '20:00', exceededMinutes: 30}, adjustments: ['CHANGE_END_TIME']}));
@@ -766,11 +777,13 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       LatLngBounds:class{constructor(){this.points=[]}extend(p){this.points.push(p)}getSouthWest(){return new window.kakao.maps.LatLng(Math.min(...this.points.map(p=>p.lat)),Math.min(...this.points.map(p=>p.lng)))}getNorthEast(){return new window.kakao.maps.LatLng(Math.max(...this.points.map(p=>p.lat)),Math.max(...this.points.map(p=>p.lng))) }},
       Map:class{constructor(){this.area=null}relayout(){}setBounds(area){this.area=area}getBounds(){return this.area}},
       Marker:class{constructor(options){this.map=options.map;this.title=options.title;window.__restaurantMarkers.push(this)}setMap(map){this.map=map}},
-      MarkerImage:class{},Size:class{},event:{addListener(marker,event,handler){marker.choose=handler}}
+      InfoWindow:class{constructor(options){this.content=options.content}open(map,marker){this.map=map;this.marker=marker}close(){this.map=null}},
+      event:{addListener(marker,event,handler){marker[event]=handler;if(event==='click')marker.choose=handler}}
     }}`);
     await click('#restaurant-workspace [data-restaurant-view="map"]');
     await until(`window.__restaurantMarkers.some(marker => marker.map && marker.title.includes('가상 음식점'))`);
     assert.equal(await evaluate(`window.__restaurantMarkers.filter(marker => marker.map && marker.title.includes('직전 장소')).length`), 1);
+    assert.equal(await evaluate(`window.__restaurantMarkers.filter(marker => marker.map).every(marker => typeof marker.mouseover === 'function' && typeof marker.mouseout === 'function')`), true);
     await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
     assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result button').getAttribute('aria-pressed')`), 'false');
     await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
@@ -857,6 +870,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   });
   await t.test('W1-04 reviews each day, handles stale and 422 responses, then shows only the saved plan', async () => {
     await click('#place-results .place-result button');
+    await evaluate(`document.querySelector('#attraction-selected input[type="number"]').value='120';document.querySelector('#attraction-selected input[type="number"]').dispatchEvent(new Event('change'))`);
     await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value='내 해변';document.querySelector('#attraction-selected input[type="text"]').dispatchEvent(new Event('input'))`);
     await click('[data-place-role="TRAVEL_BOUNDARY"]');
     await evaluate(`document.querySelector('#boundary-query').value='역';document.querySelector('#boundary-search-form').requestSubmit()`);
@@ -874,6 +888,22 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#menu-direct-name').value='직접 메뉴';document.querySelector('#menu-direct-query').value='메뉴 검색';document.querySelector('#menu-direct-form').requestSubmit()`);
     await click('#menu-confirm');
     await click('#next-step');
+    estimateMode = 'split';
+    await evaluate(`document.querySelector('#estimate-start-date').value='2026-10-01';document.querySelector('#estimate-start-date').dispatchEvent(new Event('change'));document.querySelector('#estimate-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#estimate-result .estimate-visit').length === 2`);
+    assert.equal(await evaluate(`document.querySelectorAll('#estimate-result .estimate-move').length`), 0);
+    assert.equal(estimateRequests.at(-1).places[0].stayMinutes, 120);
+    await designScreenshot('meal-split-estimate-desktop.png', true);
+    await mobileDesignScreenshot('meal-split-estimate-mobile.png', true);
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="6"]').getAttribute('aria-current')`), 'step');
+    await click('#next-step');
+    await until(`document.querySelectorAll('#review-timeline .review-visit').length === 2`);
+    assert.equal(await evaluate(`document.querySelectorAll('#review-timeline .review-move').length`), 0);
+    await designScreenshot('meal-split-review-desktop.png', true);
+    await mobileDesignScreenshot('meal-split-review-mobile.png', true);
+    await click('#review-adjust');
+    estimateMode = 'success';
     await evaluate(`document.querySelector('#estimate-start-date').value='2026-10-01';document.querySelector('#estimate-start-date').dispatchEvent(new Event('change'));document.querySelector('#estimate-form').requestSubmit()`);
     await until(`document.querySelectorAll('#estimate-result section').length === 2`);
     await click('#next-step');
@@ -881,7 +911,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await until(`document.querySelector('#restaurant-results').textContent.includes('가상 음식점 1')`);
     await click('#restaurant-results .place-result button');
     await evaluate(`document.querySelector('#restaurant-selected input').value='내 점심 식당';document.querySelector('#restaurant-selected input').dispatchEvent(new Event('input'))`);
-    await evaluate(`window.__reviewOverlays=[];window.kakao.maps.CustomOverlay=class{constructor(options){this.map=options.map;this.content=options.content;window.__reviewOverlays.push(this)}setMap(map){this.map=map}}`);
+    await evaluate(`window.__reviewMarkerStart=window.__restaurantMarkers.length;window.__reviewOverlays=[];window.kakao.maps.CustomOverlay=class{constructor(options){this.map=options.map;this.content=options.content;window.__reviewOverlays.push(this)}setMap(map){this.map=map}}`);
     const beforeDaySwitch = {estimate: estimateRequests.length, restaurant: restaurantRequests.length, create: createRequests.length};
     await click('#next-step');
     await until(`document.querySelector('#review-timeline').textContent.includes('내 점심 식당')`);
@@ -890,7 +920,11 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#review-timeline .review-visit .review-entry-marker').textContent`), '2');
     assert.equal(await evaluate(`document.querySelector('#review-timeline .review-move .review-entry-marker').textContent`), '↓');
     assert.equal(await evaluate(`window.__reviewOverlays.some(overlay => overlay.map && overlay.content.textContent.includes('3'))`), true);
+    assert.equal(await evaluate(`window.__reviewOverlays.filter(overlay => overlay.map).every(overlay => overlay.content.tagName === 'BUTTON')`), true);
+    const firstDayMarkers = await evaluate(`window.__restaurantMarkers.slice(window.__reviewMarkerStart).filter(marker => marker.map && marker.title.includes('내 해변')).length`);
+    assert.ok(firstDayMarkers > 0);
     await click('#review-days button:nth-child(2)');
+    assert.equal(await evaluate(`window.__restaurantMarkers.slice(window.__reviewMarkerStart).filter(marker => marker.map && marker.title.includes('내 해변')).length`), 0);
     assert.equal(await evaluate(`document.querySelector('#review-timeline').textContent.includes('내 해변')`), false);
     assert.equal(await evaluate(`document.querySelector('#review-days button:nth-child(2)').getAttribute('aria-pressed')`), 'true');
     assert.equal(await evaluate(`document.querySelector('#review-day-title').textContent`), '2일차 일정');

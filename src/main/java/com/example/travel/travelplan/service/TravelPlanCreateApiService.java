@@ -28,6 +28,7 @@ import com.example.travel.user.service.RequestExecutionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -170,7 +171,9 @@ public class TravelPlanCreateApiService {
         return new TravelPlanCreateApiResponse.Item(item.id(), item.itemOrder(), item.itemType().name(),
                 item.planPlaceId(), name, place == null ? null : place.placeUrl(),
                 item.startTime().format(TIME), item.endTime().format(TIME),
-                place == null ? null : place.stayMinutes(), item.estimatedMinutes(),
+                item.itemType() == TravelPlanItem.Type.VISIT
+                        ? Math.toIntExact(Duration.between(item.startTime(), item.endTime()).toMinutes()) : null,
+                item.estimatedMinutes(),
                 place == null ? null : place.memo());
     }
 

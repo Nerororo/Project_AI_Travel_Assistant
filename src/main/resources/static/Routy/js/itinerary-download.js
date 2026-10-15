@@ -116,7 +116,7 @@
     $('h1').textContent = plan.title;
     $('.period').textContent = `${plan.startDate} — ${plan.endDate}`;
     const travelMode = plan.travelMode === 'CAR' ? '자동차' : '대중교통';
-    const visits = plan.days.reduce((count, day) => count + day.items.filter(item => item.type === 'VISIT').length, 0);
+    const visits = new Set(plan.days.flatMap(day => day.items.filter(item => item.type === 'VISIT').map(item => item.planPlaceId))).size;
     for (const [label, value, detail] of [
       ['여행 기간', `${plan.days.length}일`, `${plan.startDate.slice(5).replace('-', '.')} — ${plan.endDate.slice(5).replace('-', '.')}`],
       ['이동 방식', travelMode, '우리의 이동 수단'],

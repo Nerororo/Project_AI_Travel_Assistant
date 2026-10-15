@@ -125,6 +125,7 @@ public class TravelPlanCompletionSaveService {
         if (command.hotel() != null) validatePlace(command.hotel(), PlanPlace.Role.HOTEL);
         command.restaurants().values().forEach(place -> validatePlace(place, PlanPlace.Role.RESTAURANT));
         Set<UUID> seenVisits = new HashSet<>();
+        Map<UUID, Long> visitMinutes = new HashMap<>();
         Set<CompletedPlanSaveCommand.MealKey> seenMeals = new HashSet<>();
         List<LocalDate> dates = command.conditions().period().dates();
         for (int index = 0; index < dates.size(); index++) {
@@ -132,7 +133,10 @@ public class TravelPlanCompletionSaveService {
             if (day == null || !dates.get(index).equals(day.date())) fail();
             DailyActivityWindow window = command.conditions().days().stream()
                     .filter(value -> value.date().equals(day.date())).findFirst().orElseThrow();
-            int visits = 0;
+            Set<UUID> dayVisits = new HashSet<>();
+            UUID lastVisit = null;
+            boolean mealSinceVisit = false;
+            java.time.LocalDateTime previousEnd = null;
             int expectedOrder = 1;
             for (EstimatedItem item : day.items()) {
                 if (item == null || item.order() != expectedOrder++ || item.type() == null
@@ -140,12 +144,22 @@ public class TravelPlanCompletionSaveService {
                         || !day.date().equals(item.startTime().toLocalDate())
                         || !day.date().equals(item.endTime().toLocalDate())
                         || item.startTime().toLocalTime().isBefore(window.startTime())
-                        || item.endTime().toLocalTime().isAfter(window.endTime())) fail();
+                        || item.endTime().toLocalTime().isAfter(window.endTime())
+                        || item.endTime().isBefore(item.startTime())
+                        || previousEnd != null && item.startTime().isBefore(previousEnd)) fail();
+                previousEnd = item.endTime();
                 switch (item.type()) {
                     case VISIT -> {
                         if (item.clientPlaceId() == null || !command.attractions().containsKey(item.clientPlaceId())
-                                || !seenVisits.add(item.clientPlaceId()) || item.estimatedMinutes() != null) fail();
-                        visits++;
+                                || item.estimatedMinutes() != null || !item.endTime().isAfter(item.startTime())) fail();
+                        if (!seenVisits.add(item.clientPlaceId())
+                                && (!dayVisits.contains(item.clientPlaceId())
+                                    || !item.clientPlaceId().equals(lastVisit) || !mealSinceVisit)) fail();
+                        dayVisits.add(item.clientPlaceId());
+                        visitMinutes.merge(item.clientPlaceId(),
+                                Duration.between(item.startTime(), item.endTime()).toMinutes(), Long::sum);
+                        lastVisit = item.clientPlaceId();
+                        mealSinceVisit = false;
                     }
                     case MEAL -> {
                         if (item.mealType() == null || item.estimatedMinutes() != null
@@ -153,6 +167,7 @@ public class TravelPlanCompletionSaveService {
                                 || item.endTime().toLocalTime().isAfter(item.mealType().allowedEnd())
                                 || Duration.between(item.startTime(), item.endTime()).toMinutes() != 60
                                 || !seenMeals.add(new CompletedPlanSaveCommand.MealKey(day.date(), item.mealType()))) fail();
+                        mealSinceVisit = true;
                     }
                     case MOVE -> {
                         Integer minutes = item.estimatedMinutes();
@@ -161,11 +176,14 @@ public class TravelPlanCompletionSaveService {
                     }
                 }
             }
-            if (visits > 5 || day.plannedEndTime() == null
+            if (dayVisits.size() > 5 || day.plannedEndTime() == null
                     || day.plannedEndTime().toLocalTime().isAfter(window.endTime())) fail();
         }
         if (!seenVisits.equals(command.attractions().keySet())
                 || !seenMeals.containsAll(command.restaurants().keySet())) fail();
+        command.attractions().forEach((id, place) -> {
+            if (visitMinutes.get(id) != place.stayMinutes().longValue()) fail();
+        });
     }
 
     private static void validatePlace(CompletedPlanSaveCommand.Place place, PlanPlace.Role role) {

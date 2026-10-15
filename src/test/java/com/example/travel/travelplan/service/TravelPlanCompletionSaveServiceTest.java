@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -44,6 +46,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 @Testcontainers
 @ActiveProfiles("test")
@@ -67,9 +71,41 @@ class TravelPlanCompletionSaveServiceTest {
     @Autowired UserRepository users;
     @Autowired TravelPlanRepository plans;
     @Autowired TravelPlanDayRepository days;
-    @Autowired TravelPlanItemRepository items;
+    @MockitoSpyBean TravelPlanItemRepository items;
     @Autowired PlanPlaceRepository places;
     @Autowired FoodPreferenceRepository foods;
+    @Autowired TravelPlanReadService reads;
+
+    @Test
+    void splitSightseeingStoresOnePlaceAndReadsSegmentDurations() {
+        long userId = user();
+        var source = command(userId, false);
+        var split = new EstimatedDay(DATE, DATE.atTime(14, 30), List.of(
+                item(1, EstimatedItem.Type.VISIT, ATTRACTION, null, 11, 0, 11, 45, null),
+                item(2, EstimatedItem.Type.MOVE, null, null, 11, 45, 11, 55, 10),
+                item(3, EstimatedItem.Type.MEAL, null, MealType.LUNCH, 12, 0, 13, 0, null),
+                item(4, EstimatedItem.Type.MOVE, null, null, 13, 0, 13, 10, 10),
+                item(5, EstimatedItem.Type.VISIT, ATTRACTION, null, 13, 10, 14, 25, null)));
+        var attraction = new CompletedPlanSaveCommand.Place("1", "https://place.map.kakao.com/1",
+                "My museum", "My note", 120);
+        var save = new CompletedPlanSaveCommand(userId, source.title(), source.regionId(),
+                source.regionDisplayName(), source.conditions(), source.foods(), Map.of(ATTRACTION, attraction),
+                null, source.restaurants(), List.of(split));
+        long planId = service.save(save);
+        assertThat(places.findByTravelPlanId(planId)).hasSize(2);
+        var visits = reads.detail(userId, planId).days().getFirst().items().stream()
+                .filter(value -> value.type().equals("VISIT")).toList();
+        assertThat(visits).extracting(value -> value.planPlaceId()).containsOnly(visits.getFirst().planPlaceId());
+        assertThat(visits).extracting(value -> value.stayMinutes()).containsExactly(45, 75);
+        assertThat(reads.sharedDetail(planId).days()).isEqualTo(reads.detail(userId, planId).days());
+
+        var shortened = new CompletedPlanSaveCommand.Place("1", "https://place.map.kakao.com/1",
+                "My museum", null, 90);
+        assertThatThrownBy(() -> service.save(new CompletedPlanSaveCommand(userId, source.title(),
+                source.regionId(), source.regionDisplayName(), source.conditions(), source.foods(),
+                Map.of(ATTRACTION, shortened), null, source.restaurants(), List.of(split))))
+                .isInstanceOf(ApiException.class);
+    }
 
     @Test
     void storesWholeCalculatedPlanWithoutWarningsCoordinatesOrZeroMinuteMoves() {
@@ -116,7 +152,9 @@ class TravelPlanCompletionSaveServiceTest {
         long placeCount = places.count();
         long foodCount = foods.count();
 
-        assertThatThrownBy(() -> service.save(command(userId, true)))
+        doThrow(new DataIntegrityViolationException("Synthetic item insert failure"))
+                .when(items).save(any(com.example.travel.travelplan.domain.TravelPlanItem.class));
+        assertThatThrownBy(() -> service.save(command(userId, false)))
                 .isInstanceOf(DataAccessException.class);
         assertThat(plans.findByUserId(userId)).isEmpty();
         assertThat(days.count()).isEqualTo(dayCount);

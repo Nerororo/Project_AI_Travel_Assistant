@@ -28,14 +28,11 @@ body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) {
 }
 .journey-symbols { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 .journey-icon { width: 1.5rem; height: 1.5rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .site-header { min-height: 4.75rem; background: rgb(250 249 245 / .96); padding-inline: 2.75rem; }
-body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .brand { font-size: 1.85rem; }
+body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .site-header { background: rgb(250 249 245 / .96); }
 body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .brand-mark { background: transparent; border: 4px solid #0c141a; border-radius: 44%; width: 2.35rem; height: 2.35rem; }
 body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .brand-mark img { visibility: hidden; }
-body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .primary-nav { background: white; padding: .2rem; }
-body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .primary-nav a { padding: .6rem 1.35rem; }
+body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .primary-nav { background: white; }
 body:is([data-view="workspace"], [data-view="trips"]) .primary-nav a[aria-current] { background: var(--blue); box-shadow: 0 3px 9px #1242ff20; }
-body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .account-action { min-width: 6.6rem; }
 body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .button-primary { background: linear-gradient(115deg, #0844ff, #243fff); box-shadow: 0 3px 8px #1242ff0a; }
 body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) :is(input, textarea, select) { font-family: inherit; font-size: 1rem; }
 body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) :is(input, textarea, select):focus-visible { outline: 3px solid #dce5ff; outline-offset: 2px; border-color: #7793ff; }
@@ -326,7 +323,6 @@ body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) textar
   .auth-photo-heritage { left: 6rem; width: 11rem; }
 }
 @media (max-width: 58rem) {
-  body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .site-header { padding-inline: 1.25rem; }
   .auth-page { grid-template-columns: 1fr; }
   .auth-visual { min-height: 25rem; padding: 2rem; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; column-gap: 1rem; }
   .auth-visual > .eyebrow { grid-column: 1 / -1; }
@@ -360,10 +356,6 @@ body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) textar
   .canvas-actions { margin: 1.5rem 0 0; padding: 1rem 0 0; background: transparent; backdrop-filter: none; }
 }
 @media (max-width: 44rem) {
-  body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .site-header { min-height: 4.3rem; padding: .6rem 1rem; }
-  body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .brand { font-size: 1.55rem; }
-  body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .brand-mark { width: 2rem; height: 2rem; border-width: 3px; }
-  body:is([data-view="auth"], [data-view="workspace"], [data-view="trips"]) .account-action { min-width: 5rem; }
   .auth-visual { min-height: 22rem; padding: 1.7rem 1.25rem; grid-template-columns: 1fr; }
   .auth-story { padding: 2rem 0 5rem; }
   .auth-story strong { font-size: 2rem; max-width: 19rem; }

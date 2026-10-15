@@ -80,7 +80,7 @@
     grid-template-columns: minmax(9rem, 1fr) auto minmax(9rem, 1fr);
     align-items: center;
     min-height: 5rem;
-    padding: .75rem var(--gutter);
+    padding: .75rem 2.75rem;
     border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
     background: rgb(244 241 234 / .88);
     backdrop-filter: blur(18px) saturate(1.2);
@@ -90,10 +90,10 @@
   .brand-mark { display: grid; width: 2.35rem; height: 2.35rem; margin-right: .55rem; place-items: center; border-radius: 50%; background: var(--ink); }
   .brand-mark img { width: 1.55rem; filter: brightness(0) invert(1); }
   .primary-nav { display: flex; align-items: center; gap: .35rem; padding: .3rem; border: 1px solid var(--line); border-radius: 999px; background: rgb(255 255 255 / .55); }
-  .primary-nav a { padding: .55rem 1rem; border-radius: 999px; color: var(--ink-soft); font-size: var(--text-sm); font-weight: 680; }
+  .primary-nav a { padding: .55rem 1rem; border-radius: 999px; color: var(--ink-soft); font-size: .875rem; font-weight: 680; white-space: nowrap; }
   .primary-nav a[aria-current="page"] { background: var(--ink); color: white; }
   .header-actions { display: flex; justify-self: end; align-items: center; gap: .75rem; }
-  .motion-toggle { display: inline-flex; align-items: center; gap: .45rem; padding: .55rem; color: var(--ink-soft); font-size: var(--text-xs); }
+  .motion-toggle { display: inline-flex; align-items: center; gap: .45rem; padding: .55rem; color: var(--ink-soft); font-size: .75rem; }
   .motion-toggle > span:first-child { font-size: 1.25rem; }
   .site-footer { display: flex; align-items: center; gap: 1.25rem; min-height: 9rem; padding: 2rem var(--gutter) calc(2rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); color: var(--ink-soft); }
   .site-footer p { font-size: var(--text-sm); }
@@ -211,7 +211,7 @@
   .auth-form .field-help { color: var(--ink-soft); font-size: .8rem; }
   #auth-status { overflow-wrap: anywhere; font-size: .9rem; }
   #auth-status[data-error="true"] { color: var(--danger); }
-  .header-actions .account-action { display: inline-flex; min-height: 2.75rem; }
+  .header-actions .account-action { display: inline-flex; min-width: 6.6rem; min-height: 2.75rem; font-size: .875rem; }
   .auth-form .button { margin-top: .5rem; }
 
   .workspace-page { min-height: calc(100dvh - 5rem); padding: 1.25rem var(--gutter) 2rem; }
@@ -464,10 +464,7 @@
 
   @media (max-width: 44rem) {
     body { padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)); }
-    .site-header { min-height: 4.3rem; padding: .6rem 1rem; }
-    .brand { font-size: 1.35rem; }
-    .brand-mark { width: 2rem; height: 2rem; }
-    .brand-mark img { width: 1.3rem; }
+    .site-header { padding-inline: 1rem; }
     .header-actions .button { display: none; }
     .header-actions .account-action { display: inline-flex; }
     .site-footer { display: grid; min-height: 12rem; justify-items: start; padding: 2rem 1rem; }
@@ -625,7 +622,8 @@
   .review-finish header { padding: 1.4rem; border-bottom: 1px solid var(--line); }
   .review-finish .review-heading-icon { background: var(--ink); color: var(--lime); }
   .review-finish header span { display: block; margin-top: .5rem; }
-  .review-marker { display: inline-block; min-width: 2rem; padding: .35rem .5rem; border: 2px solid white; border-radius: 999px; background: var(--blue); color: white; box-shadow: 0 2px 8px #2234; font-size: .8rem; font-weight: 800; text-align: center; cursor: pointer; }
+  .map-place-label { max-width: min(15rem, 65vw); padding: .65rem .85rem; color: var(--ink); background: white; font: 700 .85rem/1.5 var(--font-body, sans-serif); overflow-wrap: anywhere; white-space: normal; }
+  .review-marker { display: inline-block; min-width: 2rem; margin-bottom: 2.6rem; padding: .35rem .5rem; border: 2px solid white; border-radius: 999px; background: var(--blue); color: white; box-shadow: 0 2px 8px #2234; font-size: .8rem; font-weight: 800; text-align: center; cursor: pointer; }
   #review-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: end; padding: 1.4rem; }
   #review-form label { grid-column: 1 / -1; font-size: var(--text-sm); font-weight: 800; }
   #review-title { width: 100%; min-width: 0; min-height: 2.8rem; padding: .65rem .8rem; border: 1px solid #b8bbb4; border-radius: .65rem; background: white; font: inherit; }

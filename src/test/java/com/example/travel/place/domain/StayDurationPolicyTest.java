@@ -28,6 +28,33 @@ class StayDurationPolicyTest {
 	}
 
 	@Test
+	void mapsAdditionalCategoryLabelsWithoutFallingBackToNinetyMinutes() {
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 산")).isEqualTo(240);
+		assertThat(suggestedAttractionMinutes(" 여행 > 관광,명소 > 오름 ")).isEqualTo(240);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 둘레길")).isEqualTo(240);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 숲길")).isEqualTo(240);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 워터파크")).isEqualTo(360);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 놀이공원")).isEqualTo(360);
+		assertThat(suggestedAttractionMinutes("문화,예술 > 문화시설 > 과학관")).isEqualTo(120);
+		assertThat(suggestedAttractionMinutes("문화,예술 > 문화시설 > 기념관")).isEqualTo(120);
+	}
+
+	@Test
+	void shoppingCategoriesUseTwoHoursInsteadOfTheGeneralFallback() {
+		assertThat(suggestedAttractionMinutes("쇼핑,유통 > 백화점")).isEqualTo(120);
+		assertThat(suggestedAttractionMinutes("쇼핑,유통 > 쇼핑센터 > 쇼핑몰")).isEqualTo(120);
+		assertThat(suggestedAttractionMinutes("쇼핑,유통 > 아울렛")).isEqualTo(120);
+	}
+
+	@Test
+	void shortMountainLabelDoesNotMatchInsideAnUnrelatedCategoryWord() {
+		assertThat(suggestedAttractionMinutes("문화,예술 > 산업박물관")).isEqualTo(120);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 자연유산")).isEqualTo(90);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 부산 관광명소")).isEqualTo(90);
+		assertThat(suggestedAttractionMinutes("여행 > 관광,명소 > 산책로")).isEqualTo(90);
+	}
+
+	@Test
 	void appliesTheMostSpecificCategoryWhenKeywordsOverlap() {
 		assertThat(suggestedAttractionMinutes("박물관 체험관")).isEqualTo(180);
 		assertThat(suggestedAttractionMinutes("산악 체험 테마파크")).isEqualTo(360);

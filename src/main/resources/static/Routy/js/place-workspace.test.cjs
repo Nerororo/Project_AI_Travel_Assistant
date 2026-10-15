@@ -3,6 +3,41 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const ui = require('./place-workspace.js');
 
+test('standard map pins show safe labels, preserve viewport on selection and discard old windows', async () => {
+  const pins = [], windows = [], maps = [];
+  const window = {document: {createElement: () => ({})}, kakao: {maps: {
+    LatLng: class { constructor(lat, lng) { this.lat = lat; this.lng = lng; } },
+    LatLngBounds: class { extend() {} },
+    Map: class { constructor() { this.fits = 0; maps.push(this); } relayout() {} setBounds() { this.fits++; } },
+    Marker: class { constructor(options) { Object.assign(this, options); pins.push(this); } setMap(map) { this.map = map; } },
+    InfoWindow: class { constructor(options) { Object.assign(this, options); windows.push(this); } open(map, marker) { this.map = map; this.marker = marker; } close() { this.map = null; } },
+    event: {addListener(marker, event, listener) { marker[event] = listener; }}
+  }}};
+  const element = {classList: {remove() {}}, replaceChildren() {}};
+  const view = ui.createMapView(window, element, {});
+  assert.equal(await view.ensure(), true);
+  const places = [{kakaoPlaceId: 'a', providerDisplayName: '<img onerror=alert(1)>', latitude: 35, longitude: 128}];
+  const chosen = [];
+  view.render(places, new Set(), id => chosen.push(id));
+  assert.equal(pins[0].image, undefined);
+  assert.equal(windows[0].content.textContent, places[0].providerDisplayName);
+  pins[0].mouseover(); assert.equal(windows[0].marker, pins[0]);
+  pins[0].mouseout(); assert.equal(windows[0].map, null);
+  pins[0].click(); assert.deepEqual(chosen, ['a']);
+  view.render(places, new Set(['a']), id => chosen.push(id));
+  assert.equal(pins[0].map, null);
+  assert.equal(maps[0].fits, 1);
+  assert.match(pins[1].title, /✓ 선택됨/);
+  assert.equal(windows[1].map, maps[0]);
+  pins[1].mouseout(); assert.equal(windows[1].map, maps[0]);
+  view.render([{...places[0], latitude: 36}], new Set(), () => {});
+  assert.equal(maps[0].fits, 2);
+  assert.equal(windows[1].map, null);
+  view.dispose();
+  assert.ok(pins.every(pin => pin.map === null));
+  assert.ok(windows.every(info => info.map === null));
+});
+
 test('attraction search retains district filter while moving the map and separates explicit whole-region search', () => {
   assert.deepEqual(ui.searchBody('ATTRACTION', 'city', '해변', {districtFilterId: 'district', center: {latitude: 35, longitude: 129}, page: 2}), {
     regionId: 'city', districtFilterId: 'district', placeRole: 'ATTRACTION', query: '해변',

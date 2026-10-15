@@ -139,6 +139,8 @@
   function createMapView(window, element, status) {
     let map = null;
     let markers = [];
+    let infoWindows = [];
+    let viewportKey = '';
     let ready = false;
     let generation = 0;
     async function ensure() {
@@ -164,20 +166,29 @@
     function render(places, selectedIds, onChoose) {
       if (!ready) return;
       const maps = window.kakao.maps;
-      markers.forEach(marker => marker.setMap(null));
-      markers = [];
+      clearMarkers();
       const bounds = new maps.LatLngBounds();
-      const icon = selected => new maps.MarkerImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 40S2 24 2 16a14 14 0 1 1 28 0c0 8-14 24-14 24Z" fill="${selected ? '#1748df' : '#303b4a'}" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="5" fill="white"/></svg>`)}`, new maps.Size(32, 42));
       for (const place of places) {
         const position = new maps.LatLng(place.latitude, place.longitude);
         const selected = selectedIds.has(place.kakaoPlaceId);
-        const marker = new maps.Marker({map, position, image: icon(selected), title: `${selected ? '선택됨 · ' : ''}${place.providerDisplayName}`});
+        const title = `${selected ? '✓ 선택됨 · ' : ''}${place.providerDisplayName}`;
+        const marker = new maps.Marker({map, position, title, zIndex: selected ? 3 : 1, opacity: selected ? 1 : 0.8});
+        const label = window.document.createElement('div');
+        label.className = 'map-place-label';
+        label.textContent = title;
+        const info = new maps.InfoWindow({content: label, zIndex: selected ? 4 : 5});
+        maps.event.addListener(marker, 'mouseover', () => info.open(map, marker));
+        maps.event.addListener(marker, 'mouseout', () => { if (!selected) info.close(); });
         maps.event.addListener(marker, 'click', () => onChoose(place.kakaoPlaceId));
+        if (selected) info.open(map, marker);
+        infoWindows.push(info);
         markers.push(marker);
         bounds.extend(position);
       }
-      if (places.length) map.setBounds(bounds);
+      const nextKey = JSON.stringify(places.map(place => [place.kakaoPlaceId, place.latitude, place.longitude]).sort());
+      if (places.length && nextKey !== viewportKey) map.setBounds(bounds);
       else map.relayout();
+      viewportKey = nextKey;
     }
     function center() {
       if (!ready) return null;
@@ -189,7 +200,8 @@
       const area = map.getBounds(), sw = area.getSouthWest(), ne = area.getNorthEast();
       return {minLatitude: sw.getLat(), minLongitude: sw.getLng(), maxLatitude: ne.getLat(), maxLongitude: ne.getLng()};
     }
-    function clear() { markers.forEach(marker => marker.setMap(null)); markers = []; }
+    function clearMarkers() { infoWindows.forEach(info => info.close()); infoWindows = []; markers.forEach(marker => marker.setMap(null)); markers = []; }
+    function clear() { clearMarkers(); viewportKey = ''; }
     function dispose() { generation++; clear(); map = null; ready = false; element.replaceChildren(); element.classList.remove('is-unavailable'); status.textContent = ''; }
     return {ensure, render, center, bounds, clear, dispose};
   }

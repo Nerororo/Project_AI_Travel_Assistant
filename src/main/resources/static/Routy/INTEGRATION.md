@@ -515,3 +515,13 @@ git diff --check
 - 6.7절 기준으로 지역·관광지·숙소·메뉴·추정·음식점·일차별 검토와 오류·편집 캡처를 확인했다. 추가 오류 캡처는 `build/qa/w1-06-auth-{limited,oversized}-{desktop,mobile}.png`, `w1-06-estimate-{limited,oversized}-{desktop,mobile}.png`, `w1-06-create-rejected-{desktop,mobile}.png`, `w1-06-forced-colors-mobile.png`다. 완료·공유는 기존 저장 DTO와 지도 없는 고정 템플릿 계약을 유지한다.
 - 루트 `test.ps1`이 4분 27초에 `BUILD SUCCESSFUL`로 종료했다. XML 합계는 96개 suite·552개 테스트이며 실패·오류·건너뜀 0이다. DB 종료 중 Hikari 연결 정리 경고가 있었으나 최종 종료 코드 0과 테스트 결과를 확인했다. `git diff --check`가 통과했고 공통·보안 응답·브라우저·데이터 수명 DoD의 로컬 해당 범위를 확인했다.
 - W1-06은 구현·로컬 검증 완료다. 실제 카카오/OpenAI·CSP 적용·Render/Aiven 보안 회귀·운영 가능 판정은 SEC1-07~08·Q1에서 확인한다. 다음 Task는 SEC1-07이며 이번 작업에서 시작하지 않았다.
+
+### W1-MARKER team5 마커 방식 반영 (2026-10-15)
+
+- 사용자 요청의 지도 표현 보완 작업으로 W1-02·03A·04의 기존 책임 경계를 따른다. `C:\SSAFY\관통 프로젝트\team5`의 제품 마커 생성·정리와 실습 `kakao.js`의 기본 Marker·mouseover/mouseout InfoWindow 방식을 직접 확인했다. [카카오 공식 예제](https://apis.map.kakao.com/web/sample/addMarkerMouseEvent/)도 대조했다.
+- Allowed와 실제 변경: `js/place-workspace.js`, `js/review-workspace.js`, `css/style.css`, `js/place-workspace.test.cjs`, `js/auth.browser.test.cjs`, 이 문서. Conditional은 Git 제외 `build/qa/` 검증 산출물이다. Java·API·DB·설정·dependency·team5 원본은 Forbidden이며 변경하지 않았다. 기존 사용자 수정은 보존했다.
+- 관광지·여행 경계·숙소·음식점의 공통 지도에서 자체 SVG 핀을 기본 카카오 핀으로 바꾸고, 이름을 안전한 DOM 텍스트로 넣은 InfoWindow를 연결했다. 선택된 장소는 `✓ 선택됨` 안내창과 높은 z-index로 구분하고 목록·마커 선택 계약을 유지한다. 표시 장소 ID·좌표 집합이 같으면 선택·입력 갱신으로 지도를 다시 맞추지 않는다. 검색 장소가 바뀌면 새 범위에 맞춘다.
+- 검토 지도는 기본 핀과 키보드로 누를 수 있는 방문 번호 버튼을 함께 표시한다. 같은 위치의 반복 방문 번호를 모두 유지하고 핀·번호 클릭으로 해당 일정 항목을 찾는다. 날짜 변경·초기화·완료 시 핀·번호·InfoWindow를 함께 정리한다. 연결선·주소 지오코딩·외부 조회·저장소 영속화는 추가하지 않았다.
+- References Read: 루트·resources·static·Routy AGENTS, `docs/11` W1 단계, `docs/12` W1 경계, `docs/01` 장소·검토 계약, `docs/08` 브라우저·지도 검증, `docs/10` 14~15절, 본 문서의 지도 계약, 직접 호출자와 기존 diff.
+- 검증: 직접 Node 테스트 10개, 실제 Chromium을 포함한 전체 Routy Node 회귀 87개 통과. 지도 SDK는 Fake로 마커 이벤트·선택·범위 유지·날짜 전환·폐기를 검증했다. 루트 `test.ps1`은 4분 20초에 `BUILD SUCCESSFUL`, XML 합계 566개·실패/오류/건너뜀 0이다. JS 구문 검사와 `git diff --check` 통과. 테스트 실행 당시의 기존 미커밋 변경을 포함한 현재 작업 트리 기준 결과다.
+- 실제 카카오 SDK의 핀 외형·안내창 겹침과 실서비스 키·CSP는 미검증이다. 자동 브라우저 캡처는 실제 지도 렌더링 증거가 아니며, 운영 DoD 완료나 SEC1 다음 단계 진행으로 표시하지 않는다.

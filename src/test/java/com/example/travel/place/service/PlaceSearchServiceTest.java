@@ -101,6 +101,24 @@ class PlaceSearchServiceTest {
 	}
 
 	@Test
+	void searchResponseCarriesTheDefaultDurationForEachAttractionKind() {
+		when(client.search(any(), any())).thenReturn(new PlaceSearchResult(List.of(
+				candidate("1", "테스트도 테스트시 중앙로", "여행 > 관광,명소 > 공원"),
+				candidate("2", "테스트도 테스트시 중앙로", "문화,예술 > 과학관"),
+				candidate("3", "테스트도 테스트시 중앙로", "여행 > 관광,명소 > 체험농장"),
+				candidate("4", "테스트도 테스트시 중앙로", "여행 > 관광,명소 > 산"),
+				candidate("5", "테스트도 테스트시 중앙로", "여행 > 관광,명소 > 놀이공원"),
+				candidate("6", "테스트도 테스트시 중앙로", "쇼핑,유통 > 백화점")), 1, false));
+		var response = service.search(7L, requestId, radiusRequest(PlaceRole.ATTRACTION, 20_000));
+		assertThat(response.places()).extracting(value -> value.suggestedStayMinutes())
+				.containsExactly(90, 120, 180, 240, 360, 120);
+		assertThat(java.util.Arrays.stream(
+				com.example.travel.place.dto.PlaceSearchApiResponse.Place.class.getRecordComponents())
+				.map(java.lang.reflect.RecordComponent::getName).toList())
+				.doesNotContain("providerCategory", "stayKind", "placeType");
+	}
+
+	@Test
 	void usesBoundsAndRegionNameForWholeRegionAttractionSearch() {
 		when(client.search(any(), any())).thenReturn(PlaceSearchResult.empty(3));
 		PlaceSearchApiRequest request = new PlaceSearchApiRequest(
