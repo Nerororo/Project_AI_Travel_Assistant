@@ -658,3 +658,71 @@
 .download-actions>span{font-size:13px;color:#626b64}
 #download-status{font-size:13px;min-height:1.6em;overflow-wrap:anywhere}
 body[data-view="detail"] .motion-toggle{display:none}
+
+/* Shared search results: connected rows below the search controls. */
+body .region-results, body .place-results { display: grid; margin: 0; gap: 0; max-height: clamp(18rem, 55dvh, 28rem); overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; grid-auto-rows: max-content; padding: 0; border: 1px solid var(--line); border-radius: 0 0 .65rem .65rem; background: white; }
+body .region-results:empty, body .place-results:empty { display: none; }
+body .region-results > .region-result, body .place-result { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 0; margin: 0; padding: 0; gap: 0; border: 0; border-radius: 0; box-shadow: none; overflow-wrap: anywhere; }
+body .region-results > .region-result + .region-result, body .place-result + .place-result { border-top: 1px solid var(--line); }
+body .region-results > .region-result.is-selected { border: 0; background: var(--blue-soft); box-shadow: none; }
+body .region-results > .region-result.is-selected + .region-result { border-top: 1px solid var(--line); }
+body .region-results > .region-result > span { display: block; padding: .85rem 1rem; }
+body .search-result-choice { display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; min-height: 3rem; padding: .85rem 1rem; border: 0; border-radius: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+body .search-result-choice > span:first-child { display: grid; gap: .2rem; min-width: 0; }
+body .search-result-choice strong { color: var(--ink); font-size: 1rem; }
+body .region-results > .region-result > span > .search-result-detail { display: block; margin-top: .2rem; }
+body .search-result-choice:hover, body .search-result-choice[aria-pressed="true"] { background: var(--blue-soft); }
+body .search-result-choice:focus-visible { outline: 2px solid var(--blue); outline-offset: -3px; }
+body .search-result-detail, body .search-result-state { color: var(--ink-soft); font-size: var(--text-xs); }
+body .search-result-state { flex-shrink: 0; font-weight: 750; }
+body .place-result > a { padding: 0 1rem .75rem; justify-self: start; }
+body .place-result.has-thumbnail { grid-template-columns: minmax(0, 1fr) 9rem; }
+body .place-result.has-thumbnail > :not(.place-image-gallery) { grid-column: 1; }
+body .place-result.has-thumbnail > .place-image-gallery { grid-column: 2; grid-row: 1 / span 2; }
+body .place-layout { grid-template-columns: minmax(0, 1fr); }
+body .search-combobox { position: relative; min-width: 0; border: 1px solid #b8bbb4; border-radius: 1.5rem; background: white; }
+body .search-combobox:focus-within, body .search-combobox.is-open { border-color: var(--blue); box-shadow: 0 3px 14px #1722351a; }
+body .search-combobox:focus-within { outline: 2px solid var(--blue-soft); outline-offset: 1px; }
+body .search-combobox :is(input[type="search"], select):focus-visible { outline: 0; }
+body .search-combobox.is-open { z-index: 20; border-radius: 1.5rem 1.5rem 0 0; }
+body .search-combobox > :is(.region-input-row, .place-input-row) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0; }
+body .search-combobox :is(input[type="search"], select), body .search-combobox > textarea { border: 0; border-radius: 1.5rem; background: transparent; box-shadow: none; }
+body .search-combobox .button { width: auto; min-height: 2.6rem; margin: .25rem; padding: .5rem 1rem; }
+body .search-combobox > :is(.region-results, .place-results) { display: none; position: absolute; top: 100%; left: -1px; width: calc(100% + 2px); max-height: min(24rem, 45dvh); border: 1px solid var(--blue); border-top: 0; border-radius: 0 0 1.5rem 1.5rem; box-shadow: 0 10px 14px #1722351a; }
+body .search-combobox.is-open > :is(.region-results, .place-results):not(:empty) { display: grid; }
+body .search-combobox > :is(.region-results, .place-results)::before { content: ''; display: block; height: 1px; margin: 0 1rem; background: var(--line); }
+body .work-canvas:has(.search-combobox.is-open) { overflow: visible; }
+
+/* Place discovery uses the page body; only region filters use dropdowns. */
+body .place-list-pane .place-results { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; max-height: clamp(26rem, 70dvh, 48rem); padding: .25rem; border: 0; border-radius: 0; background: transparent; }
+body .place-list-pane .workspace-empty { grid-column: 1 / -1; }
+body .place-list-pane .place-result { align-content: start; border: 1px solid var(--line); border-radius: 1rem; overflow: hidden; background: white; }
+body .place-list-pane .place-result.has-thumbnail { grid-template-columns: minmax(0, 1fr); }
+body .place-list-pane .place-result.has-thumbnail > .place-image-gallery { grid-column: 1; grid-row: 1; }
+body .place-list-pane .place-image-strip { width: 100%; height: 180px; border-radius: 0; }
+body .place-list-pane .place-thumbnail { width: 100%; height: 100%; }
+@media (min-width: 70rem) {
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) { grid-template-columns: 12rem minmax(0, 1fr); }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) > .step-rail { grid-column: 1; grid-row: 1 / span 2; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) > .work-canvas { grid-column: 2; grid-row: 2; padding: 1.5rem; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) > .journey-summary { position: sticky; top: 5.5rem; z-index: 15; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1rem; grid-column: 2; grid-row: 1; margin: 1rem 1.5rem 0; padding: .75rem 1rem; background: white; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-heading { padding: 0; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-heading :is(.eyebrow, svg),
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-policy { display: none; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-heading h2 { margin: 0; font-size: 1rem; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-list { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin: 0; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-list > div { display: grid; gap: .15rem; padding: 0; border: 0; font-size: .8rem; }
+  body .workspace-shell:is([data-active-step="2"], [data-active-step="3"], [data-active-step="6"]) .summary-list dd { text-align: left; }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: repeat(4, max-content) minmax(0, 1fr); align-items: start; }
+  body #restaurant-workspace { grid-template-rows: repeat(5, max-content) minmax(0, 1fr); }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) > :not(.place-layout) { grid-column: 1; }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) .place-layout:not([hidden]) { display: contents; }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) .place-list-pane { grid-column: 1; min-width: 0; }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) .place-map-pane { grid-column: 2; grid-row: 1 / span 5; position: sticky; top: 11rem; }
+  body #restaurant-workspace .place-map-pane { grid-row: 1 / span 6; }
+  body :is(#attractions-workspace, #hotel-workspace, #restaurant-workspace) .place-map { height: clamp(32rem, calc(100dvh - 17rem), 44rem); }
+}
+@media (max-width: 69.999rem) {
+  body .place-list-pane .place-results { grid-template-columns: minmax(0, 1fr); }
+  body .place-list-pane .place-image-strip { height: 215px; }
+}

@@ -126,12 +126,14 @@
         const address = document.createElement('span'); address.textContent = place.address;
         const detour = document.createElement('span'); detour.textContent = `예상 동선 이탈 ${place.estimatedDetourMinutes}분`;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result-choice';
         button.dataset.placeId = place.kakaoPlaceId;
-        button.textContent = chosen?.kakaoPlaceId === place.kakaoPlaceId ? '선택됨' : '선택';
+        const state = document.createElement('span'); state.className = 'search-result-state';
+        state.textContent = chosen?.kakaoPlaceId === place.kakaoPlaceId ? '선택됨' : '';
+        const copy = document.createElement('span'); copy.append(heading, address, detour); button.append(copy, state);
         button.setAttribute('aria-pressed', String(chosen?.kakaoPlaceId === place.kakaoPlaceId));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
-        item.append(heading, address, detour, link, button); images.append(item, place); return item;
+        item.append(button, link); images.append(item, place); return item;
       });
       if (searched && !results.length) {
         const item = document.createElement('li'); item.className = 'workspace-empty';

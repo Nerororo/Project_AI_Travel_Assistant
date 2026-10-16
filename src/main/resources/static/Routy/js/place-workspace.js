@@ -285,12 +285,14 @@
         const heading = document.createElement('strong'); heading.textContent = place.providerDisplayName;
         const address = document.createElement('span'); address.textContent = place.address;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result-choice';
         button.dataset.placeId = place.kakaoPlaceId;
-        button.textContent = selectedIds.has(place.kakaoPlaceId) ? '선택됨' : '선택';
+        const state = document.createElement('span'); state.className = 'search-result-state';
+        state.textContent = selectedIds.has(place.kakaoPlaceId) ? '선택됨' : '';
+        const copy = document.createElement('span'); copy.append(heading, address); button.append(copy, state);
         button.setAttribute('aria-pressed', String(selectedIds.has(place.kakaoPlaceId)));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
-        item.append(heading, address, link, button);
+        item.append(button, link);
         images.append(item, place);
         return item;
       }));
@@ -445,8 +447,8 @@
         if (!response.ok || !Array.isArray(body?.regions)) { status('#district-status', errorFor(response.status, body).message, true); return; }
         const matches = body.regions.filter(item => item.placeSearchFilterable === true && item.parentRegionId === region?.regionId);
         $('#district-results').replaceChildren(...matches.map(item => {
-          const li = document.createElement('li'), button = document.createElement('button'); button.type = 'button'; button.textContent = `${item.name} 필터 선택`;
-          li.className = 'place-result'; button.className = 'button button-ghost';
+          const li = document.createElement('li'), button = document.createElement('button'); button.type = 'button'; button.textContent = item.name;
+          li.className = 'place-result'; button.className = 'search-result-choice';
           button.addEventListener('click', () => { district = {regionId: item.regionId, name: item.name}; renderDistrict(); status('#district-status', `${item.name} 필터를 적용했습니다.`); }); li.append(button); return li;
         }));
         status('#district-status', matches.length ? `${matches.length}개의 구·군을 찾았습니다.` : '선택 지역에 속한 구·군 필터가 없습니다.');

@@ -200,10 +200,10 @@
                   <input id="region-query" name="query" type="search" autocomplete="off" placeholder="예: 강릉, 부산, 해운대">
                   <button class="button button-primary" id="region-search-submit" type="submit">검색</button>
                 </div>
+                <ul class="region-results" id="region-search-results" aria-label="지역 검색 결과" tabindex="0"></ul>
                 <p class="field-help">시·군과 특별시·광역시·세종을 선택할 수 있어요. 구·군은 다음 장소 검색에서만 사용됩니다.</p>
               </form>
               <div class="region-status" id="region-search-status" role="status" aria-live="polite" tabindex="-1"></div>
-              <ul class="region-results" id="region-search-results" aria-label="지역 검색 결과" tabindex="0"></ul>
             </section>
 
             <section class="region-panel" id="region-ai-panel" role="tabpanel" aria-labelledby="region-ai-tab" hidden>
@@ -227,10 +227,12 @@
 
           <section class="place-workspace" id="attractions-workspace" aria-label="관광지와 여행 경계" hidden>
             <div class="place-tabs" role="group" aria-label="장소 종류"><button type="button" data-place-role="ATTRACTION" aria-pressed="true">관광지</button><button type="button" data-place-role="TRAVEL_BOUNDARY" aria-pressed="false">시작·종료 장소</button></div>
+            <div id="place-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div class="mobile-place-view" role="group" aria-label="관광지 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
             <div id="attraction-controls">
               <div id="district-controls" hidden>
-              <form id="district-form" class="place-search-form" novalidate><label for="district-query">구·군 필터 찾기 <span class="field-help">특별시·광역시만</span></label><div class="place-input-row"><input id="district-query" type="search" autocomplete="off"><button type="submit" class="button button-ghost">구·군 찾기</button></div></form>
-              <div id="district-status" role="status" aria-live="polite"></div><ul id="district-results" class="place-results" aria-label="구·군 검색 결과" tabindex="0"></ul><div id="district-current" class="selected-place"></div>
+              <form id="district-form" class="place-search-form" novalidate><label for="district-query">구·군 필터 찾기 <span class="field-help">특별시·광역시만</span></label><div class="place-input-row"><input id="district-query" type="search" autocomplete="off"><button type="submit" class="button button-ghost">구·군 찾기</button></div><ul id="district-results" class="place-results" aria-label="구·군 검색 결과" tabindex="0"></ul></form>
+              <div id="district-status" role="status" aria-live="polite"></div><div id="district-current" class="selected-place"></div>
               </div>
               <form id="attraction-search-form" class="place-search-form" novalidate><label for="attraction-query">관광지 검색어</label><div class="place-input-row"><input id="attraction-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div><label><input id="attraction-whole-region" type="checkbox"> 지역 전체에서 검색</label></form>
             </div>
@@ -240,17 +242,15 @@
               <div class="place-input-row"><input id="boundary-query" type="search" autocomplete="off" required><button type="submit" class="button button-primary">검색</button></div>
               <p class="field-help">역·터미널·공항 등 여행을 시작하거나 마칠 장소를 선택해 주세요. 시작과 종료에 같은 장소를 선택할 수 있어요.</p>
             </form>
-            <div id="place-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div class="mobile-place-view" role="group" aria-label="관광지 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
             <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="place-results" class="place-results" aria-label="장소 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="place-prev-page" type="button" class="button button-ghost">이전</button><span id="place-page">1</span><button id="place-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="place-map" class="place-map" role="img" aria-label="장소 검색 지도"></div><p id="place-map-status" class="field-help"></p><button id="place-search-map" type="button" class="button button-ghost">현재 지도 위치에서 다시 검색</button></div></div>
             <div id="attraction-selected" class="selected-places" aria-label="선택한 관광지"></div>
             <div id="boundary-selected" class="selected-places" aria-label="선택한 시작·종료 장소" hidden></div>
           </section>
 
           <section class="place-workspace" id="hotel-workspace" aria-label="숙소 선택" hidden>
-            <form id="hotel-search-form" class="place-search-form" novalidate><label for="hotel-mode">숙소 탐색 기준</label><div class="place-input-row"><select id="hotel-mode"><option value="GEOMETRIC_MEDIAN">관광지 중심 · 5km</option><option value="GEOMETRIC_MEDIAN_10">관광지 중심 · 10km</option><option value="MEDOID">관광지 중간 장소 · 5km</option><option value="MAP_BOUNDS">현재 지도 영역</option></select><button type="submit" class="button button-primary">숙소 찾기</button></div></form>
             <p class="field-help">검색 순서에 거리 점수나 추천 순위는 적용하지 않습니다. 숙소를 직접 선택해 주세요.</p><div id="hotel-status" role="status" aria-live="polite" tabindex="-1"></div>
             <div class="mobile-place-view" role="group" aria-label="숙소 검색 결과 보기"><button type="button" data-place-view="list" aria-pressed="true">목록 보기</button><button type="button" data-place-view="map" aria-pressed="false">지도 보기</button></div>
+            <form id="hotel-search-form" class="place-search-form" novalidate><label for="hotel-mode">숙소 탐색 기준</label><div class="place-input-row"><select id="hotel-mode"><option value="GEOMETRIC_MEDIAN">관광지 중심 · 5km</option><option value="GEOMETRIC_MEDIAN_10">관광지 중심 · 10km</option><option value="MEDOID">관광지 중간 장소 · 5km</option><option value="MAP_BOUNDS">현재 지도 영역</option></select><button type="submit" class="button button-primary">숙소 찾기</button></div></form>
             <div class="place-layout" data-mobile-view="list"><div class="place-list-pane"><ul id="hotel-results" class="place-results" aria-label="숙소 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="hotel-prev-page" type="button" class="button button-ghost">이전</button><span id="hotel-page">1</span><button id="hotel-next-page" type="button" class="button button-ghost">다음</button></div></div><div class="place-map-pane"><div id="hotel-map" class="place-map" role="img" aria-label="숙소 검색 지도"></div><p id="hotel-map-status" class="field-help"></p></div></div>
             <div id="hotel-selected" class="selected-places" aria-label="선택한 숙소"></div>
           </section>
@@ -289,17 +289,17 @@
           </section>
 
           <section class="restaurant-workspace" id="restaurant-workspace" aria-label="음식점 선택" hidden>
+            <p class="field-help">검색 결과는 식사 전후 시각과 동선 이탈을 서버가 평가한 순서입니다. 음식점은 직접 선택하거나 미정으로 둘 수 있습니다.</p>
+            <div id="restaurant-status" role="status" aria-live="polite" tabindex="-1"></div>
+            <div id="restaurant-intro" class="workspace-empty"><h3>아직 찾은 음식점이 없어요</h3><p>식사 날짜와 메뉴를 고른 뒤 음식점 찾기를 눌러 주세요.</p></div>
+            <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소" hidden></div>
+            <div class="mobile-place-view" id="restaurant-view-switch" role="group" aria-label="음식점 검색 결과 보기" hidden><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
             <form id="restaurant-search-form" class="place-search-form" novalidate>
               <label for="restaurant-slot">식사 날짜와 시간<select id="restaurant-slot"></select></label>
               <label for="restaurant-menu">확정 메뉴<select id="restaurant-menu"></select></label>
               <label for="restaurant-reference">기준 관광지<select id="restaurant-reference"><option value="">기준 관광지 없음</option></select></label>
               <button id="restaurant-submit" class="button button-primary" type="submit">음식점 찾기</button>
             </form>
-            <p class="field-help">검색 결과는 식사 전후 시각과 동선 이탈을 서버가 평가한 순서입니다. 음식점은 직접 선택하거나 미정으로 둘 수 있습니다.</p>
-            <div id="restaurant-status" role="status" aria-live="polite" tabindex="-1"></div>
-            <div id="restaurant-intro" class="workspace-empty"><h3>아직 찾은 음식점이 없어요</h3><p>식사 날짜와 메뉴를 고른 뒤 음식점 찾기를 눌러 주세요.</p></div>
-            <div id="restaurant-context" class="restaurant-context" aria-label="식사 전후 장소" hidden></div>
-            <div class="mobile-place-view" id="restaurant-view-switch" role="group" aria-label="음식점 검색 결과 보기" hidden><button type="button" data-restaurant-view="list" aria-pressed="true">목록 보기</button><button type="button" data-restaurant-view="map" aria-pressed="false">지도 보기</button></div>
             <div class="place-layout" id="restaurant-layout" data-mobile-view="list" hidden>
               <div class="place-list-pane"><ul id="restaurant-results" class="place-results" aria-label="음식점 검색 결과" tabindex="0"></ul><div class="place-pagination"><button id="restaurant-prev-page" type="button" class="button button-ghost">이전</button><span id="restaurant-page">1</span><button id="restaurant-next-page" type="button" class="button button-ghost">다음</button></div></div>
               <div class="place-map-pane"><div id="restaurant-map" class="place-map" role="img" aria-label="식사 전후 장소와 음식점 지도"></div><p id="restaurant-map-status" class="field-help"></p><button id="restaurant-search-map" type="button" class="button button-ghost">현재 지도 영역에서 다시 검색</button></div>

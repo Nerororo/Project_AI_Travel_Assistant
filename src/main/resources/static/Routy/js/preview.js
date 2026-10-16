@@ -97,6 +97,59 @@
   }
 
   function mount(document, window) {
+    const dropdowns = [
+      ['region-search-results', '#region-search-form .region-input-row'],
+      ['region-ai-results', '#region-request'],
+      ['district-results', '#district-form .place-input-row']
+    ].map(([id, ...selectors]) => {
+      const list = document.getElementById(id);
+      const boxes = selectors.map(selector => {
+        const anchor = document.querySelector(selector), box = document.createElement('div');
+        box.className = 'search-combobox';
+        anchor.before(box); box.append(anchor);
+        const trigger = anchor.matches('input, textarea, button') ? anchor : anchor.querySelector('input, select');
+        trigger.setAttribute('aria-controls', id); trigger.setAttribute('aria-expanded', 'false');
+        return {box, trigger};
+      });
+      let active = boxes[0];
+      const close = (restoreFocus = false) => {
+        if (restoreFocus) active.trigger.focus({preventScroll: true});
+        active.box.classList.remove('is-open'); active.trigger.setAttribute('aria-expanded', 'false');
+      };
+      const open = () => {
+        if (!list.children.length) { close(); return; }
+        active.box.classList.add('is-open'); active.trigger.setAttribute('aria-expanded', 'true');
+      };
+      const attach = () => {
+        close();
+        active = boxes.find(({box}) => !box.closest('[hidden]')) || boxes[0];
+        active.box.append(list); open();
+      };
+      active.box.append(list);
+      new window.MutationObserver(attach).observe(list, {childList: true});
+      boxes.forEach(({box}) => {
+        box.addEventListener('focusin', open);
+        box.addEventListener('click', event => { if (!list.contains(event.target)) open(); });
+        box.addEventListener('focusout', event => { if (!box.contains(event.relatedTarget)) close(); });
+        box.addEventListener('keydown', event => {
+          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); }
+          if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && event.target !== list && !event.target.matches('select, textarea')) {
+            const choices = [...list.querySelectorAll('.search-result-choice')];
+            if (!choices.length) return;
+            event.preventDefault(); open();
+            const index = choices.indexOf(document.activeElement);
+            const next = index < 0 ? (event.key === 'ArrowDown' ? 0 : choices.length - 1)
+              : (index + (event.key === 'ArrowDown' ? 1 : choices.length - 1)) % choices.length;
+            choices[next].focus();
+          }
+        });
+      });
+      list.addEventListener('click', event => {
+        if (event.target.closest('.search-result-choice')) window.setTimeout(() => close(true), 0);
+      });
+      return {contains: target => active.box.contains(target), close};
+    });
+    document.addEventListener('click', event => dropdowns.forEach(dropdown => { if (!dropdown.contains(event.target)) dropdown.close(); }));
     const pages = Array.from(document.querySelectorAll('[data-view]'));
     const content = document.querySelector('#content');
     const stepList = document.querySelector('#step-list');
@@ -246,7 +299,7 @@
       if (changed) { menuController?.reset(); estimateController?.reset(); restaurantController?.reset(); furthestStep = 0; renderStep(false); }
       document.querySelectorAll('[data-region-id]').forEach(button => {
         const selected = button.dataset.regionId === selectedRegion.regionId;
-        button.textContent = selected ? '선택됨' : '이 지역 선택';
+        button.querySelector('.search-result-state').textContent = selected ? '선택됨' : '';
         button.setAttribute('aria-pressed', String(selected));
         button.closest('.region-result')?.classList.toggle('is-selected', selected);
       });
@@ -258,10 +311,11 @@
       list.replaceChildren(...regions.map(region => {
         const item = document.createElement('li');
         item.className = 'region-result';
-        const copy = document.createElement('div');
-        const title = document.createElement('h3');
+        const copy = document.createElement('span');
+        const title = document.createElement('strong');
         title.textContent = region.name;
-        const detail = document.createElement('p');
+        const detail = document.createElement('span');
+        detail.className = 'search-result-detail';
         detail.textContent = kind === 'ai' ? `${region.provinceName || '광역 지역'} · ${region.reason}` : (region.provinceName || '광역 지역');
         copy.append(title, detail);
         if (kind === 'search' && !region.selectable) {
@@ -270,17 +324,18 @@
           badge.textContent = region.placeSearchFilterable ? '장소 검색 필터' : '최종 선택 불가';
           copy.append(badge);
         }
-        item.append(copy);
         if (kind === 'ai' || region.selectable) {
           const button = document.createElement('button');
           button.type = 'button';
-          button.className = 'button button-ghost';
+          button.className = 'search-result-choice';
           button.dataset.regionId = region.regionId;
           button.setAttribute('aria-pressed', String(selectedRegion?.regionId === region.regionId));
-          button.textContent = selectedRegion?.regionId === region.regionId ? '선택됨' : '이 지역 선택';
+          const state = document.createElement('span'); state.className = 'search-result-state';
+          state.textContent = selectedRegion?.regionId === region.regionId ? '선택됨' : '';
+          button.append(copy, state);
           button.addEventListener('click', () => selectRegion(region, kind));
           item.append(button);
-        }
+        } else item.append(copy);
         return item;
       }));
     }
