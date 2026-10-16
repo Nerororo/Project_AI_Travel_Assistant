@@ -116,6 +116,17 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       if (estimateMode === 'oversized' || estimateMode === 'limited') {
         res.writeHead(estimateMode === 'oversized' ? 413 : 429);
         res.end(JSON.stringify({code: estimateMode === 'oversized' ? 'REQUEST_TOO_LARGE' : 'RATE_LIMIT_EXCEEDED', retryAfterSeconds: 43, message: 'untrusted-response'}));
+      } else if (estimateMode === 'split') {
+        const place = body.places[0];
+        res.writeHead(200);
+        res.end(JSON.stringify({routeVerified: false, days: body.days.map((day, index) => ({date: day.date,
+          items: index ? [] : [
+            {order: 1, type: 'MOVE', startTime: '11:00', endTime: '11:00', estimatedMinutes: 0},
+            {order: 2, type: 'VISIT', clientPlaceId: place.clientPlaceId, displayName: place.displayName, startTime: '11:00', endTime: '11:45'},
+            {order: 3, type: 'MEAL', startTime: '12:00', endTime: '13:00'},
+            {order: 4, type: 'VISIT', clientPlaceId: place.clientPlaceId, displayName: place.displayName, startTime: '13:15', endTime: '14:30'},
+            {order: 5, type: 'MOVE', startTime: '14:30', endTime: '14:30', estimatedMinutes: 0}
+          ]}))}));
       } else if (estimateMode === 'capacity') {
         res.writeHead(422);
         res.end(JSON.stringify({code: 'PLAN_CAPACITY_EXCEEDED', message: 'fixed', details: {date: body.startDate, plannedEndTime: '20:30', allowedEndTime: '20:00', exceededMinutes: 30}, adjustments: ['CHANGE_END_TIME']}));
@@ -195,7 +206,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     if (req.method === 'POST' && req.url === '/api/places/image') {
       for await (const _ of req) { /* Discard temporary search terms. */ }
       res.writeHead(200, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
-      res.end(JSON.stringify({thumbnailUrl: null}));
+      res.end(JSON.stringify({thumbnailUrls: []}));
       return;
     }
     if (req.method === 'POST' && req.url === '/api/places/restaurants/search') {
@@ -309,18 +320,56 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`window.scrollTo({top:${scroll},behavior:"instant"})`);
   }
   async function searchScrollScreenshot(selector, name) {
+    if (!await evaluate(`!!document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox')`)) {
+      const previousScroll = await evaluate('scrollY');
+      await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});window.scrollProbeNodes=[...list.children];list.replaceChildren(...Array.from({length:20},(_,i)=>window.scrollProbeNodes[i%window.scrollProbeNodes.length].cloneNode(true)))})()`);
+      for (const width of [1440, 390]) {
+        await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+        await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.scrollTop=0;list.scrollIntoView({block:'center',behavior:'instant'});list.focus({preventScroll:true})})()`);
+        const layout = await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),pane=list.closest('.place-layout'),map=pane.querySelector('.place-map'),r=list.getBoundingClientRect(),m=map.getBoundingClientRect();return {position:getComputedStyle(list).position,columns:getComputedStyle(list).gridTemplateColumns.split(' ').length,scrolls:list.scrollHeight>list.clientHeight,fits:document.documentElement.scrollWidth<=innerWidth,mapRight:m.left>=r.right,mapHeight:m.height}})()`);
+        assert.equal(layout.position, 'static', 'place results stay in the page body');
+        assert.equal(layout.columns, width === 1440 ? 2 : 1, `${name} card columns at ${width}px`);
+        assert.equal(layout.scrolls && layout.fits, true, `${name} results scroll without page overflow`);
+        if (width === 1440) assert.ok(layout.mapRight && layout.mapHeight >= 512, `${name} has a large map on the right`);
+        if (width === 1440) {
+          await screenshot('selection-summary-' + name + '-desktop.png');
+          const summary = await evaluate(`(()=>{const node=document.querySelector('.journey-summary'),r=node.getBoundingClientRect(),header=document.querySelector('.site-header').getBoundingClientRect();return {position:getComputedStyle(node).position,top:r.top,bottom:r.bottom,height:r.height,headerBottom:header.bottom,fields:['#summary-region','#summary-places'].every(selector=>{const b=document.querySelector(selector).getBoundingClientRect();return b.top>=r.top&&b.bottom<=r.bottom})}})()`);
+          assert.ok(summary.position==='sticky'&&summary.top>=summary.headerBottom&&summary.bottom<1000&&summary.height<=100&&summary.fields, `${name} keeps current selection visible: ${JSON.stringify(summary)}`);
+        }
+        await screenshot(`search-scroll-${name}-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+        await key('ArrowDown', 'ArrowDown', 40);
+        await until(`document.querySelector(${JSON.stringify(selector)}).scrollTop>0`);
+      }
+      await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.replaceChildren(...window.scrollProbeNodes);list.scrollTop=0;delete window.scrollProbeNodes})()`);
+      await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+      await evaluate(`window.scrollTo({top:${previousScroll},behavior:'instant'})`);
+      return;
+    }
     const previousScroll = await evaluate('scrollY');
+    assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),choice=list.querySelector('.search-result-choice');return !!choice&&choice.tagName==='BUTTON'&&choice.textContent.trim().length>0&&!list.querySelector('.button')})()`), true, `${name} uses selectable result rows`);
     // Expand fake result cards for layout only; restore the original nodes and listeners.
     await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});window.scrollProbeNodes=[...list.children];list.replaceChildren(...Array.from({length:10},(_,i)=>window.scrollProbeNodes[i%window.scrollProbeNodes.length].cloneNode(true)))})()`);
     for (const width of [1440, 390]) {
       await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
-      await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.scrollTop=0;list.scrollIntoView({block:'center',behavior:'instant'});list.focus({preventScroll:true})})()`);
+      await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),box=list.closest('.search-combobox');document.activeElement.blur();box.querySelector('[aria-controls]').focus({preventScroll:true});list.scrollTop=0;box.scrollIntoView({block:'start',behavior:'instant'});list.focus({preventScroll:true})})()`);
       await delay(150);
       assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),style=getComputedStyle(list);return list.clientHeight<=Math.ceil(parseFloat(style.maxHeight)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom))&&list.scrollHeight>list.clientHeight&&list.getBoundingClientRect().right<=innerWidth})()`), true, `${name} bounds at ${width}px`);
+      assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),row=list.querySelector('li'),choice=row.querySelector('.search-result-choice');return Math.abs(choice.getBoundingClientRect().width-row.clientWidth)<2&&getComputedStyle(list).rowGap==='0px'})()`), true, `${name} has connected, full-width rows at ${width}px`);
+      const overlay = await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),box=list.closest('.search-combobox'),bounds=box.getBoundingClientRect(),result=list.getBoundingClientRect(),probe=document.createElement('span');box.after(probe);const before=probe.offsetTop;box.classList.remove('is-open');const after=probe.offsetTop;box.classList.add('is-open');probe.remove();return {position:getComputedStyle(list).position,gap:result.top-bounds.bottom,width:result.width-bounds.width,movement:after-before}})()`);
+      assert.ok(overlay.position === 'absolute' && Math.abs(overlay.gap) <= 1 && Math.abs(overlay.width) <= 1 && Math.abs(overlay.movement) <= 1, `${name} joins the search bar without moving content at ${width}px: ${JSON.stringify(overlay)}`);
+      assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)}),r=list.getBoundingClientRect(),y=Math.min(r.bottom-15,innerHeight-100);return list.contains(document.elementFromPoint(r.left+20,y))})()`), true, `${name} results stay above the underlying screen at ${width}px`);
+      await evaluate(`document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox').querySelector('[aria-controls]').focus({preventScroll:true})`);
       await screenshot(`search-scroll-${name}-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+      await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus({preventScroll:true})`);
       await key('ArrowDown', 'ArrowDown', 40);
       await until(`document.querySelector(${JSON.stringify(selector)}).scrollTop>0`);
       assert.equal(await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.scrollTop=list.scrollHeight;return list.scrollTop>0})()`), true);
+      await key('Escape', 'Escape', 27);
+      assert.equal(await evaluate(`!document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox').classList.contains('is-open')`), true, 'Escape closes the dropdown');
+      await evaluate(`document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox').click()`);
+      assert.equal(await evaluate(`document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox').classList.contains('is-open')`), true, 'search control reopens results');
+      await click('#step-title');
+      assert.equal(await evaluate(`!document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox').classList.contains('is-open')`), true, 'outside click closes the dropdown');
     }
     await evaluate(`(()=>{const list=document.querySelector(${JSON.stringify(selector)});list.replaceChildren(...window.scrollProbeNodes);list.scrollTop=0;delete window.scrollProbeNodes})()`);
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
@@ -346,9 +395,11 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await send('Input.dispatchKeyEvent', {type: 'keyUp', key, code, windowsVirtualKeyCode, modifiers});
   }
   async function chooseWithKeyboard(selector) {
-    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`);
+    const dropdown = await evaluate(`!!document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox')`);
+    await evaluate(`(()=>{const choice=document.querySelector(${JSON.stringify(selector)});choice.closest('.search-combobox')?.click();choice.focus()})()`);
     await key('Enter', 'Enter', 13);
-    assert.equal(await evaluate(`document.activeElement === document.querySelector(${JSON.stringify(selector)})`), true, 'selection keeps focus on the same result');
+    if (dropdown) await until(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).closest('.search-combobox');return !box.classList.contains('is-open')&&document.activeElement===box.querySelector('[aria-controls]')})()`);
+    else assert.equal(await evaluate(`document.activeElement === document.querySelector(${JSON.stringify(selector)})`), true, 'card selection keeps keyboard focus');
   }
   await send('Runtime.enable');
   await send('Page.enable');
@@ -454,6 +505,21 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await screenshot('w1-workspace-initial-desktop.png');
     loginTtl = 3600;
   });
+  await t.test('workspace proportions keep every step label on one line across viewport sizes', async () => {
+    const activeStep = await evaluate(`document.querySelector('.workspace-shell').dataset.activeStep`);
+    for (const width of [320, 390, 768, 930, 1024, 1120, 1280, 1440, 1920]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width <= 390});
+      for (const step of ['0', '2', '5', '6', '7']) {
+        await evaluate(`document.querySelector('.workspace-shell').dataset.activeStep='${step}'`);
+        const layout = await evaluate(`(()=>{const rail=document.querySelector('.step-rail'),canvas=document.querySelector('.work-canvas');return {fits:document.documentElement.scrollWidth<=innerWidth,canvas:canvas.clientWidth,labels:[...rail.querySelectorAll('button')].every(button=>{const node=[...button.childNodes].find(node=>node.nodeType===Node.TEXT_NODE&&node.textContent.trim());const range=document.createRange();range.selectNodeContents(node);const rects=[...range.getClientRects()];return rects.length===1&&rects[0].right<=button.getBoundingClientRect().right})}})()`);
+        assert.ok(layout.fits && layout.labels, `step ${step} at ${width}px: ${JSON.stringify(layout)}`);
+        if (width >= 930) assert.ok(layout.canvas >= 600, `working area stays readable at ${width}px`);
+      }
+      await evaluate(`document.querySelector('.workspace-shell').dataset.activeStep=${JSON.stringify(activeStep)}`);
+      if ([390, 1024, 1280, 1440].includes(width)) await screenshot(`responsive-workspace-${width}.png`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
+  });
   await t.test('direct search and exactly three AI candidates support an explicit region choice', async () => {
     await navigate('/workspace');
     await evaluate(`document.querySelector('#region-query').value='강릉';document.querySelector('#region-search-form').requestSubmit()`);
@@ -498,6 +564,38 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await click('#next-step');
     await evaluate(`document.querySelector('#attraction-query').value='해변';document.querySelector('#attraction-search-form').requestSubmit()`);
     await until(`document.querySelectorAll('#place-results .place-result').length === 1`);
+    for (const width of [1440, 390]) {
+      await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
+      const sizes = await evaluate(`(() => {
+        const list = document.querySelector('#place-results'), plain = list.querySelector('.place-result');
+        const pictured = plain.cloneNode(true), gallery = document.createElement('div'); pictured.id = 'image-layout-probe';
+        const strip = document.createElement('div'), image = document.createElement('img');
+        gallery.className = 'place-image-gallery'; strip.className = 'place-image-strip'; image.className = 'place-thumbnail';
+        image.src = '/img/workspace-coast.png'; image.alt = ''; strip.tabIndex = 0;
+        const second = image.cloneNode(); second.src = '/img/auth-heritage.png';
+        strip.append(image, second); gallery.append(strip); pictured.append(gallery); pictured.classList.add('has-thumbnail'); list.prepend(pictured);
+        const other = pictured.cloneNode(true); other.id = 'image-layout-probe-two';
+        other.querySelector('strong').textContent = '가상 한옥'; other.querySelector('img').src = '/img/auth-heritage.png'; list.insertBefore(other, pictured.nextSibling);
+        const result = {plainButton: plain.querySelector('button').getBoundingClientRect().width, plainWidth: plain.clientWidth,
+          picturedButton: pictured.querySelector('button').getBoundingClientRect().width, picturedWidth: pictured.clientWidth,
+          imageWidth: image.getBoundingClientRect().width, imageHeight: image.getBoundingClientRect().height,
+          imageBottom: image.getBoundingClientRect().bottom, textTop: pictured.querySelector('button').getBoundingClientRect().top};
+        return result;
+      })()`);
+      assert.ok(Math.abs(sizes.plainButton - sizes.plainWidth) < 1, 'plain result fills the row');
+      assert.ok(Math.abs(sizes.picturedButton - sizes.picturedWidth) < 1, 'place text fills the card');
+      assert.ok(Math.abs(sizes.imageWidth - sizes.picturedWidth) < 1 && sizes.imageWidth >= 240, 'photo fills the card width');
+      assert.equal(sizes.imageHeight, width === 1440 ? 180 : 215, 'photo matches the reference height');
+      assert.ok(sizes.imageBottom <= sizes.textTop + 1, 'photo sits above the place information');
+      await evaluate(`Promise.all([...document.querySelectorAll('#image-layout-probe img, #image-layout-probe-two img')].map(image=>image.decode()))`);
+      await evaluate(`document.querySelector('#attractions-workspace').scrollIntoView({block:'start',behavior:'instant'})`);
+      await screenshot(`place-map-layout-${width === 1440 ? 'desktop' : 'mobile'}.png`);
+      await evaluate(`document.querySelector('#image-layout-probe .place-image-strip').focus({preventScroll:true})`);
+      await key('ArrowRight', 'ArrowRight', 39);
+      await until(`document.querySelector('#image-layout-probe .place-image-strip').scrollLeft>0`);
+      await evaluate(`document.querySelector('#image-layout-probe').remove();document.querySelector('#image-layout-probe-two').remove()`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await designScreenshot('w1-06-attractions-desktop.png');
     await searchScrollScreenshot('#place-results', 'attractions');
     const attractionRequest = placeRequests.at(-1);
@@ -731,7 +829,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#restaurant-results').scrollIntoView({block:'start',behavior:'instant'})`);
     await delay(150);
     assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth`), true);
-    assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result').getBoundingClientRect().bottom <= document.querySelector('.canvas-actions').getBoundingClientRect().top`), true);
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('#restaurant-results')).position === 'static'`), true);
     await screenshot('w1-03a-candidates-mobile.png');
     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false});
     await chooseWithKeyboard('#restaurant-results .place-result button');
@@ -749,11 +847,13 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
       LatLngBounds:class{constructor(){this.points=[]}extend(p){this.points.push(p)}getSouthWest(){return new window.kakao.maps.LatLng(Math.min(...this.points.map(p=>p.lat)),Math.min(...this.points.map(p=>p.lng)))}getNorthEast(){return new window.kakao.maps.LatLng(Math.max(...this.points.map(p=>p.lat)),Math.max(...this.points.map(p=>p.lng))) }},
       Map:class{constructor(){this.area=null}relayout(){}setBounds(area){this.area=area}getBounds(){return this.area}},
       Marker:class{constructor(options){this.map=options.map;this.title=options.title;window.__restaurantMarkers.push(this)}setMap(map){this.map=map}},
-      MarkerImage:class{},Size:class{},event:{addListener(marker,event,handler){marker.choose=handler}}
+      InfoWindow:class{constructor(options){this.content=options.content}open(map,marker){this.map=map;this.marker=marker}close(){this.map=null}},
+      event:{addListener(marker,event,handler){marker[event]=handler;if(event==='click')marker.choose=handler}}
     }}`);
     await click('#restaurant-workspace [data-restaurant-view="map"]');
     await until(`window.__restaurantMarkers.some(marker => marker.map && marker.title.includes('가상 음식점'))`);
     assert.equal(await evaluate(`window.__restaurantMarkers.filter(marker => marker.map && marker.title.includes('직전 장소')).length`), 1);
+    assert.equal(await evaluate(`window.__restaurantMarkers.filter(marker => marker.map).every(marker => typeof marker.mouseover === 'function' && typeof marker.mouseout === 'function')`), true);
     await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
     assert.equal(await evaluate(`document.querySelector('#restaurant-results .place-result button').getAttribute('aria-pressed')`), 'false');
     await evaluate(`window.__restaurantMarkers.find(marker => marker.map && marker.title.includes('가상 음식점')).choose()`);
@@ -773,6 +873,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#restaurant-search-form').requestSubmit()`);
     await until(`document.querySelector('#restaurant-status').textContent.includes('후보가 없습니다')`);
     assert.equal(await evaluate(`document.querySelector('#restaurant-results .workspace-empty h3').textContent`), '조건에 맞는 음식점이 없어요');
+    assert.equal(await evaluate(`(()=>{const empty=document.querySelector('#restaurant-results .workspace-empty'),list=empty.parentElement;return empty.getBoundingClientRect().width>=list.clientWidth-10})()`), true, 'empty result guidance spans the card area');
     assert.equal(await evaluate(`document.querySelector('#restaurant-layout').dataset.mobileView`), 'list');
     assert.equal(await evaluate(`document.querySelector('#restaurant-selected').textContent.includes('가상 음식점 1')`), true);
     await screenshot('w1-03a-restaurant-desktop.png');
@@ -818,7 +919,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#district-query').value='해운대';document.querySelector('#district-form').requestSubmit()`);
     await until(`document.querySelector('#district-results button') !== null`);
     await searchScrollScreenshot('#district-results', 'districts');
-    assert.equal(await evaluate(`parseFloat(getComputedStyle(document.querySelector('#district-results li')).borderTopWidth) > 0`), true);
+    assert.equal(await evaluate(`parseFloat(getComputedStyle(document.querySelector('#district-results')).borderBottomWidth) > 0`), true);
     for (const width of [1440, 390]) {
       await send('Emulation.setDeviceMetricsOverride', {width, height: 1000, deviceScaleFactor: 1, mobile: width === 390});
       await evaluate(`document.querySelector('#district-results').scrollIntoView({block:'center',behavior:'instant'})`);
@@ -840,6 +941,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
   });
   await t.test('W1-04 reviews each day, handles stale and 422 responses, then shows only the saved plan', async () => {
     await click('#place-results .place-result button');
+    await evaluate(`document.querySelector('#attraction-selected input[type="number"]').value='120';document.querySelector('#attraction-selected input[type="number"]').dispatchEvent(new Event('change'))`);
     await evaluate(`document.querySelector('#attraction-selected input[type="text"]').value='내 해변';document.querySelector('#attraction-selected input[type="text"]').dispatchEvent(new Event('input'))`);
     await click('[data-place-role="TRAVEL_BOUNDARY"]');
     await evaluate(`document.querySelector('#boundary-query').value='역';document.querySelector('#boundary-search-form').requestSubmit()`);
@@ -857,6 +959,22 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await evaluate(`document.querySelector('#menu-direct-name').value='직접 메뉴';document.querySelector('#menu-direct-query').value='메뉴 검색';document.querySelector('#menu-direct-form').requestSubmit()`);
     await click('#menu-confirm');
     await click('#next-step');
+    estimateMode = 'split';
+    await evaluate(`document.querySelector('#estimate-start-date').value='2026-10-01';document.querySelector('#estimate-start-date').dispatchEvent(new Event('change'));document.querySelector('#estimate-form').requestSubmit()`);
+    await until(`document.querySelectorAll('#estimate-result .estimate-visit').length === 2`);
+    assert.equal(await evaluate(`document.querySelectorAll('#estimate-result .estimate-move').length`), 0);
+    assert.equal(estimateRequests.at(-1).places[0].stayMinutes, 120);
+    await designScreenshot('meal-split-estimate-desktop.png', true);
+    await mobileDesignScreenshot('meal-split-estimate-mobile.png', true);
+    await click('#next-step');
+    assert.equal(await evaluate(`document.querySelector('[data-step="6"]').getAttribute('aria-current')`), 'step');
+    await click('#next-step');
+    await until(`document.querySelectorAll('#review-timeline .review-visit').length === 2`);
+    assert.equal(await evaluate(`document.querySelectorAll('#review-timeline .review-move').length`), 0);
+    await designScreenshot('meal-split-review-desktop.png', true);
+    await mobileDesignScreenshot('meal-split-review-mobile.png', true);
+    await click('#review-adjust');
+    estimateMode = 'success';
     await evaluate(`document.querySelector('#estimate-start-date').value='2026-10-01';document.querySelector('#estimate-start-date').dispatchEvent(new Event('change'));document.querySelector('#estimate-form').requestSubmit()`);
     await until(`document.querySelectorAll('#estimate-result section').length === 2`);
     await click('#next-step');
@@ -864,7 +982,7 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     await until(`document.querySelector('#restaurant-results').textContent.includes('가상 음식점 1')`);
     await click('#restaurant-results .place-result button');
     await evaluate(`document.querySelector('#restaurant-selected input').value='내 점심 식당';document.querySelector('#restaurant-selected input').dispatchEvent(new Event('input'))`);
-    await evaluate(`window.__reviewOverlays=[];window.kakao.maps.CustomOverlay=class{constructor(options){this.map=options.map;this.content=options.content;window.__reviewOverlays.push(this)}setMap(map){this.map=map}}`);
+    await evaluate(`window.__reviewMarkerStart=window.__restaurantMarkers.length;window.__reviewOverlays=[];window.kakao.maps.CustomOverlay=class{constructor(options){this.map=options.map;this.content=options.content;window.__reviewOverlays.push(this)}setMap(map){this.map=map}}`);
     const beforeDaySwitch = {estimate: estimateRequests.length, restaurant: restaurantRequests.length, create: createRequests.length};
     await click('#next-step');
     await until(`document.querySelector('#review-timeline').textContent.includes('내 점심 식당')`);
@@ -873,7 +991,11 @@ test('authentication and region browser flows, keyboard, lifecycle and mobile la
     assert.equal(await evaluate(`document.querySelector('#review-timeline .review-visit .review-entry-marker').textContent`), '2');
     assert.equal(await evaluate(`document.querySelector('#review-timeline .review-move .review-entry-marker').textContent`), '↓');
     assert.equal(await evaluate(`window.__reviewOverlays.some(overlay => overlay.map && overlay.content.textContent.includes('3'))`), true);
+    assert.equal(await evaluate(`window.__reviewOverlays.filter(overlay => overlay.map).every(overlay => overlay.content.tagName === 'BUTTON')`), true);
+    const firstDayMarkers = await evaluate(`window.__restaurantMarkers.slice(window.__reviewMarkerStart).filter(marker => marker.map && marker.title.includes('내 해변')).length`);
+    assert.ok(firstDayMarkers > 0);
     await click('#review-days button:nth-child(2)');
+    assert.equal(await evaluate(`window.__restaurantMarkers.slice(window.__reviewMarkerStart).filter(marker => marker.map && marker.title.includes('내 해변')).length`), 0);
     assert.equal(await evaluate(`document.querySelector('#review-timeline').textContent.includes('내 해변')`), false);
     assert.equal(await evaluate(`document.querySelector('#review-days button:nth-child(2)').getAttribute('aria-pressed')`), 'true');
     assert.equal(await evaluate(`document.querySelector('#review-day-title').textContent`), '2일차 일정');

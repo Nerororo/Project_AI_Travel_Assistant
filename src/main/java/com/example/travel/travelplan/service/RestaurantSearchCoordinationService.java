@@ -124,17 +124,7 @@ public class RestaurantSearchCoordinationService {
 				previous = visitReference(item, visits, item.endTime());
 			}
 		}
-		if (previous.clientPlaceId() != null) {
-			UUID previousId = previous.clientPlaceId();
-			EstimatedItem visit = items.stream().filter(item -> item.type() == EstimatedItem.Type.VISIT
-					&& item.clientPlaceId().equals(previousId)
-					&& !item.startTime().isAfter(meal.startTime())
-					&& !item.endTime().isBefore(meal.endTime())).findFirst().orElse(null);
-			if (visit != null) {
-				return new References(visitReference(visit, visits, visit.startTime()),
-						visitReference(visit, visits, visit.endTime()));
-			}
-		}
+
 		ReferencePoint next = dayEnd;
 		for (int index = mealIndex + 1; index < items.size(); index++) {
 			EstimatedItem item = items.get(index);

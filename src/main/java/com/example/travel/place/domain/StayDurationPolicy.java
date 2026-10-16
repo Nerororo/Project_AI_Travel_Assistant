@@ -40,19 +40,32 @@ public final class StayDurationPolicy {
 	private static StayKind classify(String providerCategory) {
 		Objects.requireNonNull(providerCategory, "providerCategory must not be null");
 		String normalized = providerCategory.trim().toLowerCase(Locale.ROOT);
-		if (containsAny(normalized, "테마파크", "놀이공원")) {
+		if (containsAny(normalized, "테마파크", "놀이공원", "워터파크")) {
 			return StayKind.THEME_PARK;
 		}
-		if (containsAny(normalized, "등산", "산악", "트레킹")) {
+		if (containsAny(normalized, "등산", "산악", "트레킹", "둘레길", "숲길")
+				|| hasCategorySegment(normalized, "산", "오름")) {
 			return StayKind.HIKING;
 		}
 		if (containsAny(normalized, "체험", "공방")) {
 			return StayKind.EXPERIENCE;
 		}
-		if (containsAny(normalized, "박물관", "미술관", "전시")) {
+		if (containsAny(normalized, "박물관", "미술관", "전시", "과학관", "기념관")) {
 			return StayKind.MUSEUM_OR_EXHIBITION;
 		}
+		if (containsAny(normalized, "백화점", "쇼핑몰", "아울렛")) {
+			return StayKind.SHOPPING;
+		}
 		return StayKind.GENERAL_OR_NATURE;
+	}
+
+	private static boolean hasCategorySegment(String category, String... labels) {
+		for (String segment : category.split(">")) {
+			for (String label : labels) {
+				if (segment.trim().equals(label)) return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean containsAny(String value, String... keywords) {
@@ -67,6 +80,7 @@ public final class StayDurationPolicy {
 	private enum StayKind {
 		GENERAL_OR_NATURE(90),
 		MUSEUM_OR_EXHIBITION(120),
+		SHOPPING(120),
 		EXPERIENCE(180),
 		HIKING(240),
 		THEME_PARK(360);

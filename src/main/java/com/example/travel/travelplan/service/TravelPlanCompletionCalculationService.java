@@ -91,7 +91,7 @@ public class TravelPlanCompletionCalculationService {
 			Set<MealType> actual = new HashSet<>();
 			events.stream().filter(event -> event.item().type() == EstimatedItem.Type.MEAL)
 					.forEach(event -> actual.add(event.item().mealType()));
-			if (!actual.equals(expected)) throw capacity(window, window.date().atTime(window.endTime()).plusMinutes(1));
+			if (!actual.equals(expected)) throw capacity(window, candidate.get(index).plannedEndTime());
 			Coordinate dayStart = index == 0 ? startCoordinate : command.hotelCoordinate();
 			Coordinate dayEnd = index == windows.size() - 1 ? endCoordinate : command.hotelCoordinate();
 			Coordinate previous = dayStart;
@@ -102,15 +102,8 @@ public class TravelPlanCompletionCalculationService {
 					segments.add(segment(previous, event.coordinate()));
 					segmentDetails.add(new RouteNotFoundDetails(window.date(), ++itemOrder,
 							command.conditions().travelMode()));
-					if (event.included()) {
-						segments.add(segment(event.coordinate(), previous));
-						itemOrder++; // The selected meal is between the outward and return MOVE.
-						segmentDetails.add(new RouteNotFoundDetails(window.date(), ++itemOrder,
-								command.conditions().travelMode()));
-					} else {
-						itemOrder++; // The visit or meal follows its incoming MOVE.
-						previous = event.coordinate();
-					}
+					itemOrder++; // The visit or meal follows its incoming MOVE.
+					previous = event.coordinate();
 				} else {
 					itemOrder++; // An unselected meal has no provider segment.
 				}
@@ -150,85 +143,81 @@ public class TravelPlanCompletionCalculationService {
 	private static List<Event> events(EstimatedDay candidate, Map<UUID, EstimateVisit> visits,
 			Map<MealType, Coordinate> restaurants) {
 		List<Event> events = new ArrayList<>();
-		EstimatedItem lastVisit = null;
+		UUID lastVisit = null;
 		for (EstimatedItem item : candidate.items()) {
 			if (item.type() == EstimatedItem.Type.VISIT) {
-				lastVisit = item;
-				events.add(new Event(item, visits.get(item.clientPlaceId()).coordinate(), false));
+				boolean resumeWithoutRestaurant = item.clientPlaceId().equals(lastVisit)
+						&& !events.isEmpty() && events.getLast().item().type() == EstimatedItem.Type.MEAL
+						&& events.getLast().coordinate() == null;
+				events.add(new Event(item, resumeWithoutRestaurant ? null
+						: visits.get(item.clientPlaceId()).coordinate()));
+				lastVisit = item.clientPlaceId();
 			} else if (item.type() == EstimatedItem.Type.MEAL) {
-				Coordinate restaurant = restaurants.get(item.mealType());
-				boolean included = lastVisit != null
-						&& !item.startTime().isBefore(lastVisit.startTime())
-						&& !item.endTime().isAfter(lastVisit.endTime());
-				events.add(new Event(item, restaurant, included));
+				events.add(new Event(item, restaurants.get(item.mealType())));
 			}
 		}
 		return events;
 	}
 
 	private static EstimatedDay render(DayRoute route, List<RouteSegmentTravelTime> times, int buffer) {
+		try {
+			return render(route, times, buffer, true);
+		} catch (ApiException failure) {
+			if (failure.errorCode() != ErrorCode.PLAN_CAPACITY_EXCEEDED) throw failure;
+			return render(route, times, buffer, false);
+		}
+	}
+
+	private static EstimatedDay render(DayRoute route, List<RouteSegmentTravelTime> times, int buffer,
+			boolean preferMealTimes) {
 		DailyActivityWindow window = route.window();
 		LocalDateTime cursor = window.date().atTime(window.startTime());
 		List<EstimatedItem> items = new ArrayList<>();
 		int segmentIndex = route.firstSegment();
-		LocalDateTime visitStart = null;
-		LocalDateTime visitEnd = null;
-		LocalDateTime priorIncludedMealEnd = null;
-		for (Event event : route.events()) {
+		long resumedMinutes = 0;
+		for (int eventIndex = 0; eventIndex < route.events().size(); eventIndex++) {
+			Event event = route.events().get(eventIndex);
 			EstimatedItem item = event.item();
-			if (event.coordinate() != null && !event.included()) {
+			if (event.coordinate() != null) {
 				int minutes = minutes(times.get(segmentIndex++));
 				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MOVE,
 						null, null, null, cursor, cursor.plusMinutes(minutes), minutes));
 				cursor = cursor.plusMinutes(minutes);
 			}
 			if (item.type() == EstimatedItem.Type.VISIT) {
-				visitStart = cursor;
-				visitEnd = cursor.plus(Duration.between(item.startTime(), item.endTime()));
-				priorIncludedMealEnd = null;
+				long stay = Duration.between(item.startTime(), item.endTime()).toMinutes() + resumedMinutes;
+				resumedMinutes = 0;
+				if (eventIndex + 2 < route.events().size()) {
+					Event meal = route.events().get(eventIndex + 1);
+					EstimatedItem resume = route.events().get(eventIndex + 2).item();
+					if (meal.item().type() == EstimatedItem.Type.MEAL
+							&& resume.type() == EstimatedItem.Type.VISIT
+							&& item.clientPlaceId().equals(resume.clientPlaceId())) {
+						int outward = meal.coordinate() == null ? buffer : minutes(times.get(segmentIndex));
+						long remaining = Duration.between(resume.startTime(), resume.endTime()).toMinutes();
+						LocalDateTime earliest = max(cursor.plusMinutes(outward + 1L),
+								window.date().atTime(meal.item().mealType().allowedStart()));
+						LocalDateTime latest = min(cursor.plusMinutes(stay + remaining - 1 + outward),
+								window.date().atTime(meal.item().mealType().allowedEnd()).minusMinutes(60));
+						if (earliest.isAfter(latest)) throw capacity(window, earliest.plusMinutes(60));
+						LocalDateTime mealStart = preferMealTimes ? min(max(window.date().atTime(
+								meal.item().mealType().preferredStart()), earliest), latest) : earliest;
+						long beforeMeal = Duration.between(cursor, mealStart.minusMinutes(outward)).toMinutes();
+						resumedMinutes = stay - beforeMeal;
+						stay = beforeMeal;
+					}
+				}
+				LocalDateTime visitEnd = cursor.plusMinutes(stay);
 				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.VISIT,
-						item.clientPlaceId(), item.displayName(), null, visitStart, visitEnd, null));
+						item.clientPlaceId(), item.displayName(), null, cursor, visitEnd, null));
 				cursor = visitEnd;
-			} else if (event.included() && event.coordinate() != null) {
-				int outward = minutes(times.get(segmentIndex++));
-				int back = minutes(times.get(segmentIndex++));
-				LocalDateTime earliest = max(visitStart.plusMinutes(outward),
-						window.date().atTime(item.mealType().allowedStart()));
-				if (priorIncludedMealEnd != null) earliest = max(earliest, priorIncludedMealEnd);
-				LocalDateTime latest = min(visitEnd.minusMinutes(back + 60L),
-						window.date().atTime(item.mealType().allowedEnd()).minusMinutes(60));
-				if (earliest.isAfter(latest)) throw capacity(window, max(cursor,
-						window.date().atTime(window.endTime()).plusMinutes(1)));
-				LocalDateTime mealStart = min(max(window.date().atTime(item.mealType().preferredStart()), earliest), latest);
-				LocalDateTime outwardStart = mealStart.minusMinutes(outward);
-				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MOVE,
-						null, null, null, outwardStart, mealStart, outward));
-				LocalDateTime mealEnd = mealStart.plusMinutes(60);
-				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MEAL,
-						null, null, item.mealType(), mealStart, mealEnd, null));
-				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MOVE,
-						null, null, null, mealEnd, mealEnd.plusMinutes(back), back));
-				priorIncludedMealEnd = mealEnd.plusMinutes(back);
-			} else if (event.included()) {
-				LocalDateTime earliest = max(visitStart.plusMinutes(buffer),
-						window.date().atTime(item.mealType().allowedStart()));
-				if (priorIncludedMealEnd != null) earliest = max(earliest,
-						priorIncludedMealEnd.plusMinutes(2L * buffer));
-				LocalDateTime latest = min(visitEnd.minusMinutes(buffer + 60L),
-						window.date().atTime(item.mealType().allowedEnd()).minusMinutes(60));
-				if (earliest.isAfter(latest)) throw capacity(window, max(cursor,
-						window.date().atTime(window.endTime()).plusMinutes(1)));
-				LocalDateTime mealStart = min(max(window.date().atTime(item.mealType().preferredStart()), earliest), latest);
-				priorIncludedMealEnd = mealStart.plusMinutes(60);
-				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MEAL,
-						null, null, item.mealType(), mealStart, priorIncludedMealEnd, null));
 			} else {
 				LocalDateTime earliest = max(cursor.plusMinutes(event.coordinate() == null ? buffer : 0),
 						window.date().atTime(item.mealType().allowedStart()));
 				LocalDateTime latest = window.date().atTime(item.mealType().allowedEnd()).minusMinutes(60);
-				if (earliest.isAfter(latest)) throw capacity(window, max(earliest.plusMinutes(60),
-						window.date().atTime(window.endTime()).plusMinutes(1)));
-				LocalDateTime mealStart = min(max(window.date().atTime(item.mealType().preferredStart()), earliest), latest);
+				if (earliest.isAfter(latest)) throw capacity(window, earliest.plusMinutes(60));
+				LocalDateTime mealStart = preferMealTimes
+						? min(max(window.date().atTime(item.mealType().preferredStart()), earliest), latest) : earliest;
 				LocalDateTime mealEnd = mealStart.plusMinutes(60);
 				items.add(new EstimatedItem(items.size() + 1, EstimatedItem.Type.MEAL,
 						null, null, item.mealType(), mealStart, mealEnd, null));
@@ -268,7 +257,7 @@ public class TravelPlanCompletionCalculationService {
 		LocalDateTime allowedEnd = window.date().atTime(window.endTime());
 		return new ApiException(ErrorCode.PLAN_CAPACITY_EXCEEDED,
 				new PlanCapacityDetails(window.date(), plannedEnd.toLocalTime(), window.endTime(),
-						Duration.between(allowedEnd, plannedEnd).toMinutes()),
+						Math.max(0, Duration.between(allowedEnd, plannedEnd).toMinutes())),
 				CAPACITY_ADJUSTMENTS, null);
 	}
 
@@ -280,7 +269,7 @@ public class TravelPlanCompletionCalculationService {
 		}
 	}
 
-	private record Event(EstimatedItem item, Coordinate coordinate, boolean included) { }
+	private record Event(EstimatedItem item, Coordinate coordinate) { }
 	private record DayRoute(DailyActivityWindow window, List<Event> events,
 			int firstSegment, int endSegment) { }
 }
