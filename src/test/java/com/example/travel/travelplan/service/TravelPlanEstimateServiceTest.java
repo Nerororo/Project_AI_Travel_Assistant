@@ -84,7 +84,7 @@ class TravelPlanEstimateServiceTest {
 
 		assertThat(result.days().getFirst().items().stream()
 				.filter(item -> item.type() == EstimatedItem.Type.VISIT)
-				.map(EstimatedItem::clientPlaceId)).containsExactly(A, B);
+				.map(EstimatedItem::clientPlaceId).distinct()).containsExactly(A, B);
 	}
 
 	@Test
@@ -107,17 +107,61 @@ class TravelPlanEstimateServiceTest {
 	}
 
 	@Test
-	void includedMealDoesNotExtendLongVisitOrAddBufferTwice() {
+	void mealSplitsSightseeingAndAddsItsOwnTimeAndTravelBudget() {
 		EstimateCommand command = command(1,
-				List.of(visit(A, CENTER, 180, FIRST, 1)),
+				List.of(visit(A, CENTER, 120, FIRST, 1)),
 				LocalTime.of(11, 0), LocalTime.of(16, 0), null);
 
 		EstimateResult result = service.estimate(command);
 
 		assertThat(result.days().getFirst().plannedEndTime().toLocalTime())
-				.isEqualTo(LocalTime.of(14, 0));
+				.isEqualTo(LocalTime.of(14, 30));
+		var items = result.days().getFirst().items();
+		assertThat(items.stream().filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.map(item -> Duration.between(item.startTime(), item.endTime()).toMinutes()))
+				.containsExactly(45L, 75L);
+		for (int index = 1; index < items.size(); index++) {
+			assertThat(items.get(index).startTime()).isAfterOrEqualTo(items.get(index - 1).endTime());
+		}
 		assertThat(result.days().getFirst().items().stream()
 				.filter(item -> item.type() == EstimatedItem.Type.MEAL)).hasSize(1);
+	}
+
+	@Test
+	void mealExtensionThatExceedsEndTimeIsRejected() {
+		EstimateCommand command = command(1, List.of(visit(A, CENTER, 120, FIRST, 1)),
+				LocalTime.of(11, 0), LocalTime.of(14, 0), null);
+		assertThatThrownBy(() -> service.estimate(command)).isInstanceOfSatisfying(ApiException.class,
+				exception -> assertThat(exception.errorCode()).isEqualTo(ErrorCode.PLAN_CAPACITY_EXCEEDED));
+	}
+
+	@Test
+	void mealWindowConflictDoesNotInventAnExtraMinute() {
+		var command = command(1, List.of(visit(A, CENTER, 30, FIRST, 1)),
+				LocalTime.of(13, 0), LocalTime.of(23, 0), null);
+		var conditions = new TravelConditions(command.conditions().period(), TravelMode.CAR,
+				command.conditions().days(), 60);
+		var tightLunch = new EstimateCommand(command.userId(), command.regionId(), conditions,
+				command.startBoundarySelectionToken(), command.endBoundarySelectionToken(), command.visits(), null);
+		assertThatThrownBy(() -> service.estimate(tightLunch)).isInstanceOfSatisfying(ApiException.class, failure -> {
+			assertThat(failure.errorCode()).isEqualTo(ErrorCode.PLAN_CAPACITY_EXCEEDED);
+			assertThat(((PlanCapacityDetails) failure.details()).exceededMinutes()).isZero();
+		});
+	}
+
+	@Test
+	void lunchAndDinnerBothPauseLongSightseeingWithoutReducingItsTotal() {
+		var result = service.estimate(command(1, List.of(visit(A, CENTER, 480, FIRST, 1)),
+				LocalTime.of(11, 0), LocalTime.of(23, 0), null));
+		var items = result.days().getFirst().items();
+		assertThat(result.days().getFirst().plannedEndTime()).isEqualTo(FIRST.atTime(22, 0));
+		assertThat(items.stream().filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.mapToLong(item -> Duration.between(item.startTime(), item.endTime()).toMinutes()).sum())
+				.isEqualTo(480);
+		assertThat(items.stream().filter(item -> item.type() == EstimatedItem.Type.MEAL)).hasSize(2);
+		for (int index = 1; index < items.size(); index++) {
+			assertThat(items.get(index).startTime()).isAfterOrEqualTo(items.get(index - 1).endTime());
+		}
 	}
 
 	@Test
@@ -159,11 +203,13 @@ class TravelPlanEstimateServiceTest {
 		EstimateResult relaxed = service.estimate(command(1, selected,
 				LocalTime.of(9, 0), LocalTime.of(17, 0), null));
 		assertThat(relaxed.days().getFirst().items().stream()
-				.filter(item -> item.type() == EstimatedItem.Type.VISIT))
-				.extracting(EstimatedItem::clientPlaceId).containsExactlyInAnyOrder(A, B);
+				.filter(item -> item.type() == EstimatedItem.Type.VISIT)
+				.map(EstimatedItem::clientPlaceId).distinct()).containsExactlyInAnyOrder(A, B);
 		assertThat(relaxed.days().getFirst().items().stream()
 				.filter(item -> item.type() == EstimatedItem.Type.VISIT)
-				.map(item -> Duration.between(item.startTime(), item.endTime()).toMinutes()))
+				.collect(java.util.stream.Collectors.groupingBy(EstimatedItem::clientPlaceId,
+						java.util.stream.Collectors.summingLong(item -> Duration.between(
+								item.startTime(), item.endTime()).toMinutes()))).values())
 				.containsExactlyInAnyOrder(180L, 180L);
 	}
 

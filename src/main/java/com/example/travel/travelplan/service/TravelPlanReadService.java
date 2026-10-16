@@ -17,6 +17,7 @@ import com.example.travel.travelplan.repository.TravelPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -94,7 +95,9 @@ public class TravelPlanReadService {
         return new TravelPlanCreateApiResponse.Item(item.id(), item.itemOrder(), item.itemType().name(),
                 item.planPlaceId(), name, place == null ? null : place.placeUrl(),
                 item.startTime().format(TIME), item.endTime().format(TIME),
-                place == null ? null : place.stayMinutes(), item.estimatedMinutes(),
+                item.itemType() == TravelPlanItem.Type.VISIT
+                        ? Math.toIntExact(Duration.between(item.startTime(), item.endTime()).toMinutes()) : null,
+                item.estimatedMinutes(),
                 place == null ? null : place.memo());
     }
 

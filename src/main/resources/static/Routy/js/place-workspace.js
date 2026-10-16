@@ -38,19 +38,51 @@
           headers: {'Content-Type': 'application/json', Accept: 'application/json', 'Idempotency-Key': window.crypto.randomUUID()},
           body: JSON.stringify({placeName: place.providerDisplayName, address: place.address}), signal: controller.signal})
           .then(response => response instanceof window.Response && response.ok ? response.json() : null)
-          .then(body => {
-            const url = new URL(body?.thumbnailUrl);
-            return url.protocol === 'https:' && (url.hostname === 'kakaocdn.net' || url.hostname.endsWith('.kakaocdn.net')) ? url.href : null;
-          }).catch(() => null).finally(() => pending.delete(controller));
+          .then(body => (Array.isArray(body?.thumbnailUrls) ? body.thumbnailUrls : []).flatMap(value => {
+            try {
+              const url = new URL(value);
+              return url.protocol === 'https:' && (url.hostname === 'kakaocdn.net' || url.hostname.endsWith('.kakaocdn.net')) ? [url.href] : [];
+            } catch (_) { return []; }
+          }).slice(0, 5)).catch(() => []).finally(() => pending.delete(controller));
         cache.set(place.kakaoPlaceId, lookup);
       }
-      lookup.then(url => {
-        if (!url || !item.isConnected) return;
-        const img = document.createElement('img'); img.className = 'place-thumbnail'; img.alt = '';
-        img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
-        img.onload = () => item.classList.add('has-thumbnail');
-        img.onerror = () => img.remove();
-        img.src = url; item.append(img);
+      lookup.then(urls => {
+        if (!urls.length || !item.isConnected) return;
+        const gallery = document.createElement('div'); gallery.className = 'place-image-gallery';
+        const strip = document.createElement('div'); strip.className = 'place-image-strip';
+        const count = document.createElement('span'); count.className = 'place-image-count';
+        count.textContent = `1 / ${urls.length}`;
+        if (urls.length > 1) {
+          strip.tabIndex = 0;
+          strip.setAttribute('role', 'group');
+          strip.setAttribute('aria-label', `${urls.length}장의 장소 사진. 좌우로 넘겨 보세요.`);
+          strip.addEventListener('scroll', () => {
+            count.textContent = `${Math.min(urls.length, Math.round(strip.scrollLeft / strip.clientWidth) + 1)} / ${urls.length}`;
+          });
+          let startX = null, startScroll = 0;
+          strip.addEventListener('pointerdown', event => {
+            if (event.pointerType !== 'mouse' || event.button !== 0) return;
+            startX = event.clientX; startScroll = strip.scrollLeft;
+            strip.setPointerCapture(event.pointerId);
+            event.preventDefault();
+          });
+          strip.addEventListener('pointermove', event => {
+            if (startX !== null) strip.scrollLeft = startScroll + startX - event.clientX;
+          });
+          const stopDrag = () => { startX = null; };
+          strip.addEventListener('pointerup', stopDrag);
+          strip.addEventListener('pointercancel', stopDrag);
+        }
+        for (const url of urls) {
+          const img = document.createElement('img'); img.className = 'place-thumbnail'; img.alt = '';
+          img.loading = 'eager'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer'; img.draggable = false;
+          img.onload = () => { if (item.isConnected) item.classList.add('has-thumbnail'); };
+          img.onerror = () => img.remove();
+          img.src = url; strip.append(img);
+        }
+        gallery.append(strip);
+        if (urls.length > 1) gallery.append(count);
+        item.append(gallery);
       });
     }
     return {append, clear};
@@ -107,6 +139,8 @@
   function createMapView(window, element, status) {
     let map = null;
     let markers = [];
+    let infoWindows = [];
+    let viewportKey = '';
     let ready = false;
     let generation = 0;
     async function ensure() {
@@ -132,20 +166,29 @@
     function render(places, selectedIds, onChoose) {
       if (!ready) return;
       const maps = window.kakao.maps;
-      markers.forEach(marker => marker.setMap(null));
-      markers = [];
+      clearMarkers();
       const bounds = new maps.LatLngBounds();
-      const icon = selected => new maps.MarkerImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42"><path d="M16 40S2 24 2 16a14 14 0 1 1 28 0c0 8-14 24-14 24Z" fill="${selected ? '#1748df' : '#303b4a'}" stroke="white" stroke-width="2"/><circle cx="16" cy="16" r="5" fill="white"/></svg>`)}`, new maps.Size(32, 42));
       for (const place of places) {
         const position = new maps.LatLng(place.latitude, place.longitude);
         const selected = selectedIds.has(place.kakaoPlaceId);
-        const marker = new maps.Marker({map, position, image: icon(selected), title: `${selected ? '선택됨 · ' : ''}${place.providerDisplayName}`});
+        const title = `${selected ? '✓ 선택됨 · ' : ''}${place.providerDisplayName}`;
+        const marker = new maps.Marker({map, position, title, zIndex: selected ? 3 : 1, opacity: selected ? 1 : 0.8});
+        const label = window.document.createElement('div');
+        label.className = 'map-place-label';
+        label.textContent = title;
+        const info = new maps.InfoWindow({content: label, zIndex: selected ? 4 : 5});
+        maps.event.addListener(marker, 'mouseover', () => info.open(map, marker));
+        maps.event.addListener(marker, 'mouseout', () => { if (!selected) info.close(); });
         maps.event.addListener(marker, 'click', () => onChoose(place.kakaoPlaceId));
+        if (selected) info.open(map, marker);
+        infoWindows.push(info);
         markers.push(marker);
         bounds.extend(position);
       }
-      if (places.length) map.setBounds(bounds);
+      const nextKey = JSON.stringify(places.map(place => [place.kakaoPlaceId, place.latitude, place.longitude]).sort());
+      if (places.length && nextKey !== viewportKey) map.setBounds(bounds);
       else map.relayout();
+      viewportKey = nextKey;
     }
     function center() {
       if (!ready) return null;
@@ -157,7 +200,8 @@
       const area = map.getBounds(), sw = area.getSouthWest(), ne = area.getNorthEast();
       return {minLatitude: sw.getLat(), minLongitude: sw.getLng(), maxLatitude: ne.getLat(), maxLongitude: ne.getLng()};
     }
-    function clear() { markers.forEach(marker => marker.setMap(null)); markers = []; }
+    function clearMarkers() { infoWindows.forEach(info => info.close()); infoWindows = []; markers.forEach(marker => marker.setMap(null)); markers = []; }
+    function clear() { clearMarkers(); viewportKey = ''; }
     function dispose() { generation++; clear(); map = null; ready = false; element.replaceChildren(); element.classList.remove('is-unavailable'); status.textContent = ''; }
     return {ensure, render, center, bounds, clear, dispose};
   }
@@ -241,12 +285,14 @@
         const heading = document.createElement('strong'); heading.textContent = place.providerDisplayName;
         const address = document.createElement('span'); address.textContent = place.address;
         const link = document.createElement('a'); link.href = place.placeUrl; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = '카카오 장소 보기';
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'button button-ghost';
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'search-result-choice';
         button.dataset.placeId = place.kakaoPlaceId;
-        button.textContent = selectedIds.has(place.kakaoPlaceId) ? '선택됨' : '선택';
+        const state = document.createElement('span'); state.className = 'search-result-state';
+        state.textContent = selectedIds.has(place.kakaoPlaceId) ? '선택됨' : '';
+        const copy = document.createElement('span'); copy.append(heading, address); button.append(copy, state);
         button.setAttribute('aria-pressed', String(selectedIds.has(place.kakaoPlaceId)));
         button.addEventListener('click', () => choose(place.kakaoPlaceId));
-        item.append(heading, address, link, button);
+        item.append(button, link);
         images.append(item, place);
         return item;
       }));
@@ -401,8 +447,8 @@
         if (!response.ok || !Array.isArray(body?.regions)) { status('#district-status', errorFor(response.status, body).message, true); return; }
         const matches = body.regions.filter(item => item.placeSearchFilterable === true && item.parentRegionId === region?.regionId);
         $('#district-results').replaceChildren(...matches.map(item => {
-          const li = document.createElement('li'), button = document.createElement('button'); button.type = 'button'; button.textContent = `${item.name} 필터 선택`;
-          li.className = 'place-result'; button.className = 'button button-ghost';
+          const li = document.createElement('li'), button = document.createElement('button'); button.type = 'button'; button.textContent = item.name;
+          li.className = 'place-result'; button.className = 'search-result-choice';
           button.addEventListener('click', () => { district = {regionId: item.regionId, name: item.name}; renderDistrict(); status('#district-status', `${item.name} 필터를 적용했습니다.`); }); li.append(button); return li;
         }));
         status('#district-status', matches.length ? `${matches.length}개의 구·군을 찾았습니다.` : '선택 지역에 속한 구·군 필터가 없습니다.');

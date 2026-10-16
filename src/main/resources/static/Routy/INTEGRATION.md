@@ -290,6 +290,14 @@ SDK 사용법은 카카오 공식 [마커 클러스터러 예제](https://apis.m
 
 ## 7. 컴포넌트와 상태 경계
 
+지역 직접 검색·AI 지역 추천·구군 필터 결과는 검색바에 이어진 드롭다운으로 표시한다. 기존 화면 위에 겹쳐 열리고 바깥 클릭·Escape·결과 선택으로 닫힌다. 검색창을 다시 누르거나 초점을 주면 기존 결과를 열고, Escape·선택 후 초점은 검색창으로 복귀한다.
+
+관광지·시작/종료 장소·숙소·음식점 결과는 검색창 밖의 본문에 표시한다. 사용자 지정 `C:\SSAFY\관통 프로젝트\5team` 화면처럼 데스크톱에서는 왼쪽 사진 카드 2열과 오른쪽의 큰 sticky 지도를 함께 보여준다. 해당 단계의 현재 선택은 높이 약 70px의 상단 sticky 바로 압축해 지역·기간·시작 날짜·이동수단·장소 수를 스크롤 중에도 표시한다. 지도 위치·높이는 요약 바를 고려해 조정한다. 카드 상단 전체 너비의 사진 아래에 이름·주소를 표시하고, 이름·주소 행을 클릭하거나 Tab·Enter·Space로 선택한다. 사진 높이는 데스크톱 180px·작은 화면 215px이며 좌우 사진 넘기기를 유지한다. 작은 화면의 결과는 1열이고 기존 모바일 목록·지도 전환을 유지한다. 지역 드롭다운과 본문 카드 모두 외부 장소 링크·사진 탐색은 선택 행과 분리하고, 서버 검색 순서·페이지 이동·선택 상태를 유지한다. 입력 중 자동 외부 검색은 수행하지 않는다.
+
+2026-10-16 공통 검색 UI 수정: Node 단위 테스트 68개와 가짜 API·실제 Chromium 브라우저 테스트 19개가 통과했다. 1440px·390px에서 검색바와 결과의 경계·너비 일치, 기존 화면의 배치 유지, 드롭다운의 겹침·스크롤·잘림 방지, 사진 유무, 키보드 선택과 초점 복귀, Escape·바깥 클릭 닫기와 재열기를 확인했다. JS 구문 검사·`git diff --check`와 루트 `test.ps1`의 Java 테스트 566개(실패·오류·건너뜀 0)도 통과했다. 실제 제공자 검증은 수행하지 않았다.
+
+같은 날 본문 배치 후속 검증: 1440px의 카드 2열·오른쪽 지도 위치·최소 지도 높이, 390px의 카드 1열·모바일 목록/지도 전환, 사진 전체 너비·상단 배치·180px/215px 높이·좌우 넘기기, 빈 결과 안내의 전체 너비를 확인했다. 최종 요약 바 조정 뒤에도 관광지·숙소·음식점 단계의 스크롤 중 현재 선택 표시와 요약 높이 100px 이하를 브라우저 회귀 19개로 확인했다. 전체 Java 566개는 본문 배치 변경 후 통과했고 마지막 요약 CSS 조정은 브라우저 회귀로 검증했다. 캡처 `build/qa/place-map-layout-desktop.png`, `build/qa/place-map-layout-mobile.png`, `build/qa/selection-summary-*-desktop.png`는 가짜 API·로컬 예시 사진을 이용한 배치 검증이며 실제 지도·이미지 제공자 검증은 아니다.
+
 다음 책임을 분리한다.
 
 - API adapter: endpoint, header, requestId와 Response 변환
@@ -515,3 +523,13 @@ git diff --check
 - 6.7절 기준으로 지역·관광지·숙소·메뉴·추정·음식점·일차별 검토와 오류·편집 캡처를 확인했다. 추가 오류 캡처는 `build/qa/w1-06-auth-{limited,oversized}-{desktop,mobile}.png`, `w1-06-estimate-{limited,oversized}-{desktop,mobile}.png`, `w1-06-create-rejected-{desktop,mobile}.png`, `w1-06-forced-colors-mobile.png`다. 완료·공유는 기존 저장 DTO와 지도 없는 고정 템플릿 계약을 유지한다.
 - 루트 `test.ps1`이 4분 27초에 `BUILD SUCCESSFUL`로 종료했다. XML 합계는 96개 suite·552개 테스트이며 실패·오류·건너뜀 0이다. DB 종료 중 Hikari 연결 정리 경고가 있었으나 최종 종료 코드 0과 테스트 결과를 확인했다. `git diff --check`가 통과했고 공통·보안 응답·브라우저·데이터 수명 DoD의 로컬 해당 범위를 확인했다.
 - W1-06은 구현·로컬 검증 완료다. 실제 카카오/OpenAI·CSP 적용·Render/Aiven 보안 회귀·운영 가능 판정은 SEC1-07~08·Q1에서 확인한다. 다음 Task는 SEC1-07이며 이번 작업에서 시작하지 않았다.
+
+### W1-MARKER team5 마커 방식 반영 (2026-10-15)
+
+- 사용자 요청의 지도 표현 보완 작업으로 W1-02·03A·04의 기존 책임 경계를 따른다. `C:\SSAFY\관통 프로젝트\team5`의 제품 마커 생성·정리와 실습 `kakao.js`의 기본 Marker·mouseover/mouseout InfoWindow 방식을 직접 확인했다. [카카오 공식 예제](https://apis.map.kakao.com/web/sample/addMarkerMouseEvent/)도 대조했다.
+- Allowed와 실제 변경: `js/place-workspace.js`, `js/review-workspace.js`, `css/style.css`, `js/place-workspace.test.cjs`, `js/auth.browser.test.cjs`, 이 문서. Conditional은 Git 제외 `build/qa/` 검증 산출물이다. Java·API·DB·설정·dependency·team5 원본은 Forbidden이며 변경하지 않았다. 기존 사용자 수정은 보존했다.
+- 관광지·여행 경계·숙소·음식점의 공통 지도에서 자체 SVG 핀을 기본 카카오 핀으로 바꾸고, 이름을 안전한 DOM 텍스트로 넣은 InfoWindow를 연결했다. 선택된 장소는 `✓ 선택됨` 안내창과 높은 z-index로 구분하고 목록·마커 선택 계약을 유지한다. 표시 장소 ID·좌표 집합이 같으면 선택·입력 갱신으로 지도를 다시 맞추지 않는다. 검색 장소가 바뀌면 새 범위에 맞춘다.
+- 검토 지도는 기본 핀과 키보드로 누를 수 있는 방문 번호 버튼을 함께 표시한다. 같은 위치의 반복 방문 번호를 모두 유지하고 핀·번호 클릭으로 해당 일정 항목을 찾는다. 날짜 변경·초기화·완료 시 핀·번호·InfoWindow를 함께 정리한다. 연결선·주소 지오코딩·외부 조회·저장소 영속화는 추가하지 않았다.
+- References Read: 루트·resources·static·Routy AGENTS, `docs/11` W1 단계, `docs/12` W1 경계, `docs/01` 장소·검토 계약, `docs/08` 브라우저·지도 검증, `docs/10` 14~15절, 본 문서의 지도 계약, 직접 호출자와 기존 diff.
+- 검증: 직접 Node 테스트 10개, 실제 Chromium을 포함한 전체 Routy Node 회귀 87개 통과. 지도 SDK는 Fake로 마커 이벤트·선택·범위 유지·날짜 전환·폐기를 검증했다. 루트 `test.ps1`은 4분 20초에 `BUILD SUCCESSFUL`, XML 합계 566개·실패/오류/건너뜀 0이다. JS 구문 검사와 `git diff --check` 통과. 테스트 실행 당시의 기존 미커밋 변경을 포함한 현재 작업 트리 기준 결과다.
+- 실제 카카오 SDK의 핀 외형·안내창 겹침과 실서비스 키·CSP는 미검증이다. 자동 브라우저 캡처는 실제 지도 렌더링 증거가 아니며, 운영 DoD 완료나 SEC1 다음 단계 진행으로 표시하지 않는다.

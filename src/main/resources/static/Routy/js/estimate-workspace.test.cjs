@@ -46,6 +46,13 @@ test('capacity error gives adjustment guidance without copying provider text', (
   assert.doesNotMatch(message, /raw/);
 });
 
+test('meal window failure is distinguished from actual minute overrun', () => {
+  const message = errorText({status: 422}, {code: 'PLAN_CAPACITY_EXCEEDED', details: {
+    date: '2026-10-01', plannedEndTime: '16:00', allowedEndTime: '23:00', exceededMinutes: 0}});
+  assert.match(message, /식사 허용 시간대/);
+  assert.doesNotMatch(message, /0분 초과|1분 초과/);
+});
+
 test('route error identifies only an exact MOVE and its two neighbors', () => {
   const items = [
     {order: 1, type: 'VISIT'}, {order: 2, type: 'MOVE'}, {order: 3, type: 'MEAL'}

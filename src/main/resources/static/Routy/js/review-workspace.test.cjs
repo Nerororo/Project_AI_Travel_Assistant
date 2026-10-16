@@ -3,6 +3,13 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const review = require('./review-workspace.js');
 
+test('meal timing conflict does not invent a one-minute capacity overrun', () => {
+  const message = review.errorText({status: 422}, {code: 'PLAN_CAPACITY_EXCEEDED', details: {
+    date: '2026-10-01', exceededMinutes: 0}});
+  assert.match(message, /식사 허용 시간대/);
+  assert.doesNotMatch(message, /0분 초과|1분 초과/);
+});
+
 const place = (token, latitude = 37.5) => ({selectionToken: token, latitude, longitude: 127});
 const confirmed = () => ({request: {regionId: 'KR-26', travelMode: 'CAR', startDate: '2026-10-01', endDate: '2026-10-02',
   hotelSelectionToken: 'hotel', places: [{clientPlaceId: 'a', selectionToken: 'attraction', displayName: '내 해변', day: '2026-10-01', order: 1}]},

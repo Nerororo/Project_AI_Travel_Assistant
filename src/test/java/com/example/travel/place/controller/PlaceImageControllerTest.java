@@ -17,6 +17,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
@@ -46,15 +47,15 @@ class PlaceImageControllerTest {
 	}
 
 	@Test
-	void passesValidatedSearchTermsAndReturnsOnlyThumbnail() throws Exception {
+	void passesValidatedSearchTermsAndReturnsThumbnails() throws Exception {
 		UUID requestId = UUID.randomUUID();
 		when(service.search(7L, requestId, new PlaceImageApiRequest("테스트 장소", "테스트도 테스트시")))
-				.thenReturn(new PlaceImageApiResponse(URI.create("https://search2.kakaocdn.net/argon/example")));
+				.thenReturn(new PlaceImageApiResponse(List.of(URI.create("https://search2.kakaocdn.net/argon/example"))));
 		mvc.perform(post("/api/places/image").header("Idempotency-Key", requestId)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"placeName\":\"테스트 장소\",\"address\":\"테스트도 테스트시\"}"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.thumbnailUrl").value("https://search2.kakaocdn.net/argon/example"));
+				.andExpect(jsonPath("$.thumbnailUrls[0]").value("https://search2.kakaocdn.net/argon/example"));
 		verify(service).search(7L, requestId, new PlaceImageApiRequest("테스트 장소", "테스트도 테스트시"));
 	}
 
